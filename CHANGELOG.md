@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- CI tests every supported Python (3.10-3.14) on Linux, and 3.10 and 3.14 on Windows and macOS.
+- Dependabot opens weekly update PRs for Python packages and GitHub Actions; workflows use `actions/checkout@v7` and `actions/setup-python@v7`.
+
 ## 1.0.2 (2026-09)
 
 - **Calendar: no more duplicate calendars.** A temporary Google error (expired login, a 5xx) while checking the calendars was treated as "calendar deleted", and a second "<SITE_LABEL> – deadlines" calendar was created. Now a calendar is recreated only when Google really says it's gone (404/410).
