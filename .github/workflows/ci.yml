@@ -1,10 +1,12 @@
-# Runs on every push and pull request: lint + tests on Windows, macOS and Linux.
+# Runs on every pull request and every push to main: lint + tests on Windows, macOS and Linux.
 # No secrets are used - the tests never talk to a real Moodle or send notifications.
 name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:  # manual run from the Actions tab, e.g. for a branch without a PR
 
 permissions:
   contents: read
