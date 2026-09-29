@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.3 (2026-09)
+
+Maintenance release: no changes in behaviour.
 
 - CI tests every supported Python (3.10-3.14) on Linux, and 3.10 and 3.14 on Windows and macOS.
 - Dependabot opens weekly update PRs for Python packages and GitHub Actions; workflows use `actions/checkout@v7` and `actions/setup-python@v7`.
