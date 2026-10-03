@@ -2,6 +2,14 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.2.0 (2026-10)
+
+- **Moodle in Telegram.** `/courses` (`/kursy`): a course → its sections → what's in them, every item with the most useful link - your Drive copy of a file (opens only for you), the link a teacher shared, links inside labels, or the activity in Moodle. `/today` (`/dzis`): what appeared in all your courses today, or `/today 1`, `/today 12.10`, with ◀ ▶ between days.
+- **Submitting assignments** (with `MOODLE_ACTIONS=1`): send the bot a file, pick the assignment, the bot checks the allowed types, size and whether you can still change the submission, renames the file after the assignment (`SUBMISSION_NAME`, default `{assignment} {course} {student_id}`), shows a summary and uploads only after ✅. "Submit for grading" is a separate tap.
+- **Forum posts** (`/forum`): course → forum → subject → message → preview → ✅.
+- **Attendance** (`/attendance`, `/obecnosc`, or send the QR link / a photo of the QR code): the bot opens the attendance page logged in as you (autologin, like the Moodle app), shows the statuses your teacher allows (Present first) and submits the one you pick after ✅; a session password is asked for and deleted from the chat. Needs `MOODLE_PRIVATE_TOKEN`, now saved by `python -m moodle_sync token`.
+- All new commands are in the Telegram menu. Read-only stays the default: without `MOODLE_ACTIONS=1` the bot never changes anything in Moodle.
+
 ## 1.1.1 (2026-10)
 
 - **No university is hard-wired any more.** The ECTS catalogue address is a setting (`STUDY_CATALOG`, or taken from `STUDY_PLAN_URL`); `plan --search "name" --catalog <address>`; the setup wizard asks for it.

@@ -44,6 +44,11 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/nowe` `/new` | ostatnio pobrane materiały |
 | `/oceny` `/grades` | ostatnie oceny |
 | `/status` | ostatni przebieg, wynik każdego kroku, wolne miejsce, czas działania |
+| `/kursy` `/courses` | kurs → sekcje → materiały, z linkami do kopii na Dysku, udostępnionymi linkami i Moodle |
+| `/dzis` `/today` | co pojawiło się dziś w kursach; `/dzis wczoraj`, `/dzis 12.10` = wybrany dzień |
+| `/oddaj` `/submit` albo po prostu wyślij plik | oddaj go do zadania (wymaga `MOODLE_ACTIONS=1`, zobacz [Konfiguracja](configuration.md)) |
+| `/forum` | załóż wątek na forum kursu (`MOODLE_ACTIONS=1`) |
+| `/obecnosc` `/attendance` albo wyślij link / zdjęcie QR | zaznacz obecność (`MOODLE_ACTIONS=1`) |
 | `/sync` | synchronizuj teraz |
 | `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |
 | `/rollback` | wróć do wersji sprzed ostatniego `/update` |

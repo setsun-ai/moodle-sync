@@ -38,7 +38,8 @@ Komentarz prowadzącego: Dobra robota, uwagi w sekcji 3.
 - 🧙 **Kreator konfiguracji:** sam sprawdza, jak loguje Twoja uczelnia (hasło czy SSO), i prowadzi krok po kroku. `doctor` sprawdza całość.
 - 🖥️ **Działa, jak chcesz:** dwuklik, kiedy masz ochotę, automatycznie, gdy komputer jest włączony, albo 24/7 na Raspberry Pi.
 - 🌍 **Po polsku i po angielsku:** komunikaty, bot i dokumentacja.
-- 🔒 **Prywatnie i tylko do odczytu:** Twoje dane zostają na Twoim komputerze i w Twojej chmurze. Niczego nie oddaje ani nie publikuje.
+- 📱 **Moodle w Telegramie:** przeglądaj sekcje kursu z linkami prosto do kopii na Dysku (`/kursy`), sprawdź, co pojawiło się dziś (`/dzis`), a jeśli włączysz (`MOODLE_ACTIONS=1`) – oddawaj zadania, wysyłając botowi plik (sprawdzony pod kątem dozwolonych formatów i rozmiaru, nazwany jak zadanie), pisz na forach i zaznaczaj obecność z kodu QR, linku albo hasła. Nic nie zostanie wysłane bez Twojego ✅.
+- 🔒 **Prywatnie, domyślnie tylko do odczytu:** Twoje dane zostają na Twoim komputerze i w Twojej chmurze. Oddaje i publikuje tylko to, co potwierdzisz w bocie, i tylko z `MOODLE_ACTIONS=1`.
 
 ## Szybki start
 

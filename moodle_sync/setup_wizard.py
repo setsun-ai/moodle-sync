@@ -142,6 +142,8 @@ def step_token(url: str, public: dict) -> dict:
             continue
         config.set_env_var("MOODLE_BASE_URL", url)
         config.set_env_var("MOODLE_TOKEN", token)
+        if moodle.LAST_PRIVATE_TOKEN:  # needed only for attendance (web pages opened by the bot)
+            config.set_env_var("MOODLE_PRIVATE_TOKEN", moodle.LAST_PRIVATE_TOKEN)
         print("✅ " + t("wiz_token_ok", name=info.get("fullname", "?")))
         return info
 

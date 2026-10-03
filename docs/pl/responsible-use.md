@@ -40,7 +40,7 @@ Uczelnie mają regulamin studiów, zasady e-learningu i zasady korzystania z inf
 - dostępu do danych, do których nie masz uprawnień.
 
 moodle-sync jest zaprojektowany tak, żeby mieścić się w takich zasadach:
-- używa **oficjalnego API aplikacji mobilnej**, na **Twoim własnym** koncie, **tylko do odczytu**;
+- używa **oficjalnego API aplikacji mobilnej**, na **Twoim własnym** koncie, **tylko do odczytu**, chyba że włączysz `MOODLE_ACTIONS` – wtedy oddaje, publikuje i zaznacza obecność dopiero po Twoim potwierdzeniu;
 - wysyła kilkadziesiąt zapytań na przebieg, ogłoszenia sprawdza najwyżej co 30 minut, a oceny co godzinę;
 - przedstawia się uczciwie (User-Agent z nazwą projektu).
 
@@ -52,6 +52,9 @@ W razie wątpliwości przeczytaj regulamin albo zapytaj dział IT. Lepiej zapyta
 - **Nie skracaj odstępów.** Nie uruchamiaj co minutę, nie usuwaj ograniczeń i nie puszczaj wielu kopii naraz. Serwery uczelni obsługują tysiące studentów.
 - **Nie używaj narzędzia do obchodzenia ograniczeń**, np. materiałów ukrytych do określonej daty. moodle-sync widzi tylko to, co już widzisz w Moodle, i tak ma zostać.
 - **Nie wrzucaj materiałów do zewnętrznych narzędzi AI**, chyba że uczelnia i prowadzący na to pozwalają. Część serwisów AI przechowuje wgrane treści albo uczy się na nich, co może naruszać prawa autorskie i zasady kursu.
+
+- **Zaznaczaj obecność tylko wtedy, gdy naprawdę jesteś na zajęciach.** Bot robi to samo, co aplikacja Moodle – nie wie, gdzie jesteś, więc uczciwość jest po Twojej stronie. Sesje ograniczone do sieci uczelni odrzucą bota działającego w domu.
+- **To, co oddasz albo opublikujesz przez bota, jest Twoje** – dokładnie tak, jakbyś kliknął to w Moodle. Sprawdź podsumowanie, zanim dotkniesz ✅.
 
 ## 5. Brak powiązań i gwarancji
 

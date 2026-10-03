@@ -65,6 +65,19 @@ Semestr 2/...
   o jednorazowe potwierdzenie: `python -m moodle_sync download --reorganize`. Kopia w chmurze też się przeniesie.
 - Gdy katalog nie działa, używany jest plan zapisany przy ostatnim udanym sprawdzeniu.
 
+### Bot Telegram: oddawanie zadań, fora, obecność
+
+| Zmienna | Domyślnie | Znaczenie |
+|---|---|---|
+| `MOODLE_ACTIONS` | `0` | `1` = bot może oddawać zadania, pisać na forach i zaznaczać obecność – zawsze dopiero po Twoim ✅. |
+| `STUDENT_ID` | – | Twój numer albumu, używany w nazwach oddawanych plików. |
+| `SUBMISSION_NAME` | `{assignment} {course} {student_id}` | Szablon nazwy oddawanego pliku; jest też `{original}`. Przykład: *Sprawozdanie LCMS 123456.pdf*. |
+| `MOODLE_PRIVATE_TOKEN` | – | Zapisuje go `python -m moodle_sync token`; potrzebny tylko do obecności (nie ma do niej funkcji API, więc bot otwiera stronę tak jak aplikacja Moodle). Traktuj go jak hasło. |
+
+- Kody QR: wyślij botowi link (zeskanuj kod aparatem telefonu i udostępnij go) albo zdjęcie kodu, jeśli masz
+  `zbarimg` (`sudo apt install zbar-tools`).
+- Telegram pozwala botom pobierać pliki do 20 MB.
+
 ### Chmura (rclone): zobacz [Chmura](storage.md)
 
 | Zmienna | Domyślnie | Znaczenie |

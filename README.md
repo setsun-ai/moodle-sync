@@ -38,7 +38,8 @@ Teacher's feedback: Good work, see comments in section 3.
 - 🧙 **Setup wizard:** finds out how your university logs in (password or SSO) and guides you. `doctor` checks everything.
 - 🖥️ **Runs how you want:** double-click when you feel like it, automatically while your computer is on, or 24/7 on a Raspberry Pi.
 - 🌍 **English and Polish:** messages, bot and documentation.
-- 🔒 **Private and read-only:** your data stays on your computer and your cloud. It never submits or posts anything.
+- 📱 **Moodle in Telegram:** browse a course's sections with links straight to your Drive copy (`/courses`), see what appeared today (`/today`), and - if you switch it on (`MOODLE_ACTIONS=1`) - submit an assignment by sending the bot a file (checked against the allowed types and size, renamed after the assignment), post to a forum and mark attendance from a QR code, a link or a password. Nothing is sent without your ✅.
+- 🔒 **Private, read-only by default:** your data stays on your computer and your cloud. It submits or posts only what you confirm in the bot, and only with `MOODLE_ACTIONS=1`.
 
 ## Quick start
 

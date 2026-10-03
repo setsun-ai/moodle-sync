@@ -127,6 +127,12 @@ def public_config(base_url: str) -> dict:
 
 # --- getting a token -------------------------------------------------------------------------
 
+# The "private token" Moodle hands out together with a new token (HTTPS only). It
+# lets the app open web pages logged in (tool_mobile_get_autologin_key) - we
+# need it for attendance, which has no web service functions. The wizard saves
+# it as MOODLE_PRIVATE_TOKEN; treat it like a password.
+LAST_PRIVATE_TOKEN = ""
+
 def token_from_password(base_url: str, username: str, password: str) -> str:
     """
     Sites with the normal login form (typeoflogin 1): Moodle's standard token
@@ -141,6 +147,8 @@ def token_from_password(base_url: str, username: str, password: str) -> str:
     data = resp.json()
     if "token" not in data:
         raise MoodleError(data.get("errorcode", "?"), data.get("error", ""))
+    global LAST_PRIVATE_TOKEN
+    LAST_PRIVATE_TOKEN = data.get("privatetoken") or ""
     return data["token"]
 
 
@@ -172,7 +180,21 @@ def decode_sso_token(text: str) -> str:
     parts = decoded.split(":::")
     if len(parts) < 2 or not parts[1]:
         raise ValueError("unexpected token format")
+    global LAST_PRIVATE_TOKEN
+    LAST_PRIVATE_TOKEN = parts[2] if len(parts) > 2 else ""
     return parts[1]
+
+
+def upload_draft(filename: str, data: bytes) -> int:
+    """Upload a file to the user's draft area (like the app does before submitting); returns its itemid."""
+    resp = _session.post(f"{config.moodle_base_url()}/webservice/upload.php", timeout=120,
+                         data={"token": config.moodle_token(), "filearea": "draft", "itemid": 0},
+                         files={"file_1": (filename, data)})
+    resp.raise_for_status()
+    body = resp.json()
+    if isinstance(body, dict):
+        raise MoodleError(body.get("errorcode", "?"), body.get("error") or body.get("message", ""))
+    return int(body[0]["itemid"])
 
 
 # --- files --------------------------------------------------------------------------------------
@@ -195,8 +217,10 @@ def file_url_with_token(fileurl: str, token: str | None = None) -> str:
 
 def redact(text: str) -> str:
     """requests puts the full URL (with the token!) into exception messages."""
-    token = config.moodle_token()
-    return text.replace(token, "***") if token else text
+    for secret in (config.moodle_token(), config.env("MOODLE_PRIVATE_TOKEN")):
+        if secret:
+            text = text.replace(secret, "***")
+    return text
 
 
 def session() -> requests.Session:

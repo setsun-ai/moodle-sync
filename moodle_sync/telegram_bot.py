@@ -11,6 +11,8 @@ answered, anything else is ignored without a reply):
     /update                install the newest GitHub release (updater.py), then restart
     /rollback              back to the version before the last /update
     /help       /pomoc     list of commands
+    /courses /kursy, /today /dzis, /forum, /attendance /obecnosc, /submit /oddaj, files, photos
+                           and buttons: see interactive.py
 
 Uses long polling (getUpdates) - no public address or open router ports needed.
 Setup: python -m moodle_sync bot --setup   (docs/*/notifications.md)
@@ -28,7 +30,7 @@ from pathlib import Path
 
 import requests
 
-from . import __version__, config, notify, state as state_mod, updater
+from . import __version__, config, interactive, notify, state as state_mod, updater
 from .i18n import t, weekday
 
 RUN_INTERVAL_MIN = 15  # only for display ("next run at ...")
@@ -196,12 +198,15 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
     "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None), "start": (cmd_help, None),
 }
 # Menu in Telegram: Polish names for Polish users, English otherwise.
-MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "plan", "status", "sync", "reorganize", "update", "rollback",
-                     "pomoc"],
-              "en": ["deadlines", "new", "grades", "plan", "status", "sync", "reorganize", "update", "rollback",
-                     "help"]}
+MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "kursy", "dzis", "oddaj", "forum", "obecnosc", "plan", "status",
+                     "sync", "reorganize", "update", "rollback", "pomoc"],
+              "en": ["deadlines", "new", "grades", "courses", "today", "submit", "forum", "attendance", "plan",
+                     "status", "sync", "reorganize", "update", "rollback", "help"]}
 MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
-                     "pomoc": "bot_cmd_help"}
+                     "pomoc": "bot_cmd_help", "kursy": "bot_cmd_courses", "courses": "bot_cmd_courses",
+                     "dzis": "bot_cmd_today", "today": "bot_cmd_today", "oddaj": "bot_cmd_submit",
+                     "submit": "bot_cmd_submit", "forum": "bot_cmd_forum", "obecnosc": "bot_cmd_attendance",
+                     "attendance": "bot_cmd_attendance"}
 
 
 def command_of(text: str) -> str:
@@ -221,7 +226,7 @@ def handle(text: str, chat_id: str) -> str:
 # --- loop and setup ------------------------------------------------------------------------
 
 def get_updates(offset: int | None, timeout: int = 50) -> list:
-    params = {"timeout": timeout, "allowed_updates": json.dumps(["message"])}
+    params = {"timeout": timeout, "allowed_updates": json.dumps(["message", "callback_query"])}
     if offset is not None:
         params["offset"] = offset
     resp = requests.get(f"{notify.telegram_api()}/getUpdates", params=params, timeout=timeout + 15)
@@ -244,11 +249,34 @@ def run() -> int:
         try:
             for update in get_updates(offset):
                 offset = update["update_id"] + 1
+                callback = update.get("callback_query")
+                if callback:
+                    if str(callback.get("message", {}).get("chat", {}).get("id", "")) == chat:
+                        interactive.on_callback(callback, chat)
+                    continue
                 msg = update.get("message") or {}
-                if str(msg.get("chat", {}).get("id", "")) != chat or not msg.get("text"):
-                    continue  # someone else's chat or not text: ignore silently
+                if str(msg.get("chat", {}).get("id", "")) != chat:
+                    continue  # someone else's chat: ignore silently
                 if time.time() - msg.get("date", 0) > 600:
                     continue  # command older than 10 min (bot was off) - don't execute it now
+                if not msg.get("text"):
+                    try:
+                        if msg.get("document"):
+                            interactive.on_document(msg, chat)
+                        elif msg.get("photo"):
+                            interactive.on_photo(msg, chat)
+                    except Exception as e:  # a file must never crash the bot
+                        interactive.fail(chat, e)
+                    continue
+                if not msg["text"].startswith("/"):
+                    try:
+                        interactive.on_text(msg, chat)
+                    except Exception as e:
+                        interactive.fail(chat, e)
+                    continue
+                parts = msg["text"].split()
+                if interactive.handle_command(command_of(msg["text"]), parts[1:], chat):
+                    continue
                 if command_of(msg["text"]) in {"update", "rollback"} and msg.get("date", 0) < STARTED - 1:
                     continue  # sent before this process started: it already ran before the restart
                 print(f"> {msg['text'][:40]}", flush=True)

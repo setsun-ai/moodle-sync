@@ -2,6 +2,14 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.2.0 (2026-10)
+
+- **Moodle w Telegramie.** `/kursy` (`/courses`): kurs → sekcje → zawartość, każdy element z najprzydatniejszym linkiem – Twoją kopią pliku na Dysku (otwiera się tylko dla Ciebie), linkiem udostępnionym przez prowadzącego, linkami z etykiet albo aktywnością w Moodle. `/dzis` (`/today`): co pojawiło się dziś we wszystkich kursach, albo `/dzis wczoraj`, `/dzis 12.10`, z ◀ ▶ między dniami.
+- **Oddawanie zadań** (z `MOODLE_ACTIONS=1`): wysyłasz botowi plik, wybierasz zadanie, bot sprawdza dozwolone formaty, rozmiar i to, czy oddanie da się jeszcze zmienić, nazywa plik jak zadanie (`SUBMISSION_NAME`, domyślnie `{assignment} {course} {student_id}`), pokazuje podsumowanie i wysyła dopiero po ✅. „Prześlij do oceny” to osobny przycisk.
+- **Posty na forach** (`/forum`): kurs → forum → temat → treść → podgląd → ✅.
+- **Obecność** (`/obecnosc`, `/attendance` albo wyślij link z QR / zdjęcie kodu QR): bot otwiera stronę obecności zalogowany jako Ty (autologowanie, jak aplikacja Moodle), pokazuje statusy dozwolone przez prowadzącego („Obecny” na górze) i wysyła wybrany dopiero po ✅; o hasło sesji pyta i od razu usuwa je z czatu. Wymaga `MOODLE_PRIVATE_TOKEN`, który zapisuje teraz `python -m moodle_sync token`.
+- Wszystkie nowe komendy są w menu Telegrama. Domyślnie nadal tylko do odczytu: bez `MOODLE_ACTIONS=1` bot niczego w Moodle nie zmienia.
+
 ## 1.1.1 (2026-10)
 
 - **Żadna uczelnia nie jest już wpisana na sztywno.** Adres katalogu ECTS to ustawienie (`STUDY_CATALOG` albo odczytany ze `STUDY_PLAN_URL`); `plan --search "nazwa" --catalog <adres>`; kreator konfiguracji pyta o niego.

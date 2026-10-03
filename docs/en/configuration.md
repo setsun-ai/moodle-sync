@@ -65,6 +65,19 @@ Semester 2/...
   `python -m moodle_sync download --reorganize`. The cloud copy is moved too.
 - If the catalogue is offline, the plan saved on the last successful check is used.
 
+### Telegram bot: submitting, forums, attendance
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MOODLE_ACTIONS` | `0` | `1` = the bot may submit assignments, post to forums and mark attendance - each only after your ✅. |
+| `STUDENT_ID` | – | Your student number, used in submitted file names. |
+| `SUBMISSION_NAME` | `{assignment} {course} {student_id}` | File name template for submissions; also `{original}`. Example: *Report LCMS 123456.pdf*. |
+| `MOODLE_PRIVATE_TOKEN` | – | Saved by `python -m moodle_sync token`; needed only for attendance (no web service exists for it, so the bot opens the page like the Moodle app does). Treat it like a password. |
+
+- QR codes: send the bot the link (scan the code with your phone's camera and share it), or a photo of the code if
+  `zbarimg` is installed (`sudo apt install zbar-tools`).
+- Telegram lets bots download files up to 20 MB.
+
 ### Cloud (rclone): see [Storage](storage.md)
 
 | Variable | Default | Meaning |

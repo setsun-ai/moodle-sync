@@ -44,6 +44,11 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/new` `/nowe` | recently downloaded materials |
 | `/grades` `/oceny` | latest grades |
 | `/status` | last run, result of each step, free disk space, uptime |
+| `/courses` `/kursy` | a course → its sections → materials, with links to your Drive copy, shared links and Moodle |
+| `/today` `/dzis` | what appeared in your courses today; `/today 1` = yesterday, `/today 12.10` = that day |
+| `/submit` `/oddaj`, or just send a file | submit it to an assignment (needs `MOODLE_ACTIONS=1`, see [Configuration](configuration.md)) |
+| `/forum` | start a discussion in a course forum (`MOODLE_ACTIONS=1`) |
+| `/attendance` `/obecnosc`, or send a link / QR photo | mark attendance (`MOODLE_ACTIONS=1`) |
 | `/sync` | run a sync now |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
 | `/rollback` | go back to the version before the last `/update` |

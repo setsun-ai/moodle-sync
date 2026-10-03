@@ -40,7 +40,7 @@ Universities have study regulations, e-learning rules and IT acceptable-use poli
 - accessing data you're not entitled to.
 
 moodle-sync is designed to fit such rules:
-- it uses the **official mobile app API**, on **your own** account, **read-only**;
+- it uses the **official mobile app API**, on **your own** account, **read-only** unless you turn on `MOODLE_ACTIONS` - then it submits, posts and marks attendance only after you confirm each one;
 - it makes a few dozen requests per run, and checks announcements at most every 30 minutes and grades every hour;
 - it identifies itself honestly (User-Agent with the project's name).
 
@@ -52,6 +52,9 @@ If in doubt, read the rules or ask your IT department. Asking is always better t
 - **Don't shorten the intervals.** Don't run it every minute, remove throttling, or run many copies at once. University servers serve thousands of students.
 - **Don't use it to get around restrictions**, e.g. materials hidden until a certain date. moodle-sync only sees what you already see in Moodle, and should stay that way.
 - **Don't upload course materials to third-party AI tools** unless your university and the teacher allow it. Some AI services store or train on uploaded content, which may breach copyright and course rules.
+
+- **Mark attendance only when you are actually there.** The bot does what the Moodle app does - it can't know where you are, so honesty is on you. Sessions limited to the university network will refuse a bot running at home.
+- **What you submit or post through the bot is yours**, exactly as if you clicked it in Moodle. Check the summary before you tap ✅.
 
 ## 5. No affiliation, no warranty
 
