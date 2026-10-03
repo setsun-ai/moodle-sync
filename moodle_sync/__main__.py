@@ -80,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("courses", help="preview categories per course")
     p = sub.add_parser("plan", help="study plan: semester folders and subject cards")
     p.add_argument("--search", metavar="NAME", help="find your field of study in the ECTS catalogue")
+    p.add_argument("--catalog", metavar="URL", default="", help="with --search: the catalogue's address")
     p.add_argument("--cards", action="store_true", help="download subject cards now")
     p.add_argument("--force", action="store_true", help="with --cards: re-check every card")
     p.add_argument("--dry-run", action="store_true")
@@ -130,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "plan":
         from . import studyplan
         if args.search:
-            return studyplan.search(args.search)
+            return studyplan.search(args.search, args.catalog)
         if args.cards:
             return studyplan.run(dry_run=args.dry_run, force=args.force)
         return studyplan.preview()

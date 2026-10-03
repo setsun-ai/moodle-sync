@@ -51,7 +51,8 @@ Semester 2/...
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `STUDY_PLAN_URL` | – | Your field of study (or specialisation) in the ECTS catalogue. Supported for now: Gdańsk Tech (`ects.pg.edu.pl`). Find it with `python -m moodle_sync plan --search "name"`. |
+| `STUDY_CATALOG` | – | Address of your university's ECTS catalogue, e.g. `https://ects.example.edu`. Only needed for `plan --search`. |
+| `STUDY_PLAN_URL` | – | Your field of study (or specialisation) in the ECTS catalogue. Find it with `python -m moodle_sync plan --search "name" --catalog <address>`. The catalogue must show the plan by semesters ("Semestr 1 (2025/2026 - zimowy)") with a PDF card per subject. |
 | `STUDY_START` | – | Without a catalogue: your first semester, e.g. `2025/2026-winter`. Semester numbers are counted from the course start dates. |
 | `SEMESTER_FOLDERS` | on with one of the above | `0` = keep the old layout, only rename the course folders after the plan. |
 | `SYLLABUS` | on with `STUDY_PLAN_URL` | `0` = don't download subject cards. Cards are re-checked every 30 days; a changed card is notified. |

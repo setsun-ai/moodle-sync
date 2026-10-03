@@ -44,7 +44,7 @@ moodle-sync is designed to fit such rules:
 - it makes a few dozen requests per run, and checks announcements at most every 30 minutes and grades every hour;
 - it identifies itself honestly (User-Agent with the project's name).
 
-If in doubt, read the rules or ask your IT department. For Gdańsk Tech, that's CUI. Asking is always better than guessing.
+If in doubt, read the rules or ask your IT department. Asking is always better than guessing.
 
 ## 4. Don'ts ⛔
 
@@ -55,7 +55,7 @@ If in doubt, read the rules or ask your IT department. For Gdańsk Tech, that's 
 
 ## 5. No affiliation, no warranty
 
-moodle-sync is an independent student project. It is **not affiliated with or endorsed by** Moodle Pty Ltd, Gdańsk University of Technology or any other university. It comes **without warranty** ([MIT license](../../LICENSE)). Don't rely on it as your only source of deadlines, and **always check Moodle itself** for anything important.
+moodle-sync is an independent student project. It is **not affiliated with or endorsed by** Moodle Pty Ltd or any university. It comes **without warranty** ([MIT license](../../LICENSE)). Don't rely on it as your only source of deadlines, and **always check Moodle itself** for anything important.
 
 ---
 

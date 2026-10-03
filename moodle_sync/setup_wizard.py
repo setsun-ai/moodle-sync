@@ -158,16 +158,20 @@ def step_basics(public: dict) -> None:
 
 
 def step_study_plan() -> None:
-    """Optional: semester folders and subject cards from the ECTS catalogue (Gdańsk Tech for now)."""
+    """Optional: semester folders and subject cards from the university's ECTS catalogue."""
     from . import studyplan
 
     header(t("wiz_plan_header"))
     print(t("wiz_plan_help"))
+    catalog = studyplan.catalog_url(ask(t("wiz_plan_catalog"), config.env("STUDY_CATALOG")))
+    if not catalog:
+        return
     query = ask(t("wiz_plan_prompt"))
     if not query:
         return
+    config.set_env_var("STUDY_CATALOG", catalog)
     try:
-        programs = studyplan.search_programs(query)
+        programs = studyplan.search_programs(query, catalog)
     except Exception as e:  # the catalogue is optional - never break the wizard
         print(t("error", error=e))
         return

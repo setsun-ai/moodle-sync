@@ -82,9 +82,9 @@ Nazwa tematu działa jak hasło: kto ją zna, czyta Twoje wiadomości. Niech bę
 ```
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=ty@gmail.com
+SMTP_USER=ty@example.com
 SMTP_PASSWORD=abcd efgh ijkl mnop
-EMAIL_TO=ty@gmail.com
+EMAIL_TO=ty@example.com
 ```
 
 - **Gmail** wymaga **hasła do aplikacji**, a nie zwykłego hasła. Utworzysz je w *Konto Google → Bezpieczeństwo → Weryfikacja dwuetapowa → Hasła do aplikacji*, co wymaga włączonej weryfikacji dwuetapowej.

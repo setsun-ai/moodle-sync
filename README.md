@@ -31,7 +31,7 @@ Teacher's feedback: Good work, see comments in section 3.
 ## Features
 
 - 📂 **Files → folders in the cloud.** Every course is sorted into *Lectures / Exercises / Labs / Projects / Other*. A teacher's replaced file gets updated in place. Works with Google Drive, OneDrive (incl. university Microsoft 365), Dropbox and [70+ more](https://rclone.org), or with no cloud at all.
-- 🗂️ **Semesters and subject cards.** Point it at your field of study in the ECTS catalogue (for now: Gdańsk Tech, ects.pg.edu.pl) and courses go into *Semester 1 / Semester 2 …* folders named after the subjects, with each subject's card (syllabus) downloaded next to its materials and re-checked for changes.
+- 🗂️ **Semesters and subject cards.** Point it at your field of study in your university's ECTS catalogue and courses go into *Semester 1 / Semester 2 …* folders named after the subjects, with each subject's card (syllabus) downloaded next to its materials and re-checked for changes.
 - 📅 **Deadlines → Google Calendar.** Submitted assignments get ✅ and stop reminding you. Moved deadlines are updated and notified. Classes go into a separate calendar you can hide. Outlook or Apple Calendar can use a subscription link instead.
 - 📢 **Announcements and 🎓 grades** from teachers go straight to your phone, including teacher feedback.
 - 🔔 **Your choice of channel:** Telegram (with commands like `/deadlines`, `/sync`), Discord, ntfy or e-mail.
@@ -86,4 +86,4 @@ Ideas, bugs and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md
 
 ## License
 
-[MIT](LICENSE). Made by a student of Gdańsk University of Technology, for students everywhere.
+[MIT](LICENSE). Made by a student, for students everywhere.

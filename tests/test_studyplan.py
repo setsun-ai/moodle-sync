@@ -191,3 +191,18 @@ class TestCards:
 
     def test_off_without_plan(self):
         assert studyplan.run() == 2
+
+
+class TestCatalogAddress:
+    def test_from_setting_or_plan_url(self, monkeypatch):
+        assert studyplan.catalog_url("https://ects.example.edu") == "https://ects.example.edu/pl"
+        assert studyplan.catalog_url("https://ects.example.edu/en/courses/7") == "https://ects.example.edu/en"
+        assert studyplan.catalog_url() == ""
+        monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/7/subjects")
+        assert studyplan.catalog_url() == "https://ects.example.edu/pl"
+        monkeypatch.setenv("STUDY_CATALOG", "https://other.example.edu/en/")
+        assert studyplan.catalog_url() == "https://other.example.edu/en"
+
+    def test_search_needs_a_catalogue(self, capsys):
+        assert studyplan.search("anything") == 2
+        assert "STUDY_CATALOG" in capsys.readouterr().out

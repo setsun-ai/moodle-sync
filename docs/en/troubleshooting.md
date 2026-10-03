@@ -69,7 +69,7 @@ Stop the scheduler and move `state.json` away. Everything is downloaded again. N
 Run `python -m moodle_sync download --baseline` once. It marks everything that exists now as done.
 
 **Does it work with my university?**
-It works if your Moodle has the mobile app enabled (almost always). It was developed on Moodle 5.1 at Gdańsk University of Technology and uses only standard API functions available since Moodle 3.9.
+It works if your Moodle has the mobile app enabled (almost always). It was developed on Moodle 5.1 and uses only standard API functions available since Moodle 3.9.
 
 **Can it submit assignments / post for me?**
 No. By design it's read-only.

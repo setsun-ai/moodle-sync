@@ -1,8 +1,16 @@
 # Changelog
 
+🇵🇱 [Po polsku](CHANGELOG.pl.md)
+
+## 1.1.1 (2026-10)
+
+- **No university is hard-wired any more.** The ECTS catalogue address is a setting (`STUDY_CATALOG`, or taken from `STUDY_PLAN_URL`); `plan --search "name" --catalog <address>`; the setup wizard asks for it.
+- Documentation and examples no longer name a particular university; PRIVACY lists the requests to the catalogue.
+- Polish changelog: [CHANGELOG.pl.md](CHANGELOG.pl.md).
+
 ## 1.1.0 (2026-10)
 
-- **Semester folders and subject cards.** Set `STUDY_PLAN_URL` to your field of study in the ECTS catalogue (supported for now: Gdańsk Tech, `ects.pg.edu.pl`) and files go into `Semester N/<subject>/…`, with course folders named after the subjects of the plan. Each subject's card (syllabus PDF) is downloaded next to its materials, re-checked every 30 days and notified when it changes. Compulsory subjects get their card before they appear in Moodle; electives only when you have the course.
+- **Semester folders and subject cards.** Set `STUDY_PLAN_URL` to your field of study in the ECTS catalogue and files go into `Semester N/<subject>/…`, with course folders named after the subjects of the plan. Each subject's card (syllabus PDF) is downloaded next to its materials, re-checked every 30 days and notified when it changes. Compulsory subjects get their card before they appear in Moodle; electives only when you have the course.
 - Without a catalogue, `STUDY_START=2025/2026-winter` numbers the semesters from the course start dates.
 - `python -m moodle_sync plan` previews semesters, subjects and the Moodle course feeding each folder; `plan --search "name"` finds your field of study and its specialisations; `plan --cards` downloads the cards now. The setup wizard has an optional step for it.
 - courses.json: `plan` (which subject a course is) and `semester` (force a semester).

@@ -2,9 +2,11 @@
 Study plan: semester folders and subject cards (syllabi) from the university's
 ECTS catalogue.
 
+    STUDY_CATALOG     your university's ECTS catalogue, e.g. https://ects.example.edu/pl
+                      (only needed to search; taken from STUDY_PLAN_URL otherwise)
     STUDY_PLAN_URL    your field of study in the catalogue, e.g.
-                      https://ects.pg.edu.pl/pl/courses/17839 (or a specialisation:
-                      .../courses/17839/subcourses/17843/subjects).
+                      https://ects.example.edu/pl/courses/123 (or a specialisation:
+                      .../courses/123/subcourses/456/subjects).
                       Find it with: python -m moodle_sync plan --search "name"
     STUDY_START       without a catalogue: your first semester, e.g. 2025/2026-winter;
                       semester numbers are then counted from the course start dates
@@ -13,9 +15,10 @@ ECTS catalogue.
     SYLLABUS          1 = download subject cards into the subject folders
                       (default: on with STUDY_PLAN_URL)
 
-Supported catalogue: ects.pg.edu.pl (Gdańsk University of Technology). The
-parsing functions are pure - see tests/test_studyplan.py - so another
-university's catalogue only needs its own parse_* functions.
+Supported catalogues show the plan as semesters ("Semestr 1 (2025/2026 -
+zimowy)") with a PDF card per subject (".../subjects/<id>/card.pdf"). The
+parsing functions are pure - see tests/test_studyplan.py - so a catalogue in
+another format only needs its own parse_* functions.
 
 How a Moodle course finds its subject: the subject whose every word appears in
 the course name (most words wins: "Mathematics II" beats "Mathematics"), else a
@@ -55,6 +58,13 @@ HEADERS = {"User-Agent": "moodle-sync (+https://github.com/setsun-ai/moodle-sync
 
 def plan_url() -> str:
     return normalize_plan_url(config.env("STUDY_PLAN_URL"))
+
+
+def catalog_url(url: str = "") -> str:
+    """Base of the ECTS catalogue with its language part: https://ects.example.edu/pl"""
+    url = (url or config.env("STUDY_CATALOG") or config.env("STUDY_PLAN_URL")).strip()
+    m = re.match(r"(https?://[^/]+)(?:/([a-z]{2})(?=/|$))?", url)
+    return f"{m.group(1)}/{m.group(2) or 'pl'}" if m else ""
 
 
 def study_start() -> tuple[int, str] | None:
@@ -309,12 +319,15 @@ def load_plan(state: dict | None = None, force: bool = False) -> list[dict] | No
     return semesters
 
 
-def search_programs(query: str) -> list[dict]:
-    """Fields of study in the PG catalogue whose name contains all words of the query."""
+def search_programs(query: str, catalog: str = "") -> list[dict]:
+    """Fields of study in the catalogue whose name contains all words of the query."""
+    base = catalog_url(catalog)
+    if not base:
+        raise ValueError(t("plan_no_catalog"))
     wanted = _words(query)
     found = []
     for page in range(1, SEARCH_MAX_PAGES + 1):
-        programs = parse_programs(_get(f"https://ects.pg.edu.pl/pl/courses?p={page}").text)
+        programs = parse_programs(_get(f"{base}/courses?p={page}").text)
         if not programs:
             break
         found += [p for p in programs if set(wanted) <= set(_words(p["field"]))]
@@ -463,9 +476,13 @@ def preview() -> int:
     return 0
 
 
-def search(query: str) -> int:
-    """python -m moodle_sync plan --search "name": find the STUDY_PLAN_URL."""
-    programs = search_programs(query)
+def search(query: str, catalog: str = "") -> int:
+    """python -m moodle_sync plan --search "name" [--catalog URL]: find the STUDY_PLAN_URL."""
+    try:
+        programs = search_programs(query, catalog)
+    except ValueError as e:
+        print(e)
+        return 2
     if not programs:
         print(t("plan_search_none", query=query))
         return 1

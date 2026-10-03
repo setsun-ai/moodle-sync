@@ -82,9 +82,9 @@ The topic name works like a password: anyone who knows it can read your messages
 ```
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=you@gmail.com
+SMTP_USER=you@example.com
 SMTP_PASSWORD=abcd efgh ijkl mnop
-EMAIL_TO=you@gmail.com
+EMAIL_TO=you@example.com
 ```
 
 - **Gmail** needs an **app password**, not your normal one. You get it at *Google Account → Security → 2-Step Verification → App passwords*, which requires 2-Step Verification to be on.

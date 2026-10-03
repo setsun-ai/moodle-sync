@@ -51,7 +51,8 @@ Semestr 2/...
 
 | Zmienna | Domyślnie | Znaczenie |
 |---|---|---|
-| `STUDY_PLAN_URL` | – | Twój kierunek (albo specjalność) w katalogu ECTS. Na razie obsługiwany: Politechnika Gdańska (`ects.pg.edu.pl`). Znajdziesz go: `python -m moodle_sync plan --search "nazwa"`. |
+| `STUDY_CATALOG` | – | Adres katalogu ECTS Twojej uczelni, np. `https://ects.uczelnia.edu.pl`. Potrzebny tylko do `plan --search`. |
+| `STUDY_PLAN_URL` | – | Twój kierunek (albo specjalność) w katalogu ECTS. Znajdziesz go: `python -m moodle_sync plan --search "nazwa" --catalog <adres>`. Katalog musi pokazywać plan według semestrów („Semestr 1 (2025/2026 - zimowy)”) z kartą przedmiotu w PDF. |
 | `STUDY_START` | – | Bez katalogu: Twój pierwszy semestr, np. `2025/2026-winter`. Numery semestrów liczone są z dat rozpoczęcia kursów. |
 | `SEMESTER_FOLDERS` | włączone z jednym z powyższych | `0` = bez folderów semestrów, tylko nazwy przedmiotów z planu. |
 | `SYLLABUS` | włączone z `STUDY_PLAN_URL` | `0` = nie pobieraj kart przedmiotów. Karty są sprawdzane co 30 dni; o zmianie dostajesz powiadomienie. |

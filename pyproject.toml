@@ -1,6 +1,6 @@
 [project]
 name = "moodle-sync"
-version = "1.1.0"
+version = "1.1.1"
 description = "Moodle -> cloud storage (Google Drive, OneDrive...), Google Calendar and notifications (Telegram, Discord, ntfy, e-mail)."
 readme = "README.md"
 license = { text = "MIT" }

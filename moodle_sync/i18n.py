@@ -91,8 +91,12 @@ MESSAGES: dict[str, dict[str, str]] = {
     "plan_unmatched": {"pl": "Kursy z Moodle bez przedmiotu w planie (przypiszesz je w courses.json -> \"plan\"):",
                        "en": "Moodle courses without a subject in the plan (assign them in courses.json -> \"plan\"):"},
     "plan_no_semester": {"pl": "bez semestru", "en": "no semester"},
-    "plan_search_none": {"pl": "Nie znalazłem kierunku „{query}” w katalogu ECTS PG.",
-                         "en": "No field of study \"{query}\" in the PG ECTS catalogue."},
+    "plan_search_none": {"pl": "Nie znalazłem kierunku „{query}” w katalogu ECTS.",
+                         "en": "No field of study \"{query}\" in the ECTS catalogue."},
+    "plan_no_catalog": {"pl": "Podaj adres katalogu ECTS swojej uczelni: --catalog https://ects.uczelnia.edu.pl\n"
+                              "(albo ustaw go raz: python -m moodle_sync set STUDY_CATALOG <adres>)",
+                        "en": "Give the address of your university's ECTS catalogue: --catalog https://ects.university.edu\n"
+                              "(or set it once: python -m moodle_sync set STUDY_CATALOG <address>)"},
     "plan_specialisation": {"pl": "specjalność", "en": "specialisation"},
     "plan_search_hint": {"pl": "Skopiuj link swojego kierunku (albo specjalności) i ustaw go:\n"
                                "  python -m moodle_sync set STUDY_PLAN_URL <link>\n"
@@ -103,10 +107,12 @@ MESSAGES: dict[str, dict[str, str]] = {
 
     "wiz_plan_header": {"pl": "Semestry i karty przedmiotów (opcjonalnie)",
                         "en": "Semesters and subject cards (optional)"},
-    "wiz_plan_help": {"pl": "Jeśli Twoja uczelnia ma katalog ECTS (na razie: Politechnika Gdańska, ects.pg.edu.pl),\n"
+    "wiz_plan_help": {"pl": "Jeśli Twoja uczelnia ma katalog ECTS z planem studiów i kartami przedmiotów,\n"
                             "pliki trafią do folderów \"Semestr N/Przedmiot\", a karty przedmiotów pobiorą się same.",
-                      "en": "If your university has an ECTS catalogue (for now: Gdańsk Tech, ects.pg.edu.pl),\n"
+                      "en": "If your university has an ECTS catalogue with study plans and subject cards,\n"
                             "files go into \"Semester N/Subject\" folders and subject cards are downloaded too."},
+    "wiz_plan_catalog": {"pl": "Adres katalogu ECTS, np. https://ects.uczelnia.edu.pl (Enter = pomiń)",
+                         "en": "Address of the ECTS catalogue, e.g. https://ects.university.edu (Enter = skip)"},
     "wiz_plan_prompt": {"pl": "Nazwa kierunku (Enter = pomiń)", "en": "Field of study (Enter = skip)"},
     "wiz_plan_choose": {"pl": "Który to Twój kierunek i rocznik?", "en": "Which one is your field of study and intake?"},
     "wiz_plan_skip": {"pl": "żaden – pomiń", "en": "none - skip"},

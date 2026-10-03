@@ -29,7 +29,7 @@ If you have **Google Drive for desktop**, **OneDrive** or **Dropbox** installed,
 
 ```
 DOWNLOAD_DIR=C:\Users\You\OneDrive\Moodle            (Windows)
-DOWNLOAD_DIR=/Users/you/Library/CloudStorage/GoogleDrive-you@gmail.com/My Drive/Moodle   (macOS)
+DOWNLOAD_DIR=/Users/you/Library/CloudStorage/GoogleDrive-you@example.com/My Drive/Moodle   (macOS)
 ```
 
 The desktop app uploads everything. Leave `RCLONE_REMOTE` empty.

@@ -7,7 +7,7 @@ test dates, room changes, cancelled classes. We watch forums of type "news"
 announcements; student discussion forums are skipped (WATCH_ALL_FORUMS=1
 changes that).
 
-Grades: many sites (e.g. Gdańsk Tech) hide the gradebook report from
+Grades: many sites hide the gradebook report from
 students (gradereport_* -> nopermissiontoviewgrades), but an assignment's
 grade and teacher feedback are visible in its submission status, and a
 quiz's result in mod_quiz_get_user_best_grade.

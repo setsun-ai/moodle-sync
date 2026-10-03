@@ -28,6 +28,7 @@ Announcements can contain **other people's personal data**, e.g. a table of grad
 | **Telegram / Discord** | Notification text: file names, deadlines, **full announcement text**, your grades and teacher feedback | if configured |
 | **ntfy** | Same as above. On the public `ntfy.sh` server anyone who knows your topic name can read it, and messages are kept there for a few hours. Use a long random topic or your own server. | if configured |
 | **Your e-mail provider** (SMTP) | Same as above | if configured |
+| **Your university's ECTS catalogue** | Ordinary public requests for the study plan and subject card PDFs. No personal data, no token. | if `STUDY_PLAN_URL` is set |
 | **healthchecks.io** | Only "run started/finished/failed" + the short result summary (step names and OK/ERROR). No course data. | if `HEALTHCHECK_URL` is set |
 
 Each of those services processes data under **its own** privacy policy (Google, Microsoft, Telegram, Discord...). moodle-sync sends **nothing** anywhere else: no crash reports, no usage statistics, no update checks.
@@ -78,6 +79,7 @@ Ogłoszenia mogą zawierać **dane osobowe innych osób**, np. tabelę ocen z nu
 | **Telegram / Discord** | Treść powiadomień: nazwy plików, terminy, **pełna treść ogłoszeń**, Twoje oceny i komentarze prowadzących | gdy skonfigurujesz |
 | **ntfy** | To samo co wyżej. Na publicznym serwerze `ntfy.sh` może to przeczytać każdy, kto zna nazwę Twojego tematu, a wiadomości są tam przechowywane przez kilka godzin. Używaj długiego, losowego tematu albo własnego serwera. | gdy skonfigurujesz |
 | **Dostawca poczty** (SMTP) | To samo co wyżej | gdy skonfigurujesz |
+| **Katalog ECTS Twojej uczelni** | Zwykłe publiczne zapytania o plan studiów i karty przedmiotów w PDF. Bez danych osobowych i bez tokenu. | gdy ustawisz `STUDY_PLAN_URL` |
 | **healthchecks.io** | Tylko „start / koniec / błąd przebiegu” + krótkie podsumowanie (nazwy kroków i OK/BŁĄD). Bez danych z kursów. | gdy ustawisz `HEALTHCHECK_URL` |
 
 Każda z tych usług przetwarza dane według **własnej** polityki prywatności (Google, Microsoft, Telegram, Discord...). moodle-sync **nie wysyła niczego nigdzie indziej**: żadnych raportów błędów, statystyk użycia ani sprawdzania aktualizacji.

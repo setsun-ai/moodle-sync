@@ -69,7 +69,7 @@ Zatrzymaj harmonogram i przenieś `state.json` w inne miejsce. Wszystko pobierze
 Uruchom raz `python -m moodle_sync download --baseline`. Oznacza wszystko, co jest teraz, jako załatwione.
 
 **Czy zadziała na mojej uczelni?**
-Zadziała, jeśli Twój Moodle ma włączoną aplikację mobilną (prawie zawsze). Projekt powstał na Moodle 5.1 na Politechnice Gdańskiej i używa tylko standardowych funkcji API dostępnych od Moodle 3.9.
+Zadziała, jeśli Twój Moodle ma włączoną aplikację mobilną (prawie zawsze). Projekt powstał na Moodle 5.1 i używa tylko standardowych funkcji API dostępnych od Moodle 3.9.
 
 **Czy może oddawać zadania albo pisać za mnie?**
 Nie. Celowo tylko czyta.
