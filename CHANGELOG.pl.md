@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.2.1 (2026-10)
+
+- Plany studiów pisane WIELKIMI LITERAMI nie dają już krzyczących folderów: przedmiot z kursem w Moodle zachowuje nazwę kursu, pozostałe dostają zwykłą pisownię („Otwarte bazy danych”).
+
 ## 1.2.0 (2026-10)
 
 - **Moodle w Telegramie.** `/kursy` (`/courses`): kurs → sekcje → zawartość, każdy element z najprzydatniejszym linkiem – Twoją kopią pliku na Dysku (otwiera się tylko dla Ciebie), linkiem udostępnionym przez prowadzącego, linkami z etykiet albo aktywnością w Moodle. `/dzis` (`/today`): co pojawiło się dziś we wszystkich kursach, albo `/dzis wczoraj`, `/dzis 12.10`, z ◀ ▶ między dniami.

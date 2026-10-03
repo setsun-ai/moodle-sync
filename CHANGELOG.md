@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.2.1 (2026-10)
+
+- Study plans written in CAPITALS no longer give SHOUTING folders: a subject with a Moodle course keeps the course's name, the others get normal capitalisation ("Otwarte bazy danych").
+
 ## 1.2.0 (2026-10)
 
 - **Moodle in Telegram.** `/courses` (`/kursy`): a course → its sections → what's in them, every item with the most useful link - your Drive copy of a file (opens only for you), the link a teacher shared, links inside labels, or the activity in Moodle. `/today` (`/dzis`): what appeared in all your courses today, or `/today 1`, `/today 12.10`, with ◀ ▶ between days.

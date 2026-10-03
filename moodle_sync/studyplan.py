@@ -272,12 +272,32 @@ def assign_courses(courses: list[dict], plan: list[dict] | None, cfg: dict) -> d
     return out
 
 
+def shouting(name: str) -> bool:
+    """Catalogues sometimes write every subject in CAPITALS - not a folder name anyone wants."""
+    letters = [c for c in name if c.isalpha()]
+    return len(letters) > 3 and all(c.isupper() for c in letters)
+
+
+def readable(name: str) -> str:
+    """'MACHINE LEARNING I SIECI NEURONOWE' -> 'Machine learning i sieci neuronowe'; other names unchanged."""
+    if not shouting(name):
+        return name
+    lower = name.lower()
+    return lower[:1].upper() + lower[1:]
+
+
+def folder_subject(subject: str | None) -> str | None:
+    """The plan's name for a course folder, or None to keep Moodle's own name (when the plan only SHOUTS)."""
+    return None if not subject or shouting(subject) else subject
+
+
 def course_layout(courses: list[dict], cfg: dict, plan: list[dict] | None) -> dict:
     """Moodle course id -> (semester folder or None, course folder name or None) for files.relative_path."""
     folders = semester_folders_enabled()
     layout = {}
     for cid, a in assign_courses(courses, plan, cfg).items():
-        layout[cid] = (semester_folder(a["semester"]) if folders and a["semester"] else None, a["subject"])
+        layout[cid] = (semester_folder(a["semester"]) if folders and a["semester"] else None,
+                       folder_subject(a["subject"]))
     return layout
 
 
@@ -343,6 +363,8 @@ def planned_cards(courses: list[dict], plan: list[dict], cfg: dict) -> dict:
     wants all fifteen alternatives). The folder is the same as for the
     course's Moodle files, so the card lands next to its materials.
     """
+    from .files import course_display_name  # files imports this module
+
     lang = config.moodle_content_language()
     folders = semester_folders_enabled()
     assigned = assign_courses(courses, plan, cfg)
@@ -350,14 +372,16 @@ def planned_cards(courses: list[dict], plan: list[dict], cfg: dict) -> dict:
     for course in courses:
         a = assigned[course["id"]]
         if a["card"]:
-            by_card[a["card"]] = _override(cfg, "names", course.get("fullname", "")) or a["subject"]
+            # the same folder as the course's Moodle files (files.course_folder)
+            by_card[a["card"]] = (_override(cfg, "names", course.get("fullname", "")) or folder_subject(a["subject"])
+                                  or course_display_name(course.get("fullname", ""), cfg))
     cards = {}
     for sem in plan:
         for subject in sem["subjects"]:
             if subject["elective"] and subject["card"] not in by_card:
                 continue
             parts = [semester_folder(sem["number"])] if folders else []
-            parts += [sanitize_component(by_card.get(subject["card"]) or subject["name"], "Course", lang),
+            parts += [sanitize_component(by_card.get(subject["card"]) or readable(subject["name"]), "Course", lang),
                       card_filename()]
             cards[subject["card"]] = (Path(*parts), subject["name"])
     return cards

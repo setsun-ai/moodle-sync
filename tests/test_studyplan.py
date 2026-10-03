@@ -206,3 +206,22 @@ class TestCatalogAddress:
     def test_search_needs_a_catalogue(self, capsys):
         assert studyplan.search("anything") == 2
         assert "STUDY_CATALOG" in capsys.readouterr().out
+
+
+class TestShoutingCatalogue:
+    def test_readable_names(self):
+        assert studyplan.readable("MACHINE LEARNING I SIECI NEURONOWE") == "Machine learning i sieci neuronowe"
+        assert studyplan.readable("Mathematics II") == "Mathematics II"
+        assert studyplan.folder_subject("CHEMOINFORMATYKA") is None and studyplan.folder_subject("Databases") == "Databases"
+
+    def test_moodle_name_wins_over_capitals(self, monkeypatch):
+        page = ('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - zimowy)</h3></div>'
+                + row("CHEMOINFORMATYKA", 31) + row("OTWARTE BAZY DANYCH", 32))
+        plan = studyplan.parse_plan(page)
+        monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
+        courses = [{"id": 5, "fullname": "Chemoinformatyka [2025/26]", "startdate": ts(2025, 10, 1)}]
+        layout = studyplan.course_layout(courses, {}, plan)
+        assert layout[5] == ("Semester 1", None)  # files keep the Moodle course name
+        cards = {path.as_posix() for path, _ in studyplan.planned_cards(courses, plan, {}).values()}
+        assert cards == {"Semester 1/Chemoinformatyka [2025_26]/Subject card.pdf",
+                         "Semester 1/Otwarte bazy danych/Subject card.pdf"}
