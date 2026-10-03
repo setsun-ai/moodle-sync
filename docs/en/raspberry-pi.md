@@ -116,6 +116,8 @@ With Telegram you rarely need SSH: `/status` shows the last run, free disk space
 cd ~/moodle-sync && git pull && bash deploy/linux/install-server.sh
 ```
 
+A copy unpacked from a release archive (not a git clone) can also be updated from Telegram: `/update` (and `/rollback`).
+
 **Disk space:** a semester is usually well under 1 GB, so a 32 GB card lasts for years. Local copies are a free backup of your cloud. To delete them after upload anyway, set `KEEP_LOCAL=0`.
 
 ## Robustness

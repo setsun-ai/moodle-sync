@@ -45,6 +45,8 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/grades` `/oceny` | latest grades |
 | `/status` | last run, result of each step, free disk space, uptime |
 | `/sync` | run a sync now |
+| `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
+| `/rollback` | go back to the version before the last `/update` |
 | `/help` `/pomoc` | list of commands |
 
 - Commands need the bot process running: `python -m moodle_sync bot`. On a Raspberry Pi it runs as a service automatically ([guide](raspberry-pi.md)).

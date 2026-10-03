@@ -8,6 +8,8 @@ answered, anything else is ignored without a reply):
     /grades     /oceny     latest grades
     /status                last run, free disk space, uptime
     /sync                  run the sync now
+    /update                install the newest GitHub release (updater.py), then restart
+    /rollback              back to the version before the last /update
     /help       /pomoc     list of commands
 
 Uses long polling (getUpdates) - no public address or open router ports needed.
@@ -26,10 +28,11 @@ from pathlib import Path
 
 import requests
 
-from . import config, notify, state as state_mod
+from . import __version__, config, notify, state as state_mod, updater
 from .i18n import t, weekday
 
 RUN_INTERVAL_MIN = 15  # only for display ("next run at ...")
+STARTED = time.time()
 
 
 def esc(text) -> str:
@@ -121,6 +124,38 @@ def cmd_sync(chat_id: str) -> str:
     return f"{icon} <b>{esc(t('bot_sync_done'))}</b>\n{esc(summary)}"
 
 
+def cmd_update(chat_id: str) -> str:
+    from .runner import SingleInstance
+
+    notify.send_telegram_html("🔎 " + esc(t("bot_update_checking")), chat_id)
+    tag = updater.latest_release()
+    if not updater.newer(tag):
+        return "✅ " + esc(t("bot_update_latest", version=__version__))
+    with SingleInstance() as lock:  # no sync may start while the code is being swapped
+        if not lock.acquired:
+            return "⏳ " + esc(t("bot_sync_busy"))
+        notify.send_telegram_html("⬇️ " + esc(t("bot_update_installing", tag=tag, version=__version__)), chat_id)
+        try:
+            notes = updater.install(tag)
+        except updater.UpdateError as e:
+            return "❌ " + esc(t("bot_update_failed", version=__version__)) + f"\n<pre>{esc(e)}</pre>"
+    updater.request_restart()
+    return "🔄 " + esc(t("bot_update_restart", tag=tag)) + f"\n<pre>{esc(notes)}</pre>"
+
+
+def cmd_rollback(chat_id: str) -> str:
+    from .runner import SingleInstance
+
+    with SingleInstance() as lock:
+        if not lock.acquired:
+            return "⏳ " + esc(t("bot_sync_busy"))
+        version = updater.rollback()
+    if version is None:
+        return esc(t("bot_rollback_none"))
+    updater.request_restart()
+    return "↩️ " + esc(t("bot_rollback_restart", version=version))
+
+
 def cmd_help(chat_id: str) -> str:
     return esc(t("bot_help"))
 
@@ -131,18 +166,23 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
     "grades": (cmd_grades, "bot_cmd_grades"), "oceny": (cmd_grades, None),
     "status": (cmd_status, "bot_cmd_status"),
     "sync": (cmd_sync, "bot_cmd_sync"),
+    "update": (cmd_update, "bot_cmd_update"), "rollback": (cmd_rollback, "bot_cmd_rollback"),
     "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None), "start": (cmd_help, None),
 }
 # Menu in Telegram: Polish names for Polish users, English otherwise.
-MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "status", "sync", "pomoc"],
-              "en": ["deadlines", "new", "grades", "status", "sync", "help"]}
+MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "status", "sync", "update", "rollback", "pomoc"],
+              "en": ["deadlines", "new", "grades", "status", "sync", "update", "rollback", "help"]}
 MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help"}
 
 
-def handle(text: str, chat_id: str) -> str:
+def command_of(text: str) -> str:
     match = re.match(r"/(\w+)", text.strip())
-    command = match.group(1).lower() if match else ""
+    return match.group(1).lower() if match else ""
+
+
+def handle(text: str, chat_id: str) -> str:
+    command = command_of(text)
     handler = COMMANDS.get(command, (cmd_help, None))[0]
     try:
         return handler(chat_id)
@@ -167,6 +207,10 @@ def run() -> int:
         print(t("bot_not_configured"))
         return 2
     print(t("bot_running"), flush=True)
+    try:
+        register_menu()  # new commands appear in the menu after an update
+    except requests.RequestException:
+        pass
     offset = None
     while True:
         try:
@@ -177,8 +221,16 @@ def run() -> int:
                     continue  # someone else's chat or not text: ignore silently
                 if time.time() - msg.get("date", 0) > 600:
                     continue  # command older than 10 min (bot was off) - don't execute it now
+                if command_of(msg["text"]) in {"update", "rollback"} and msg.get("date", 0) < STARTED - 1:
+                    continue  # sent before this process started: it already ran before the restart
                 print(f"> {msg['text'][:40]}", flush=True)
                 notify.send_telegram_html(handle(msg["text"], chat), chat)
+                if updater.restart_requested():
+                    try:
+                        get_updates(offset, timeout=0)  # confirm, so Telegram doesn't deliver /update again
+                    except (requests.RequestException, ValueError):
+                        pass
+                    updater.restart()
         except (requests.RequestException, ValueError) as e:  # ValueError: not JSON (e.g. a proxy error page)
             print(f"[telegram] {notify._redact(str(e))} - retry in 15 s", flush=True)
             time.sleep(15)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4 (2026-10)
+
+- **`/update` in the Telegram bot**: downloads the newest GitHub release, runs `pip install -r requirements.txt` only if it changed, imports the new code once (selftest) and only then swaps `moodle_sync/` and restarts the bot. `.env`, `courses.json`, `state.json`, Google tokens and `downloads/` are never touched. It waits if a sync is running, and no sync can start during the swap. If anything fails, the old version keeps running and the error is shown.
+- **`/rollback`**: back to the version that ran before the last `/update` (kept in `.update/previous`); a second `/rollback` goes forward again.
+- The bot refreshes its command menu at every start, so new commands appear without `bot --setup`.
+- For copies unpacked from a release archive; in a git clone keep using `git pull`.
+
 ## 1.0.3 (2026-09)
 
 Maintenance release: no changes in behaviour.

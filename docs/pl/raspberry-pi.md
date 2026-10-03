@@ -116,6 +116,8 @@ Z Telegramem SSH jest rzadko potrzebne: `/status` pokazuje ostatni przebieg, wol
 cd ~/moodle-sync && git pull && bash deploy/linux/install-server.sh
 ```
 
+Kopię rozpakowaną z archiwum wydania (nie klon git) można też zaktualizować z Telegrama: `/update` (i `/rollback`).
+
 **Miejsce na karcie:** semestr to zwykle dużo poniżej 1 GB, więc karta 32 GB wystarczy na lata. Lokalne kopie to darmowy backup chmury. Jeśli mimo to chcesz je usuwać po wysłaniu, ustaw `KEEP_LOCAL=0`.
 
 ## Odporność

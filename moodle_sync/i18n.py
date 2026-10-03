@@ -136,15 +136,30 @@ MESSAGES: dict[str, dict[str, str]] = {
 
     # --- Telegram bot ---
     "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
-                       "/oceny — ostatnie oceny\n/status — stan automatu\n/sync — synchronizuj teraz\n/pomoc — ta lista",
+                       "/oceny — ostatnie oceny\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
-                       "/grades — latest grades\n/status — status of the sync\n/sync — sync now\n/help — this list"},
+                       "/grades — latest grades\n/status — status of the sync\n/sync — sync now\n"
+                       "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},
     "bot_cmd_new": {"pl": "Ostatnio pobrane materiały", "en": "Recently downloaded materials"},
     "bot_cmd_grades": {"pl": "Ostatnie oceny", "en": "Latest grades"},
     "bot_cmd_status": {"pl": "Stan automatu", "en": "Status of the sync"},
     "bot_cmd_sync": {"pl": "Synchronizuj teraz", "en": "Sync now"},
     "bot_cmd_help": {"pl": "Lista komend", "en": "List of commands"},
+    "bot_cmd_update": {"pl": "Zainstaluj najnowszą wersję z GitHuba", "en": "Install the newest version from GitHub"},
+    "bot_cmd_rollback": {"pl": "Wróć do poprzedniej wersji", "en": "Go back to the previous version"},
+    "bot_update_checking": {"pl": "Szukam nowej wersji na GitHubie…", "en": "Checking GitHub for a new version…"},
+    "bot_update_latest": {"pl": "{version} to najnowsza wersja.", "en": "{version} is the newest version."},
+    "bot_update_installing": {"pl": "Instaluję {tag} (teraz {version}). Zależności mogą instalować się kilka minut…",
+                              "en": "Installing {tag} (now {version}). Dependencies may take a few minutes…"},
+    "bot_update_failed": {"pl": "Aktualizacja nie udała się, działa dalej {version}.",
+                          "en": "Update failed, still running {version}."},
+    "bot_update_restart": {"pl": "Zainstalowano {tag}, restartuję bota… Jeśli coś jest nie tak: /rollback",
+                           "en": "{tag} installed, restarting the bot… If something is wrong: /rollback"},
+    "bot_rollback_none": {"pl": "Nie ma poprzedniej wersji do przywrócenia.",
+                          "en": "There is no previous version to go back to."},
+    "bot_rollback_restart": {"pl": "Wracam do {version}, restartuję bota…", "en": "Back to {version}, restarting the bot…"},
     "bot_no_deadlines": {"pl": "Brak terminów w ciągu najbliższych 14 dni.", "en": "No deadlines in the next 14 days."},
     "bot_deadlines_header": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},
     "bot_no_new": {"pl": "Nie pobrano jeszcze nowych plików.", "en": "No new files downloaded yet."},

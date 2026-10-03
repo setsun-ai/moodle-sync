@@ -45,6 +45,8 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/oceny` `/grades` | ostatnie oceny |
 | `/status` | ostatni przebieg, wynik każdego kroku, wolne miejsce, czas działania |
 | `/sync` | synchronizuj teraz |
+| `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |
+| `/rollback` | wróć do wersji sprzed ostatniego `/update` |
 | `/pomoc` `/help` | lista komend |
 
 - Komendy wymagają działającego procesu bota: `python -m moodle_sync bot`. Na Raspberry Pi działa on jako usługa automatycznie ([instrukcja](raspberry-pi.md)).
