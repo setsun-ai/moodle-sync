@@ -44,7 +44,7 @@ moodle-sync jest zaprojektowany tak, żeby mieścić się w takich zasadach:
 - wysyła kilkadziesiąt zapytań na przebieg, ogłoszenia sprawdza najwyżej co 30 minut, a oceny co godzinę;
 - przedstawia się uczciwie (User-Agent z nazwą projektu).
 
-W razie wątpliwości przeczytaj regulamin albo zapytaj dział IT. Na PG to CUI. Lepiej zapytać, niż zgadywać.
+W razie wątpliwości przeczytaj regulamin albo zapytaj dział IT. Lepiej zapytać, niż zgadywać.
 
 ## 4. Czego nie robić ⛔
 
@@ -55,7 +55,7 @@ W razie wątpliwości przeczytaj regulamin albo zapytaj dział IT. Na PG to CUI.
 
 ## 5. Brak powiązań i gwarancji
 
-moodle-sync to niezależny projekt studencki. **Nie jest powiązany** z Moodle Pty Ltd, Politechniką Gdańską ani żadną inną uczelnią i nie jest przez nie wspierany. Działa **bez gwarancji** ([licencja MIT](../../LICENSE)). Nie traktuj go jako jedynego źródła terminów i **w ważnych sprawach zawsze sprawdzaj w samym Moodle**.
+moodle-sync to niezależny projekt studencki. **Nie jest powiązany** z Moodle Pty Ltd ani z żadną uczelnią i nie jest przez nie wspierany. Działa **bez gwarancji** ([licencja MIT](../../LICENSE)). Nie traktuj go jako jedynego źródła terminów i **w ważnych sprawach zawsze sprawdzaj w samym Moodle**.
 
 ---
 

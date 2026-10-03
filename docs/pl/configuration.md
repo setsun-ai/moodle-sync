@@ -17,7 +17,7 @@ Zmiany działają od następnego przebiegu. Bot Telegram czyta `.env` tylko przy
 
 | Zmienna | Przykład |
 |---|---|
-| `MOODLE_BASE_URL` | `https://enauczanie.pg.edu.pl/2025`: adres Twojego Moodle (kreator go sam poprawi). |
+| `MOODLE_BASE_URL` | `https://moodle.example.edu.pl/2025`: adres Twojego Moodle (kreator go sam poprawi). |
 | `MOODLE_TOKEN` | Twój token, zobacz [Token](token.md). |
 
 ### Ogólne
@@ -25,7 +25,7 @@ Zmiany działają od następnego przebiegu. Bot Telegram czyta `.env` tylko przy
 | Zmienna | Domyślnie | Znaczenie |
 |---|---|---|
 | `LANGUAGE` | `en` | `pl` / `en`: komunikaty, powiadomienia, bot, nazwy folderów. |
-| `SITE_LABEL` | `Moodle` | Krótka nazwa uczelni do nazw kalendarzy, np. `PG`. |
+| `SITE_LABEL` | `Moodle` | Krótka nazwa uczelni do nazw kalendarzy, np. `UNI`. |
 | `MOODLE_LANG` | = `LANGUAGE` | Który wariant brać z nazw wielojęzycznych (`{mlang pl}…{mlang en}…`). |
 | `TIMEZONE` | `Europe/Warsaw` (pl) / `UTC` | Strefa czasowa (IANA) tworzonych kalendarzy. |
 

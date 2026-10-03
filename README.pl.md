@@ -8,7 +8,7 @@
 🇬🇧 **[English version →](README.md)**
 
 **Nie przegap już żadnego materiału, terminu ani ogłoszenia z Moodle.**
-moodle-sync pobiera pliki z Twoich kursów do uporządkowanych folderów w chmurze, wpisuje terminy do kalendarza i powiadamia Cię na telefonie o nowościach. Działa z każdym Moodle (np. eNauczanie PG), na Windows, macOS, Linuksie i Raspberry Pi.
+moodle-sync pobiera pliki z Twoich kursów do uporządkowanych folderów w chmurze, wpisuje terminy do kalendarza i powiadamia Cię na telefonie o nowościach. Działa z każdym Moodle, na Windows, macOS, Linuksie i Raspberry Pi.
 
 > ⚖️ **Tylko do użytku osobistego.** Materiały z kursów są objęte prawem autorskim prowadzących, a ogłoszenia mogą zawierać
 > dane innych studentów. Trzymaj wszystko **prywatnie** i przestrzegaj regulaminów uczelni. Zanim zaczniesz, przeczytaj
@@ -85,4 +85,4 @@ Pomysły, zgłoszenia błędów i pull requesty są mile widziane. Zobacz [CONTR
 
 ## Licencja
 
-[MIT](LICENSE). Stworzone przez studenta Politechniki Gdańskiej, dla studentów z każdej uczelni.
+[MIT](LICENSE). Stworzone przez studenta, dla studentów z każdej uczelni.

@@ -25,7 +25,7 @@ Changes take effect on the next run. The Telegram bot reads `.env` only at start
 | Variable | Default | Meaning |
 |---|---|---|
 | `LANGUAGE` | `en` | `en` / `pl`: messages, notifications, bot, folder names. |
-| `SITE_LABEL` | `Moodle` | Short school name used in calendar names, e.g. `PG`. |
+| `SITE_LABEL` | `Moodle` | Short school name used in calendar names, e.g. `UNI`. |
 | `MOODLE_LANG` | = `LANGUAGE` | Which variant to keep from multi-language names (`{mlang pl}…{mlang en}…`). |
 | `TIMEZONE` | `Europe/Warsaw` (pl) / `UTC` | IANA time zone for created calendars. |
 

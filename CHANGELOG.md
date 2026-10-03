@@ -45,4 +45,4 @@ First public release: a universal tool for any Moodle.
 
 ## 0.x
 
-Personal scripts for Gdańsk University of Technology (eNauczanie PG), the origin of this project.
+Personal scripts for one university's Moodle, the origin of this project.

@@ -57,4 +57,4 @@ moodle-sync działa tylko wtedy, gdy serwer ma włączone *usługi mobilne* (Adm
 
 ## Osobny Moodle na każdy rok akademicki?
 
-Niektóre uczelnie (np. PG) uruchamiają co roku nową instancję (`https://enauczanie.pg.edu.pl/2025` → `/2026`). Wtedy na początku roku uruchom `python -m moodle_sync token`, podaj nowy adres i zaloguj się. Nowe kursy trafią do nowych folderów, a stare pliki zostaną na miejscu.
+Niektóre uczelnie uruchamiają co roku nową instancję (`https://moodle.example.edu.pl/2025` → `/2026`). Wtedy na początku roku uruchom `python -m moodle_sync token`, podaj nowy adres i zaloguj się. Nowe kursy trafią do nowych folderów, a stare pliki zostaną na miejscu.

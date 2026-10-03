@@ -72,7 +72,7 @@ def language() -> str:
 
 
 def site_label() -> str:
-    """Short name of the school, used in calendar names (e.g. 'PG')."""
+    """Short name of the school, used in calendar names (e.g. 'UNI')."""
     return env("SITE_LABEL", "Moodle")
 
 

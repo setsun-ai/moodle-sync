@@ -57,7 +57,7 @@ MOODLE_PATH_MARKERS = ("/course/", "/my", "/login/", "/mod/", "/user/", "/admin/
 
 
 def normalize_url(url: str) -> str:
-    """'enauczanie.pg.edu.pl/2025/course/view.php?id=1' -> 'https://enauczanie.pg.edu.pl/2025'"""
+    """'moodle.example.edu.pl/2025/course/view.php?id=1' -> 'https://moodle.example.edu.pl/2025'"""
     url = url.strip()
     if not re.match(r"https?://", url):
         url = "https://" + url

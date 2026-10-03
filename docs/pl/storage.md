@@ -34,7 +34,7 @@ DOWNLOAD_DIR=/Users/ty/Library/CloudStorage/GoogleDrive-ty@gmail.com/Mój dysk/M
 
 Aplikacja na komputerze sama wszystko wyśle. `RCLONE_REMOTE` zostaw pusty.
 
-> Wiele uczelni (w tym PG) daje studentom **Microsoft 365 z 1 TB na OneDrive**. To świetne miejsce na materiały.
+> Wiele uczelni daje studentom **Microsoft 365 z 1 TB na OneDrive**. To świetne miejsce na materiały.
 
 ## B. rclone (Raspberry Pi, serwery)
 

@@ -47,9 +47,9 @@ class TestCalendar:
         assert body["end"]["dateTime"] != body["start"]["dateTime"]
 
     def test_calendar_names_follow_language(self, monkeypatch):
-        monkeypatch.setenv("SITE_LABEL", "PG")
+        monkeypatch.setenv("SITE_LABEL", "UNI")
         monkeypatch.setenv("LANGUAGE", "pl")
-        assert calendar_sync.calendar_names() == {"deadlines": "PG – terminy", "classes": "PG – zajęcia"}
+        assert calendar_sync.calendar_names() == {"deadlines": "UNI – terminy", "classes": "UNI – zajęcia"}
 
 
 class TestWatch:

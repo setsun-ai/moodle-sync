@@ -139,6 +139,6 @@ Kopię rozpakowaną z archiwum wydania (nie klon git) można też zaktualizować
    rclone copyto <remote>:_moodle_sync/state.json state.json
    rclone copyto <remote>:_moodle_sync/przedmioty.json przedmioty.json   # albo courses.json, jeśli był
    ```
-   Kopia leży obok `DRIVE_DEST`, np. dla `DRIVE_DEST=PG/eNauczanie` w `gdrive:PG/_moodle_sync/`.
+   Kopia leży obok `DRIVE_DEST`, np. dla `DRIVE_DEST=Studia/Moodle` w `gdrive:Studia/_moodle_sync/`.
 
 Sekretów (`.env`, `google_token.json`, `rclone.conf`) w kopii **celowo nie ma**. **Trzymaj ich kopię na komputerze.** Bez `state.json` nic się nie zepsuje: Pi pobierze wszystko ponownie (w chmurze i kalendarzu nic się nie zdubluje) i wyśle jedno duże powiadomienie o „nowych” plikach.

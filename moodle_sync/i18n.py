@@ -257,7 +257,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "wiz_rules_continue": {"pl": "Enter = rozumiem, dalej (Ctrl+C = przerwij) ", "en": "Enter = I understand, continue (Ctrl+C = cancel) "},
     "wiz_site_header": {"pl": "1/6  Adres Twojego Moodle", "en": "1/6  Your Moodle address"},
     "wiz_site_help": {"pl": "Wklej adres strony Moodle Twojej uczelni - może być dowolna jej podstrona,\n"
-                            "np. https://enauczanie.pg.edu.pl/2025/my/",
+                            "np. https://moodle.example.edu.pl/2025/my/",
                       "en": "Paste the address of your school's Moodle - any page of it works,\n"
                             "e.g. https://moodle.example.edu/my/"},
     "wiz_site_prompt": {"pl": "Adres Moodle", "en": "Moodle address"},
@@ -304,7 +304,7 @@ MESSAGES: dict[str, dict[str, str]] = {
                      "en": "Logged in as {name}. Token saved to .env (treat it like a password)."},
     "wiz_courses_found": {"pl": "Twoich kursów: {n}", "en": "Your courses: {n}"},
     "wiz_basics_header": {"pl": "3/6  Nazwa i folder", "en": "3/6  Name and folder"},
-    "wiz_label_prompt": {"pl": "Krótka nazwa uczelni (do nazw kalendarzy, np. PG)",
+    "wiz_label_prompt": {"pl": "Krótka nazwa uczelni (do nazw kalendarzy, np. UNI)",
                          "en": "Short name of your school (for calendar names, e.g. MIT)"},
     "wiz_folder_help": {"pl": "Gdzie zapisywać materiały? Wskazówka: jeśli masz na komputerze Dysk Google / OneDrive /\n"
                               "Dropbox, podaj folder wewnątrz nich (np. C:\\Users\\Ty\\OneDrive\\Moodle) - wtedy pliki\n"

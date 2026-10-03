@@ -30,11 +30,11 @@ Zajmie Ci to około **10 minut**. Potrzebujesz komputera (Windows, macOS albo Li
 
 Skrypt tworzy prywatne środowisko Pythona (`.venv`), instaluje biblioteki i uruchamia **kreator konfiguracji**:
 
-1. **Adres Moodle.** Wklej dowolną stronę swojego Moodle, np. `https://enauczanie.pg.edu.pl/2025/my/`. Kreator sprawdzi, jak uczelnia loguje użytkowników.
+1. **Adres Moodle.** Wklej dowolną stronę swojego Moodle, np. `https://moodle.example.edu.pl/2025/my/`. Kreator sprawdzi, jak uczelnia loguje użytkowników.
 2. **Token (dostęp do konta).**
    - Zwykły formularz logowania: wpisujesz login i hasło. Trafiają tylko do Twojego Moodle, jednorazowo, i nie są nigdzie zapisywane.
    - Logowanie przez uczelnię, Microsoft albo Google (SSO): kreator otworzy przeglądarkę i pokaże dokładnie, co skopiować. Pomoc znajdziesz w rozdziale [Token](token.md).
-3. **Nazwa i folder.** Krótka nazwa uczelni (do nazw kalendarzy, np. `PG`) i miejsce na pliki.
+3. **Nazwa i folder.** Krótka nazwa uczelni (do nazw kalendarzy, np. `UNI`) i miejsce na pliki.
    Wskazówka: wybierz folder w swoim **Dysku Google / OneDrive / Dropboxie** na komputerze, a pliki trafią do chmury bez żadnej dodatkowej konfiguracji.
 4. **Powiadomienia** (opcjonalnie): Telegram, Discord, ntfy albo e-mail. Na koniec przyjdzie wiadomość testowa. Zobacz [Powiadomienia](notifications.md).
 5. **Chmura** (opcjonalnie): tylko dla rclone (np. na Raspberry Pi). Zobacz [Chmura](storage.md).

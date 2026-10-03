@@ -83,15 +83,15 @@ class TestConfig:
 
     def test_glued_lines_are_detected(self):
         """Regression: `printf 'LANGUAGE=pl' >> .env` onto a file without a final newline."""
-        config.ENV_FILE.write_bytes(b"A=1\r\nrclone / Google Drive:\r\nSTATE_BACKUP_DEST=PG/_syncLANGUAGE=pl\nSITE_LABEL=PG\n")
+        config.ENV_FILE.write_bytes(b"A=1\r\nrclone / Google Drive:\r\nSTATE_BACKUP_DEST=Studia/_syncLANGUAGE=pl\nSITE_LABEL=UNI\n")
         assert config.env_file_problems() == [(2, "no_equals", ""), (3, "glued", "STATE_BACKUP_DEST")]
 
     def test_set_command_repairs_a_glued_file(self):
         from moodle_sync.__main__ import main
-        config.ENV_FILE.write_bytes(b"MOODLE_TOKEN=x\r\nSTATE_BACKUP_DEST=PG/_syncLANGUAGE=pl")  # no final newline
-        assert main(["set", "STATE_BACKUP_DEST", "PG/_sync"]) == 0
+        config.ENV_FILE.write_bytes(b"MOODLE_TOKEN=x\r\nSTATE_BACKUP_DEST=Studia/_syncLANGUAGE=pl")  # no final newline
+        assert main(["set", "STATE_BACKUP_DEST", "Studia/_sync"]) == 0
         assert main(["set", "language", "pl"]) == 0
-        assert config.ENV_FILE.read_text(encoding="utf-8") == "MOODLE_TOKEN=x\nSTATE_BACKUP_DEST=PG/_sync\nLANGUAGE=pl\n"
+        assert config.ENV_FILE.read_text(encoding="utf-8") == "MOODLE_TOKEN=x\nSTATE_BACKUP_DEST=Studia/_sync\nLANGUAGE=pl\n"
         assert config.env_file_problems() == [] and config.language() == "pl"
 
     def test_legacy_polish_courses_file(self):
@@ -120,7 +120,7 @@ class TestRunner:
 
 
 @pytest.mark.parametrize("raw, expected", [
-    ("enauczanie.pg.edu.pl/2025/my/", "https://enauczanie.pg.edu.pl/2025"),
+    ("moodle.example.edu.pl/2025/my/", "https://moodle.example.edu.pl/2025"),
     ("https://moodle.example.edu/course/view.php?id=5", "https://moodle.example.edu"),
     ("https://moodle.example.edu/", "https://moodle.example.edu"),
     ("http://localhost/moodle/login/index.php", "http://localhost/moodle"),

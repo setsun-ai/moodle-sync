@@ -10,7 +10,7 @@
 Zdobądź nowy przez `python -m moodle_sync token`. Na Raspberry Pi zrestartuj też bota: `sudo systemctl restart moodle-sync-bot`. Zobacz [Token](token.md#gdy-token-przestaje-działać).
 
 **`nopermissiontoviewgrades` w logach**
-To normalne. Wiele uczelni (np. PG) ukrywa dziennik ocen przed studentami. Oceny są wtedy czytane z zadań i quizów, więc oceny końcowe wpisane tylko do dziennika albo do USOS-a nie dotrą.
+To normalne. Wiele uczelni ukrywa dziennik ocen przed studentami. Oceny są wtedy czytane z zadań i quizów, więc oceny końcowe wpisane tylko do dziennika albo do USOS-a nie dotrą.
 
 **„nie odpowiada jak Moodle z włączoną aplikacją mobilną”**
 - Sprawdź adres w przeglądarce.
@@ -54,7 +54,7 @@ Tak ma być. Pierwsze sprawdzenie tylko zapamiętuje istniejące wpisy, podobnie
 
 **Czy tak wolno?**
 moodle-sync używa oficjalnego API aplikacji mobilnej na **Twoim własnym** koncie i tylko czyta Twoje dane, jak aplikacja, i to mniejszą liczbą zapytań. O czym pamiętać:
-- Regulaminy IT uczelni zwykle zakazują udostępniania danych logowania i przeciążania serwerów. Prywatna automatyzacja własnego konta jest z reguły w porządku, ale w razie wątpliwości sprawdź regulamin albo zapytaj dział IT (na PG: CUI).
+- Regulaminy IT uczelni zwykle zakazują udostępniania danych logowania i przeciążania serwerów. Prywatna automatyzacja własnego konta jest z reguły w porządku, ale w razie wątpliwości sprawdź regulamin albo zapytaj dział IT.
 - Materiały z kursów są objęte prawem autorskim prowadzących. Trzymanie ich w **swojej prywatnej** chmurze to użytek osobisty. **Nie udostępniaj folderu publicznie ani linków do niego.**
 
 Szczegóły w **[Zasadach korzystania](responsible-use.md)** i **[Prywatności](../../PRIVACY.md#po-polsku)**.
