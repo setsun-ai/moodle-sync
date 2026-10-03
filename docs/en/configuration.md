@@ -36,6 +36,34 @@ Changes take effect on the next run. The Telegram bot reads `.env` only at start
 | `DOWNLOAD_DIR` | `downloads` | Relative to the project or absolute, e.g. inside your OneDrive folder. |
 | `MAX_FILE_MB` | `0` | Skip files bigger than N MB (0 = no limit). Skipped files are fetched automatically once you raise the limit. |
 
+### Semesters and subject cards
+
+Files can go into one folder per semester, with the course folders named after the subjects of your study plan
+and each subject's card (syllabus) next to its materials:
+
+```
+Semester 1/
+  Mathematics II/
+    Subject card.pdf
+    Lectures/...
+Semester 2/...
+```
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `STUDY_PLAN_URL` | – | Your field of study (or specialisation) in the ECTS catalogue. Supported for now: Gdańsk Tech (`ects.pg.edu.pl`). Find it with `python -m moodle_sync plan --search "name"`. |
+| `STUDY_START` | – | Without a catalogue: your first semester, e.g. `2025/2026-winter`. Semester numbers are counted from the course start dates. |
+| `SEMESTER_FOLDERS` | on with one of the above | `0` = keep the old layout, only rename the course folders after the plan. |
+| `SYLLABUS` | on with `STUDY_PLAN_URL` | `0` = don't download subject cards. Cards are re-checked every 30 days; a changed card is notified. |
+
+- `python -m moodle_sync plan` shows the semesters, the subjects and which Moodle course feeds which folder.
+- A Moodle course gets the subject whose words all appear in its name (the most specific one: "Mathematics II"
+  beats "Mathematics"). Courses without a subject get their semester from their start date.
+- Compulsory subjects get their card even before they appear in Moodle; elective ones only when you have the course.
+- **Switching it on moves your existing files.** To be safe, the first run stops and asks you to confirm once:
+  `python -m moodle_sync download --reorganize`. The cloud copy is moved too.
+- If the catalogue is offline, the plan saved on the last successful check is used.
+
 ### Cloud (rclone): see [Storage](storage.md)
 
 | Variable | Default | Meaning |
@@ -92,6 +120,8 @@ python -m moodle_sync courses
 - **`names`:** the folder name, also used in calendar event titles and notifications.
 - **`default_category`:** the category for files that no rule recognised. Use a built-in key (`lectures`, `exercises`, `labs`, `projects`, `other`) or any folder name.
 - **`skip`:** ignore these courses completely (files, calendar, announcements, grades).
+- **`plan`:** which subject of the study plan a course is, when its Moodle name doesn't say it (`"Maths for engineers": "Mathematics II"`).
+- **`semester`:** force the semester of a course (`"Sandbox": 1`).
 - **`category_rules`:** your own rules, checked **before** the built-in ones. `pattern` is a [regular expression](https://regex101.com) matched against text **without diacritics, in lower case** (write `wyklad`, not `Wykład`).
 
 The legacy file name `przedmioty.json` with the keys `nazwy` / `kategoria_domyslna` still works.

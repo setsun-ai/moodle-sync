@@ -47,6 +47,8 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/sync` | run a sync now |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
 | `/rollback` | go back to the version before the last `/update` |
+| `/plan` | semesters and subjects of your study plan (see [Configuration](configuration.md)) |
+| `/reorganize` | confirm moving downloaded files into a new layout, e.g. semester folders |
 | `/help` `/pomoc` | list of commands |
 
 - Commands need the bot process running: `python -m moodle_sync bot`. On a Raspberry Pi it runs as a service automatically ([guide](raspberry-pi.md)).

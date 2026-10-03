@@ -7,6 +7,12 @@
   "default_category": {
     "Foreign language course": "exercises"
   },
+  "plan": {
+    "Maths for engineers": "Mathematics II"
+  },
+  "semester": {
+    "Foreign language course": 2
+  },
   "skip": [
     "Library training",
     "Sandbox"

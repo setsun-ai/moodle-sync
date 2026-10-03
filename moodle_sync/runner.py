@@ -2,6 +2,7 @@
 One full run: what the scheduler (systemd / Task Scheduler / launchd) starts.
 
     1. files      new files from Moodle -> DOWNLOAD_DIR
+       syllabus   subject cards from the study plan (STUDY_PLAN_URL) -> DOWNLOAD_DIR
     2. storage    DOWNLOAD_DIR -> cloud (rclone) + backup of state.json
     3. calendar   deadlines -> Google Calendar (✅ = done)
     4. watch      new announcements and grades -> notifications
@@ -34,7 +35,7 @@ from pathlib import Path
 
 import requests
 
-from . import calendar_sync, config, files, moodle, state as state_mod, storage, watch
+from . import calendar_sync, config, files, moodle, state as state_mod, storage, studyplan, watch
 from .i18n import t, weekday
 from .notify import bullet_list, notify
 
@@ -46,6 +47,7 @@ LOG_MAX_BYTES = 1_000_000
 # (i18n key of the step name, function) - each returns 0 ok / 1 error / 2 skipped
 STEPS = [
     ("step_files", lambda: files.run()),
+    ("step_syllabus", lambda: studyplan.run()),
     ("step_storage", lambda: storage.run()),
     ("step_calendar", lambda: calendar_sync.run()),
     ("step_watch", lambda: watch.run()),

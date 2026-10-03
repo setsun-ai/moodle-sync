@@ -124,6 +124,31 @@ def cmd_sync(chat_id: str) -> str:
     return f"{icon} <b>{esc(t('bot_sync_done'))}</b>\n{esc(summary)}"
 
 
+def _run_cli(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-m", "moodle_sync", *args], cwd=config.PROJECT_DIR,
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+def cmd_plan(chat_id: str) -> str:
+    """Semesters, subjects and the Moodle course behind each folder (python -m moodle_sync plan)."""
+    proc = _run_cli("plan")
+    text = (proc.stdout or proc.stderr).strip()
+    return f"<pre>{esc(text[-3500:])}</pre>" if text else esc(t("plan_none"))
+
+
+def cmd_reorganize(chat_id: str) -> str:
+    """Confirm moving already downloaded files into a new layout (e.g. semester folders)."""
+    from .runner import SingleInstance
+
+    with SingleInstance() as lock:  # not while a scheduled sync is downloading
+        if not lock.acquired:
+            return "⏳ " + esc(t("bot_sync_busy"))
+        notify.send_telegram_html("📦 " + esc(t("bot_reorganize_started")), chat_id)
+        proc = _run_cli("download", "--reorganize")
+    icon = "✅" if proc.returncode == 0 else "❌"
+    return f"{icon} <b>{esc(t('bot_reorganize_done'))}</b>\n<pre>{esc(proc.stdout[-1500:])}</pre>"
+
+
 def cmd_update(chat_id: str) -> str:
     from .runner import SingleInstance
 
@@ -166,12 +191,15 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
     "grades": (cmd_grades, "bot_cmd_grades"), "oceny": (cmd_grades, None),
     "status": (cmd_status, "bot_cmd_status"),
     "sync": (cmd_sync, "bot_cmd_sync"),
+    "plan": (cmd_plan, "bot_cmd_plan"), "reorganize": (cmd_reorganize, "bot_cmd_reorganize"),
     "update": (cmd_update, "bot_cmd_update"), "rollback": (cmd_rollback, "bot_cmd_rollback"),
     "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None), "start": (cmd_help, None),
 }
 # Menu in Telegram: Polish names for Polish users, English otherwise.
-MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "status", "sync", "update", "rollback", "pomoc"],
-              "en": ["deadlines", "new", "grades", "status", "sync", "update", "rollback", "help"]}
+MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "plan", "status", "sync", "reorganize", "update", "rollback",
+                     "pomoc"],
+              "en": ["deadlines", "new", "grades", "plan", "status", "sync", "reorganize", "update", "rollback",
+                     "help"]}
 MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help"}
 

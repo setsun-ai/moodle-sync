@@ -36,6 +36,34 @@ Zmiany działają od następnego przebiegu. Bot Telegram czyta `.env` tylko przy
 | `DOWNLOAD_DIR` | `downloads` | Względem projektu albo ścieżka bezwzględna, np. w folderze OneDrive. |
 | `MAX_FILE_MB` | `0` | Pomijaj pliki większe niż N MB (0 = bez limitu). Po podniesieniu limitu pominięte pliki pobiorą się same. |
 
+### Semestry i karty przedmiotów
+
+Pliki mogą trafiać do folderu na każdy semestr, z folderami przedmiotów nazwanymi jak w planie studiów i z kartą
+przedmiotu (sylabusem) obok materiałów:
+
+```
+Semestr 1/
+  Matematyka II/
+    Karta przedmiotu.pdf
+    Wyklady/...
+Semestr 2/...
+```
+
+| Zmienna | Domyślnie | Znaczenie |
+|---|---|---|
+| `STUDY_PLAN_URL` | – | Twój kierunek (albo specjalność) w katalogu ECTS. Na razie obsługiwany: Politechnika Gdańska (`ects.pg.edu.pl`). Znajdziesz go: `python -m moodle_sync plan --search "nazwa"`. |
+| `STUDY_START` | – | Bez katalogu: Twój pierwszy semestr, np. `2025/2026-winter`. Numery semestrów liczone są z dat rozpoczęcia kursów. |
+| `SEMESTER_FOLDERS` | włączone z jednym z powyższych | `0` = bez folderów semestrów, tylko nazwy przedmiotów z planu. |
+| `SYLLABUS` | włączone z `STUDY_PLAN_URL` | `0` = nie pobieraj kart przedmiotów. Karty są sprawdzane co 30 dni; o zmianie dostajesz powiadomienie. |
+
+- `python -m moodle_sync plan` pokazuje semestry, przedmioty i to, który kurs z Moodle trafia do którego folderu.
+- Kurs z Moodle dostaje przedmiot, którego wszystkie słowa są w jego nazwie (najdokładniejszy: „Matematyka II”
+  wygrywa z „Matematyka”). Kursy bez przedmiotu dostają semestr z daty rozpoczęcia.
+- Przedmioty obowiązkowe dostają kartę, zanim pojawią się w Moodle; obieralne tylko wtedy, gdy masz ten kurs.
+- **Włączenie przenosi już pobrane pliki.** Dla bezpieczeństwa pierwsze uruchomienie zatrzyma się i poprosi
+  o jednorazowe potwierdzenie: `python -m moodle_sync download --reorganize`. Kopia w chmurze też się przeniesie.
+- Gdy katalog nie działa, używany jest plan zapisany przy ostatnim udanym sprawdzeniu.
+
 ### Chmura (rclone): zobacz [Chmura](storage.md)
 
 | Zmienna | Domyślnie | Znaczenie |
@@ -92,6 +120,8 @@ python -m moodle_sync courses
 - **`names`:** nazwa folderu, używana też w tytułach wydarzeń w kalendarzu i w powiadomieniach.
 - **`default_category`:** kategoria dla plików, których nie rozpoznała żadna reguła. Użyj wbudowanego klucza (`lectures`, `exercises`, `labs`, `projects`, `other`) albo dowolnej nazwy folderu.
 - **`skip`:** całkowicie pomijaj te kursy (pliki, kalendarz, ogłoszenia, oceny).
+- **`plan`:** który to przedmiot z planu studiów, gdy nazwa w Moodle tego nie mówi (`"Matematyka dla inżynierów": "Matematyka II"`).
+- **`semester`:** wymuszony semestr kursu (`"Piaskownica": 1`).
 - **`category_rules`:** własne reguły, sprawdzane **przed** wbudowanymi. `pattern` to [wyrażenie regularne](https://regex101.com) dopasowywane do tekstu **bez polskich znaków, małymi literami** (pisz `wyklad`, nie `Wykład`).
 
 Stara nazwa pliku `przedmioty.json` z kluczami `nazwy` / `kategoria_domyslna` nadal działa.

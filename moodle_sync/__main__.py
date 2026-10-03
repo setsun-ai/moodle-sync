@@ -10,6 +10,7 @@ Command line: python -m moodle_sync <command>
     calendar    only sync the calendar          [--dry-run] [--auth]
     watch       only check announcements/grades [--dry-run] [--force]
     courses     preview how files are categorised (for editing courses.json)
+    plan        study plan: semesters, subjects, cards  [--search NAME] [--cards [--force]]
     ics         print the calendar subscription URL (Outlook / Apple Calendar)
     bot         run the Telegram bot            [--setup]
     notify-test send a test notification to all configured channels
@@ -77,6 +78,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--force", action="store_true")
     sub.add_parser("courses", help="preview categories per course")
+    p = sub.add_parser("plan", help="study plan: semester folders and subject cards")
+    p.add_argument("--search", metavar="NAME", help="find your field of study in the ECTS catalogue")
+    p.add_argument("--cards", action="store_true", help="download subject cards now")
+    p.add_argument("--force", action="store_true", help="with --cards: re-check every card")
+    p.add_argument("--dry-run", action="store_true")
     sub.add_parser("ics", help="print the calendar subscription URL")
     p = sub.add_parser("bot", help="run the Telegram bot")
     p.add_argument("--setup", action="store_true", help="connect the bot to your chat")
@@ -121,6 +127,13 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "courses":
         from .files import preview
         return preview()
+    if cmd == "plan":
+        from . import studyplan
+        if args.search:
+            return studyplan.search(args.search)
+        if args.cards:
+            return studyplan.run(dry_run=args.dry_run, force=args.force)
+        return studyplan.preview()
     if cmd == "ics":
         from .calendar_sync import ics_url
         return ics_url()

@@ -1,9 +1,11 @@
 """
 Step 1: find files in your courses and download the ones you don't have yet.
 
-Layout:  <DOWNLOAD_DIR>/<Course>/<Category>/[<folder>/<subfolders>/]<file>
+Layout:  <DOWNLOAD_DIR>/[<Semester N>/]<Course>/<Category>/[<folder>/<subfolders>/]<file>
 Category is one of Lectures / Exercises / Labs / Projects / Other materials
 (Polish names with LANGUAGE=pl), guessed from section, module and file names.
+With a study plan (STUDY_PLAN_URL, see studyplan.py) courses go into semester
+folders and are named after the subject in the plan.
 
 How "new" is detected: every file gets a stable id (see stable_id); the ids of
 downloaded files are remembered in state.json -> "downloaded". Anything not
@@ -26,7 +28,7 @@ from pathlib import Path
 
 import requests
 
-from . import config, moodle, state as state_mod
+from . import config, moodle, state as state_mod, studyplan
 from .i18n import t
 from .notify import bullet_list, notify
 from .textutil import clean_text, normalize_for_matching, pick_language, sanitize_component
@@ -154,13 +156,29 @@ def logical_key(f: dict) -> str:
     return f"{f['course_id']}:{f['module_id']}:{f['filepath']}{f['filename']}"
 
 
+def course_folder(f: dict, cfg: dict) -> str:
+    """Folder of a course: courses.json "names", else the subject name from the study plan, else Moodle's name."""
+    return _override(cfg, "names", f["course_name"]) or f.get("plan_subject") or course_display_name(f["course_name"], cfg)
+
+
+def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
+    """Add the study plan's semester folder and subject name to every file record (no-op without a plan)."""
+    if not (studyplan.plan_url() or studyplan.study_start()):
+        return
+    plan = studyplan.load_plan(state)
+    layout = studyplan.course_layout(courses, cfg, plan)
+    for f in files:
+        f["semester_folder"], f["plan_subject"] = layout.get(f["course_id"], (None, None))
+
+
 def relative_path(f: dict, cfg: dict | None = None) -> Path:
     cfg = config.load_courses_config() if cfg is None else cfg
     lang = config.moodle_content_language()
     # Sections are flattened: the category already carries the main
     # information, and names like "New section" would only clutter the tree.
-    parts = [
-        sanitize_component(course_display_name(f["course_name"], cfg), "Course", lang),
+    parts = [sanitize_component(f["semester_folder"], lang=lang)] if f.get("semester_folder") else []
+    parts += [
+        sanitize_component(course_folder(f, cfg), "Course", lang),
         categorize(f, cfg),
     ]
     # Files of a "folder" module go into a subfolder named after the module,
@@ -339,11 +357,18 @@ def is_pending(f: dict, downloaded: dict) -> bool:
 
 
 def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganize: bool = False) -> int:
-    files = collect_files(moodle.my_courses())
+    courses = moodle.my_courses()
+    files = collect_files(courses)
     cfg = config.load_courses_config()
 
     state = state_mod.load()
     downloaded = state.setdefault("downloaded", {})
+    try:
+        apply_layout(files, courses, cfg, state)
+    except RuntimeError as e:  # plan configured but unavailable: don't scatter files into the old layout
+        print(t("error", error=e))
+        return 1
+    state_mod.save(state)  # keeps the cached study plan
 
     plan = plan_paths(files, downloaded, cfg)
     moves = planned_moves(files, plan, downloaded)
@@ -419,13 +444,16 @@ def preview() -> int:
     courses = moodle.my_courses()
     cfg = config.load_courses_config()
     files = collect_files(courses)
+    apply_layout(files, courses, cfg, state_mod.load())
     by_course: dict = {}
     for f in files:
         by_course.setdefault(f["course_name"], []).append(f)
     print(t("courses_header", n=len(courses), file=config.courses_file().name) + "\n")
     for course in courses:
         cf = by_course.get(course["fullname"], [])
-        print(f"■ {course_display_name(course['fullname'], cfg)}")
+        first = cf[0] if cf else {"course_name": course["fullname"]}
+        where = f"{first['semester_folder']}/" if first.get("semester_folder") else ""
+        print(f"■ {where}{course_folder(first, cfg)}")
         print(f"  Moodle: {clean_text(course['fullname'], config.moodle_content_language())}")
         counts: dict = {}
         for f in cf:

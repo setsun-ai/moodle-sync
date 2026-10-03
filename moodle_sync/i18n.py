@@ -25,6 +25,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "step_storage": {"pl": "Wysyłka do chmury", "en": "Upload to cloud"},
     "step_calendar": {"pl": "Kalendarz", "en": "Calendar"},
     "step_watch": {"pl": "Ogłoszenia i oceny", "en": "Announcements and grades"},
+    "step_syllabus": {"pl": "Karty przedmiotów", "en": "Subject cards"},
     "course_skipped": {"pl": "[pominięto] {course}: {error}", "en": "[skipped] {course}: {error}"},
     "choose_number": {"pl": "Wybierz numer", "en": "Choose a number"},
     "yes_no_default_yes": {"pl": "[T/n]", "en": "[Y/n]"},
@@ -45,15 +46,74 @@ MESSAGES: dict[str, dict[str, str]] = {
     "files_mass_move": {"pl": "UWAGA: obecne ustawienia przeniosłyby {n} już pobranych plików do innych folderów\n"
                               "(np. po zmianie LANGUAGE, nazw kursów albo reguł kategorii). Dla bezpieczeństwa niczego nie\n"
                               "przenoszę ani nie pobieram. Sprawdź ustawienia: python -m moodle_sync doctor\n"
-                              "Jeśli ta zmiana jest zamierzona, zatwierdź ją raz: python -m moodle_sync download --reorganize",
+                              "Jeśli ta zmiana jest zamierzona, zatwierdź ją raz: python -m moodle_sync download --reorganize\n"
+                              "(albo komendą /reorganize w bocie Telegram)",
                         "en": "WARNING: the current settings would move {n} already downloaded files to other folders\n"
                               "(e.g. after changing LANGUAGE, course names or category rules). To be safe, nothing is moved\n"
                               "or downloaded. Check the settings: python -m moodle_sync doctor\n"
-                              "If the change is intended, confirm it once: python -m moodle_sync download --reorganize"},
+                              "If the change is intended, confirm it once: python -m moodle_sync download --reorganize\n"
+                              "(or with /reorganize in the Telegram bot)"},
     "notify_files_title": {"pl": "Nowe materiały ({n})", "en": "New course materials ({n})"},
     "courses_header": {"pl": "Kursy: {n}. Nazwy i kategorie możesz zmienić w {file} (patrz courses.example.json).",
                        "en": "Courses: {n}. You can change names and categories in {file} (see courses.example.json)."},
     "courses_no_files": {"pl": "brak plików", "en": "no files"},
+
+    # --- study plan (semester folders, subject cards) ---
+    "plan_semester_folder": {"pl": "Semestr {n}", "en": "Semester {n}"},
+    "plan_card_file": {"pl": "Karta przedmiotu.pdf", "en": "Subject card.pdf"},
+    "plan_empty": {"pl": "na stronie {url} nie ma semestrów - czy to lista przedmiotów kierunku?",
+                   "en": "no semesters on {url} - is it the subject list of a field of study?"},
+    "plan_cached": {"pl": "Katalog ECTS niedostępny ({error}) - używam zapisanego planu.",
+                    "en": "The ECTS catalogue is unavailable ({error}) - using the saved plan."},
+    "plan_unavailable": {"pl": "Nie mogę pobrać planu studiów z {url}: {error}\n"
+                               "Nie przenoszę ani nie pobieram plików, dopóki plan nie będzie dostępny "
+                               "(albo usuń STUDY_PLAN_URL).",
+                         "en": "Can't fetch the study plan from {url}: {error}\n"
+                               "No files are moved or downloaded until it's available (or remove STUDY_PLAN_URL)."},
+    "plan_not_pdf": {"pl": "to nie jest PDF", "en": "not a PDF"},
+    "plan_off": {"pl": "Karty przedmiotów wyłączone (brak STUDY_PLAN_URL).",
+                 "en": "Subject cards are off (no STUDY_PLAN_URL)."},
+    "plan_cards_new": {"pl": "Karty przedmiotów ({n})", "en": "Subject cards ({n})"},
+    "plan_card_changed": {"pl": "Zmieniła się karta przedmiotu: {subject}", "en": "Subject card changed: {subject}"},
+    "plan_cards_summary": {"pl": "Karty przedmiotów: nowe {new}, zmienione {changed}, błędy {failed}",
+                           "en": "Subject cards: new {new}, changed {changed}, errors {failed}"},
+    "plan_header": {"pl": "Plan studiów: {url}", "en": "Study plan: {url}"},
+    "plan_now": {"pl": "teraz", "en": "now"},
+    "plan_winter": {"pl": "zimowy", "en": "winter"},
+    "plan_summer": {"pl": "letni", "en": "summer"},
+    "plan_no_moodle": {"pl": "brak kursu w Moodle", "en": "no Moodle course"},
+    "plan_by_dates": {"pl": "Semestry liczone od dat rozpoczęcia kursów (STUDY_START={start}).",
+                      "en": "Semesters counted from the course start dates (STUDY_START={start})."},
+    "plan_none": {"pl": "Brak planu studiów. Znajdź swój kierunek:  python -m moodle_sync plan --search \"nazwa\"\n"
+                        "albo ustaw pierwszy semestr:  python -m moodle_sync set STUDY_START 2025/2026-winter",
+                  "en": "No study plan. Find your field of study:  python -m moodle_sync plan --search \"name\"\n"
+                        "or set your first semester:  python -m moodle_sync set STUDY_START 2025/2026-winter"},
+    "plan_unmatched": {"pl": "Kursy z Moodle bez przedmiotu w planie (przypiszesz je w courses.json -> \"plan\"):",
+                       "en": "Moodle courses without a subject in the plan (assign them in courses.json -> \"plan\"):"},
+    "plan_no_semester": {"pl": "bez semestru", "en": "no semester"},
+    "plan_search_none": {"pl": "Nie znalazłem kierunku „{query}” w katalogu ECTS PG.",
+                         "en": "No field of study \"{query}\" in the PG ECTS catalogue."},
+    "plan_specialisation": {"pl": "specjalność", "en": "specialisation"},
+    "plan_search_hint": {"pl": "Skopiuj link swojego kierunku (albo specjalności) i ustaw go:\n"
+                               "  python -m moodle_sync set STUDY_PLAN_URL <link>\n"
+                               "Podgląd semestrów i przedmiotów:  python -m moodle_sync plan",
+                         "en": "Copy the link of your field of study (or specialisation) and set it:\n"
+                               "  python -m moodle_sync set STUDY_PLAN_URL <link>\n"
+                               "Preview semesters and subjects:  python -m moodle_sync plan"},
+
+    "wiz_plan_header": {"pl": "Semestry i karty przedmiotów (opcjonalnie)",
+                        "en": "Semesters and subject cards (optional)"},
+    "wiz_plan_help": {"pl": "Jeśli Twoja uczelnia ma katalog ECTS (na razie: Politechnika Gdańska, ects.pg.edu.pl),\n"
+                            "pliki trafią do folderów \"Semestr N/Przedmiot\", a karty przedmiotów pobiorą się same.",
+                      "en": "If your university has an ECTS catalogue (for now: Gdańsk Tech, ects.pg.edu.pl),\n"
+                            "files go into \"Semester N/Subject\" folders and subject cards are downloaded too."},
+    "wiz_plan_prompt": {"pl": "Nazwa kierunku (Enter = pomiń)", "en": "Field of study (Enter = skip)"},
+    "wiz_plan_choose": {"pl": "Który to Twój kierunek i rocznik?", "en": "Which one is your field of study and intake?"},
+    "wiz_plan_skip": {"pl": "żaden – pomiń", "en": "none - skip"},
+    "wiz_plan_specialisation": {"pl": "Twoja specjalność:", "en": "Your specialisation:"},
+    "wiz_plan_common": {"pl": "bez specjalności (wspólny plan)", "en": "no specialisation (common plan)"},
+    "wiz_plan_done": {"pl": "Zapisano. Podgląd: python -m moodle_sync plan",
+                      "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- storage ---
     "storage_disabled": {"pl": "Wysyłka do chmury wyłączona (brak RCLONE_REMOTE) - pliki zostają w folderze lokalnym.",
@@ -136,16 +196,24 @@ MESSAGES: dict[str, dict[str, str]] = {
 
     # --- Telegram bot ---
     "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
-                       "/oceny — ostatnie oceny\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/oceny — ostatnie oceny\n/plan — semestry i przedmioty\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
-                       "/grades — latest grades\n/status — status of the sync\n/sync — sync now\n"
+                       "/grades — latest grades\n/plan — semesters and subjects\n/status — status of the sync\n/sync — sync now\n"
+                       "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},
     "bot_cmd_new": {"pl": "Ostatnio pobrane materiały", "en": "Recently downloaded materials"},
     "bot_cmd_grades": {"pl": "Ostatnie oceny", "en": "Latest grades"},
     "bot_cmd_status": {"pl": "Stan automatu", "en": "Status of the sync"},
     "bot_cmd_sync": {"pl": "Synchronizuj teraz", "en": "Sync now"},
+    "bot_cmd_plan": {"pl": "Semestry i przedmioty", "en": "Semesters and subjects"},
+    "bot_cmd_reorganize": {"pl": "Zatwierdź przeniesienie plików do nowych folderów",
+                           "en": "Confirm moving files into the new folders"},
+    "bot_reorganize_started": {"pl": "Przenoszę pliki do nowych folderów…", "en": "Moving files into the new folders…"},
+    "bot_reorganize_done": {"pl": "Przenoszenie zakończone (chmura zaktualizuje się przy najbliższej synchronizacji)",
+                            "en": "Moving finished (the cloud catches up on the next sync)"},
     "bot_cmd_help": {"pl": "Lista komend", "en": "List of commands"},
     "bot_cmd_update": {"pl": "Zainstaluj najnowszą wersję z GitHuba", "en": "Install the newest version from GitHub"},
     "bot_cmd_rollback": {"pl": "Wróć do poprzedniej wersji", "en": "Go back to the previous version"},

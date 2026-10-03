@@ -31,6 +31,7 @@ Komentarz prowadzącego: Dobra robota, uwagi w sekcji 3.
 ## Co potrafi
 
 - 📂 **Pliki → foldery w chmurze.** Każdy przedmiot jest podzielony na *Wykłady / Ćwiczenia / Laboratoria / Projekty / Inne*. Plik podmieniony przez prowadzącego aktualizuje się na miejscu. Działa z Dyskiem Google, OneDrive (także uczelnianym Microsoft 365), Dropboxem i [ponad 70 innymi](https://rclone.org) albo w ogóle bez chmury.
+- 🗂️ **Semestry i karty przedmiotów.** Wskaż swój kierunek w katalogu ECTS (na razie: Politechnika Gdańska, ects.pg.edu.pl), a przedmioty trafią do folderów *Semestr 1 / Semestr 2 …* nazwanych jak w planie studiów, z kartą przedmiotu (sylabusem) obok materiałów, sprawdzaną co miesiąc pod kątem zmian.
 - 📅 **Terminy → Kalendarz Google.** Oddane zadania dostają ✅ i przestają przypominać. Przesunięte terminy się aktualizują, a Ty dostajesz powiadomienie. Zajęcia trafiają do osobnego kalendarza, który możesz ukryć. Outlook i kalendarz Apple mogą zamiast tego korzystać z linku subskrypcji.
 - 📢 **Ogłoszenia i 🎓 oceny** od prowadzących trafiają prosto na telefon, razem z komentarzem prowadzącego.
 - 🔔 **Kanał do wyboru:** Telegram (z komendami `/terminy`, `/sync`...), Discord, ntfy albo e-mail.

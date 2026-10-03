@@ -157,6 +157,42 @@ def step_basics(public: dict) -> None:
     config.set_env_var("DOWNLOAD_DIR", ask(t("wiz_folder_prompt"), config.env("DOWNLOAD_DIR", "downloads")))
 
 
+def step_study_plan() -> None:
+    """Optional: semester folders and subject cards from the ECTS catalogue (Gdańsk Tech for now)."""
+    from . import studyplan
+
+    header(t("wiz_plan_header"))
+    print(t("wiz_plan_help"))
+    query = ask(t("wiz_plan_prompt"))
+    if not query:
+        return
+    try:
+        programs = studyplan.search_programs(query)
+    except Exception as e:  # the catalogue is optional - never break the wizard
+        print(t("error", error=e))
+        return
+    if not programs:
+        print(t("plan_search_none", query=query))
+        return
+    options = [(p["url"], f"{p['field']} – {p['mode']}, {p['start']}"
+                + (f" ({t('plan_now')}: {p['current']})" if p["current"] else "")) for p in programs[:30]]
+    options.append(("", t("wiz_plan_skip")))
+    url = choose(t("wiz_plan_choose"), options, options[0][0])
+    if not url:
+        return
+    url = studyplan.normalize_plan_url(url)
+    try:
+        base = url.split("/", 3)[:3]
+        specs = studyplan.parse_specializations(studyplan._get(url).text, "/".join(base))
+    except Exception:
+        specs = []
+    if specs:
+        url = choose(t("wiz_plan_specialisation"), [(u, name) for name, u in specs] + [(url, t("wiz_plan_common"))],
+                     specs[0][1])
+    config.set_env_var("STUDY_PLAN_URL", url)
+    print(t("wiz_plan_done"))
+
+
 def step_notifications() -> None:
     header(t("wiz_notify_header"))
     print(t("wiz_notify_help"))
@@ -262,6 +298,7 @@ def run() -> int:
         info = step_token(url, public)
         print(t("wiz_courses_found", n=len(moodle.call("core_enrol_get_users_courses", userid=info["userid"]))))
         step_basics(public)
+        step_study_plan()
         step_notifications()
         step_storage()
         step_calendar()

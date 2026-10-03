@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 (2026-10)
+
+- **Semester folders and subject cards.** Set `STUDY_PLAN_URL` to your field of study in the ECTS catalogue (supported for now: Gdańsk Tech, `ects.pg.edu.pl`) and files go into `Semester N/<subject>/…`, with course folders named after the subjects of the plan. Each subject's card (syllabus PDF) is downloaded next to its materials, re-checked every 30 days and notified when it changes. Compulsory subjects get their card before they appear in Moodle; electives only when you have the course.
+- Without a catalogue, `STUDY_START=2025/2026-winter` numbers the semesters from the course start dates.
+- `python -m moodle_sync plan` previews semesters, subjects and the Moodle course feeding each folder; `plan --search "name"` finds your field of study and its specialisations; `plan --cards` downloads the cards now. The setup wizard has an optional step for it.
+- courses.json: `plan` (which subject a course is) and `semester` (force a semester).
+- Telegram bot: `/plan` (semesters and subjects) and `/reorganize` (confirm the one-time move of downloaded files without logging in to the Raspberry Pi).
+- Switching the layout on moves already downloaded files locally and in the cloud, after a one-time `download --reorganize` (or `/reorganize` in the bot). If the catalogue is offline, the last saved plan is used; with no saved plan nothing is moved.
+
 ## 1.0.4 (2026-10)
 
 - **`/update` in the Telegram bot**: downloads the newest GitHub release, runs `pip install -r requirements.txt` only if it changed, imports the new code once (selftest) and only then swaps `moodle_sync/` and restarts the bot. `.env`, `courses.json`, `state.json`, Google tokens and `downloads/` are never touched. It waits if a sync is running, and no sync can start during the swap. If anything fails, the old version keeps running and the error is shown.
