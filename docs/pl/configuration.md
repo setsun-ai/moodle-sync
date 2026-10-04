@@ -122,6 +122,21 @@ cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
+### Stara strona, do której wchodzisz tylko przez przeglądarkę
+
+Gdy logowanie uczelniane wydaje tokeny tylko dla nowej strony, a stara nie ma logowania hasłem, `archive`
+kopiuje starą stronę jednorazowo przez sesję przeglądarki zamiast tokenu:
+
+```bash
+cd ~/moodle-sync && .venv/bin/python -m moodle_sync archive https://moodle.example.edu/stara --dest Studia/Licencjat
+```
+
+Program powie, gdzie znaleźć ciasteczko `MoodleSession` (F12 -> Aplikacja -> Pliki cookie), i poprosi o nie bez
+wyświetlania; ciasteczko nie jest nigdzie zapisywane. Pliki trafiają do `archive/` w folderze danych, w zwykłym
+układzie (kurs / kategoria / plik, twoje wysłane zadania w `Wyslane zadania/`), a potem są kopiowane do folderu
+w chmurze. `--list` tylko pokazuje znalezione kursy i aktywności. Gdy sesja wygaśnie w trakcie, zaloguj się
+jeszcze raz i uruchom to samo polecenie - zacznie od miejsca, w którym skończył.
+
 ### Chmura (rclone): zobacz [Chmura](storage.md)
 
 | Zmienna | Domyślnie | Znaczenie |

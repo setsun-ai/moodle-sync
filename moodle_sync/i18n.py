@@ -413,6 +413,18 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "en": "Fuse: a change in .env would move many files, so nothing was touched. If it's intended, "
                              "confirm with /reorganize in the bot. If not, look for a glued line in .env: "
                              "python -m moodle_sync doctor"},
+    "arch_cookie_help": {"pl": "Zaloguj się w przeglądarce na https://{host}{path}, potem F12 -> Aplikacja (Application) -> Pliki cookie -> https://{host}. Skopiuj wartość MoodleSession ze ścieżką (Path) {path}/ - jeśli jest kilka MoodleSession, weź to z tą ścieżką. Ciasteczko nie jest nigdzie zapisywane.",
+        "en": "Log in in your browser at https://{host}{path}, then F12 -> Application -> Cookies -> https://{host}. Copy the value of MoodleSession with the path {path}/ - if there are several, take the one with this path. The cookie is not saved anywhere."},
+    "arch_cookie_prompt": {"pl": "MoodleSession (niewidoczne przy wklejaniu): ",
+        "en": "MoodleSession (hidden while pasting): "},
+    "arch_session_expired": {"pl": "❌ Sesja nie działa albo wygasła - zaloguj się w przeglądarce jeszcze raz, skopiuj nowe ciasteczko i uruchom ponownie (pobrane pliki zostają, zacznie od miejsca, w którym skończył).",
+        "en": "❌ The session doesn't work or has expired - log in again in the browser, copy the new cookie and run again (downloaded files stay, it continues where it stopped)."},
+    "arch_courses": {"pl": "Kursy: {n}",
+        "en": "Courses: {n}"},
+    "arch_summary": {"pl": "Pobrano {ok} plików, błędów: {failed}. Folder: {dir}",
+        "en": "Downloaded {ok} files, errors: {failed}. Folder: {dir}"},
+    "arch_uploading": {"pl": "Kopiuję do chmury: {dest}",
+        "en": "Copying to the cloud: {dest}"},
     "files_submissions_failed": {"pl": "Wysłane zadania: nie udało się sprawdzić ({error}) - spróbuję za godzinę.",
                                  "en": "Submitted work: check failed ({error}) - trying again in an hour."},
     "files_new_courses_title": {"pl": "Nowe kursy w Moodle ({n})", "en": "New Moodle courses ({n})"},

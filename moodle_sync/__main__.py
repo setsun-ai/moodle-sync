@@ -87,6 +87,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--force", action="store_true", help="with --cards: re-check every card")
     p.add_argument("--dry-run", action="store_true")
     sub.add_parser("ics", help="print the calendar subscription URL")
+    p = sub.add_parser("archive", help="one-off copy of an old site you can only open in the browser")
+    p.add_argument("site", help="the site's address, e.g. https://moodle.example.edu/old")
+    p.add_argument("--dest", default="", help="cloud folder for the copy, e.g. Studies/Bachelor")
+    p.add_argument("--list", action="store_true", help="only list courses and activities")
     p = sub.add_parser("bot", help="run the Telegram bot")
     p.add_argument("--setup", action="store_true", help="connect the bot to your chat")
     sub.add_parser("notify-test", help="send a test notification")
@@ -142,6 +146,9 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "ics":
         from .calendar_sync import ics_url
         return ics_url()
+    if cmd == "archive":
+        from .webarchive import run
+        return run(args.site, dest=args.dest, list_only=args.list)
     if cmd == "bot":
         from . import telegram_bot
         return telegram_bot.setup() if args.setup else telegram_bot.run()

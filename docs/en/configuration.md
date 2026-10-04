@@ -122,6 +122,21 @@ cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
+### An old site you can only open in the browser
+
+When single sign-on gives out tokens for the new site only and the old one has no password login,
+`archive` copies the old site once using your browser session instead of a token:
+
+```bash
+cd ~/moodle-sync && .venv/bin/python -m moodle_sync archive https://moodle.example.edu/old --dest Studies/Bachelor
+```
+
+It tells you where to find the `MoodleSession` cookie (F12 -> Application -> Cookies) and asks for it without
+showing it; the cookie is never saved. Files land in `archive/` in the data folder, in the usual layout
+(course / category / file, your own submissions in `Submitted work/`), and are then copied to the cloud folder.
+`--list` only shows the courses and activities it found. When the session expires midway, log in again and run
+the same command - it continues where it stopped.
+
 ### Cloud (rclone): see [Storage](storage.md)
 
 | Variable | Default | Meaning |

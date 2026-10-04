@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.7.0 (2026-10)
+
+- `archive`: jednorazowa kopia starej strony Moodle, do której wchodzisz tylko przez przeglądarkę (logowanie uczelniane wydaje tokeny tylko dla nowej) - przez ciasteczko sesji przeglądarki, podawane niewidocznie i nigdzie niezapisywane. Kursy, sekcje, pliki zasobów, folderów, zadań (także twoje wysłane), stron i etykiet, w zwykłym układzie, potem kopiowane do folderu w chmurze; wznawia od miejsca, w którym skończył.
+
 ## 1.6.0 (2026-10)
 
 - Pliki wysłane przez ciebie do zadań też trafiają do archiwum, do `Wyslane zadania/<zadanie>/` w folderze przedmiotu (sprawdzane co godzinę, bez powiadomienia). `SUBMITTED_FILES=0` wyłącza.
