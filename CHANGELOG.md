@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.6.0 (2026-10)
+
+- Files you handed in to assignments are kept too, in `Submitted work/<assignment>/` of each subject (checked hourly, without a notification). `SUBMITTED_FILES=0` turns it off.
+
 ## 1.5.5 (2026-10)
 
 - A new Moodle course gets a notification with the folder its files go to; when the study plan has no match for it, the message says so and points to `/assign`.

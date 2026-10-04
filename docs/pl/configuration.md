@@ -35,6 +35,7 @@ Zmiany działają od następnego przebiegu. Bot Telegram czyta `.env` tylko przy
 |---|---|---|
 | `DOWNLOAD_DIR` | `downloads` | Względem projektu albo ścieżka bezwzględna, np. w folderze OneDrive. |
 | `MAX_FILE_MB` | `0` | Pomijaj pliki większe niż N MB (0 = bez limitu). Po podniesieniu limitu pominięte pliki pobiorą się same. |
+| `SUBMITTED_FILES` | `1` | Pobieraj też pliki wysłane przez ciebie do zadań, do `Wyslane zadania/<zadanie>/` w folderze przedmiotu (sprawdzane co godzinę, bez powiadomienia). `0` = wyłączone. |
 
 ### Semestry i karty przedmiotów
 

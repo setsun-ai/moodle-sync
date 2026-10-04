@@ -4,6 +4,7 @@ Step 1: find files in your courses and download the ones you don't have yet.
 Layout:  <DOWNLOAD_DIR>/[<Semester N>/]<Course>/<Category>/[<folder>/<subfolders>/]<file>
 Category is one of Lectures / Exercises / Labs / Projects / Other materials
 (Polish names with LANGUAGE=pl), guessed from section, module and file names.
+Files you handed in to assignments go to <Course>/Submitted work/<assignment>/.
 With a study plan (STUDY_PLAN_URL, see studyplan.py) courses go into semester
 folders and are named after the subject in the plan.
 
@@ -50,9 +51,9 @@ CATEGORY_RULES = [
 ]
 FOLDER_NAMES = {
     "pl": {"labs": "Laboratoria", "projects": "Projekty", "lectures": "Wyklady",
-           "exercises": "Cwiczenia", "other": "Inne materialy"},
+           "exercises": "Cwiczenia", "other": "Inne materialy", "submitted": "Wyslane zadania"},
     "en": {"labs": "Labs", "projects": "Projects", "lectures": "Lectures",
-           "exercises": "Exercises", "other": "Other materials"},
+           "exercises": "Exercises", "other": "Other materials", "submitted": "Submitted work"},
 }
 
 
@@ -119,6 +120,52 @@ def collect_files(courses: list) -> list:
     return list(files.values())
 
 
+SUBMISSIONS_INTERVAL = 3600  # one status call per assignment - hourly is plenty for your own uploads
+
+
+def submitted_files(courses: list, state: dict) -> list:
+    """
+    Files you handed in to assignments, as file records (category "submitted", a subfolder
+    per assignment). Checked hourly; in between - and when Moodle fails - the last list.
+    """
+    cache = state.setdefault("submissions", {})
+    if not config.env_bool("SUBMITTED_FILES", True) or not courses:
+        return []
+    if time.time() - cache.get("checked", 0) < SUBMISSIONS_INTERVAL:
+        return cache.get("files", [])
+    by_id = {c["id"]: c for c in courses}
+    try:
+        data = moodle.call("mod_assign_get_assignments", **{f"courseids[{i}]": c["id"] for i, c in enumerate(courses)})
+    except (moodle.MoodleError, requests.RequestException) as e:
+        print(t("files_submissions_failed", error=moodle.redact(str(e))))
+        return cache.get("files", [])
+    records = {}
+    for course in data.get("courses", []):
+        if course.get("id") not in by_id:
+            continue
+        for a in course.get("assignments", []):
+            try:
+                status = moodle.call("mod_assign_get_submission_status", assignid=a["id"])
+            except (moodle.MoodleError, requests.RequestException):
+                continue  # e.g. an assignment hidden from you
+            submission = (status.get("lastattempt") or {}).get("submission") or {}
+            contents = [c for p in submission.get("plugins", []) if p.get("type") == "file"
+                        for area in p.get("fileareas", []) for c in area.get("files", [])]
+            for content in contents:
+                filename = content.get("filename", "")
+                if not filename or filename == "." or Path(filename).suffix.lower() in EXCLUDED_EXTENSIONS:
+                    continue
+                f = {"id": "sub:" + stable_id(content), "course_id": course["id"],
+                     "course_name": by_id[course["id"]]["fullname"], "section_name": "",
+                     "module_id": a.get("cmid"), "modname": "assign", "module_name": a.get("name", ""),
+                     "filepath": content.get("filepath", "/"), "filename": filename,
+                     "fileurl": content.get("fileurl", ""), "filesize": content.get("filesize", 0),
+                     "timemodified": content.get("timemodified", 0), "category": "submitted"}
+                records.setdefault(f["id"], f)
+    cache.update(checked=int(time.time()), files=list(records.values()))
+    return cache["files"]
+
+
 # --- naming and categories -------------------------------------------------------------------
 
 def _override(cfg: dict, section: str, course_name: str):
@@ -148,6 +195,8 @@ def categorize(f: dict, cfg: dict | None = None) -> str:
     ("General", "New section") we look at the module name, then at the path
     and file name. Custom rules from courses.json go before the built-in ones.
     """
+    if f.get("category"):  # set by the source, e.g. your own submissions
+        return folder_name(f["category"])
     cfg = config.load_courses_config() if cfg is None else cfg
     rules = [(r["folder"], r["pattern"]) for r in cfg.get("category_rules", [])] + CATEGORY_RULES
     lang = config.moodle_content_language()
@@ -241,7 +290,7 @@ def relative_path(f: dict, cfg: dict | None = None) -> Path:
     ]
     # Files of a "folder" module go into a subfolder named after the module,
     # keeping its internal structure (filepath, e.g. "/Demos/").
-    if f["modname"] == "folder":
+    if f["modname"] == "folder" or f.get("category") == "submitted":
         parts.append(sanitize_component(f["module_name"], "Folder", lang))
         parts += [sanitize_component(p, lang=lang) for p in f["filepath"].split("/") if p]
     parts.append(sanitize_component(f["filename"], "file", lang))
@@ -423,6 +472,7 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
 
     state = state_mod.load()
     downloaded = state.setdefault("downloaded", {})
+    files += submitted_files(courses, state)
     try:
         apply_layout(files, courses, cfg, state)
     except RuntimeError as e:  # plan configured but unavailable: don't scatter files into the old layout
@@ -496,7 +546,7 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
 
         again = (downloaded.get(f["id"]) or {}).get("skipped") == "redownload"
         downloaded[f["id"]] = {"path": rel.as_posix(), "key": logical_key(f), "ts": int(time.time())}
-        if not again:  # a file fetched again after /cleanup isn't news
+        if not again and f.get("category") != "submitted":  # refetched after /cleanup, or your own: not news
             done.append(rel)
         state_mod.save(state)  # after every file: an interrupted run won't start over
 

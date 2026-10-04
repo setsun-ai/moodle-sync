@@ -189,6 +189,7 @@ def test_new_course_is_announced_once(monkeypatch):
 
     sent = []
     courses = [{"id": 1, "fullname": "Algorithms", "startdate": 0}]
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
     monkeypatch.setattr(moodle, "my_courses", lambda: courses)
     monkeypatch.setattr(files, "collect_files", lambda courses: [])
     monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False: sent.append((title, message)))
@@ -213,3 +214,39 @@ def test_new_course_outside_the_plan_asks_for_assign(monkeypatch):
     assert lines[0].endswith("→ Semester 1/Chemoinformatyka")
     assert "/assign" in lines[1] and "/assign" not in lines[0]
     assert st["known_courses"] == [7, 8]
+
+
+def test_submitted_files_land_in_their_own_folder(monkeypatch):
+    from moodle_sync import moodle
+
+    calls = []
+
+    def fake_call(fn, **kw):
+        calls.append(fn)
+        if fn == "mod_assign_get_assignments":
+            return {"courses": [{"id": 1, "assignments": [{"id": 9, "cmid": 90, "name": "Report 1"}]}]}
+        return {"lastattempt": {"submission": {"plugins": [{"type": "file", "fileareas": [{"files": [
+            {"filename": "report.pdf", "filepath": "/", "fileurl": "https://m.example/pluginfile.php/1/report.pdf",
+             "filesize": 3, "timemodified": 1}]}]}]}}}
+
+    monkeypatch.setattr(moodle, "call", fake_call)
+    courses = [{"id": 1, "fullname": "Algorithms"}]
+    st = {}
+    [f] = files.submitted_files(courses, st)
+    assert files.relative_path(f, {}).as_posix() == "Algorithms/Submitted work/Report 1/report.pdf"
+    assert files.submitted_files(courses, st) == [f] and calls.count("mod_assign_get_submission_status") == 1  # cached
+
+    sent = []
+    monkeypatch.setattr(moodle, "my_courses", lambda: courses)
+    monkeypatch.setattr(files, "collect_files", lambda courses: [])
+    monkeypatch.setattr(files, "download_file", lambda f, dest: (dest.parent.mkdir(parents=True, exist_ok=True),
+                                                                 dest.write_bytes(b"pdf")))
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False: sent.append(title))
+    assert files.run() == 0
+    assert state.load()["downloaded"][f["id"]]["path"] == "Algorithms/Submitted work/Report 1/report.pdf"
+    assert sent == []  # your own files are not news
+
+
+def test_submitted_files_can_be_turned_off(monkeypatch):
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
+    assert files.submitted_files([{"id": 1, "fullname": "A"}], {}) == []

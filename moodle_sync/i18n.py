@@ -413,6 +413,8 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "en": "Fuse: a change in .env would move many files, so nothing was touched. If it's intended, "
                              "confirm with /reorganize in the bot. If not, look for a glued line in .env: "
                              "python -m moodle_sync doctor"},
+    "files_submissions_failed": {"pl": "Wysłane zadania: nie udało się sprawdzić ({error}) - spróbuję za godzinę.",
+                                 "en": "Submitted work: check failed ({error}) - trying again in an hour."},
     "files_new_courses_title": {"pl": "Nowe kursy w Moodle ({n})", "en": "New Moodle courses ({n})"},
     "files_new_course_unmatched": {"pl": "❓ nie pasuje do planu studiów – przypisz go w /przypisz",
                                    "en": "❓ not in the study plan – assign it with /assign"},

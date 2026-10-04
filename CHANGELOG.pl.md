@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.6.0 (2026-10)
+
+- Pliki wysłane przez ciebie do zadań też trafiają do archiwum, do `Wyslane zadania/<zadanie>/` w folderze przedmiotu (sprawdzane co godzinę, bez powiadomienia). `SUBMITTED_FILES=0` wyłącza.
+
 ## 1.5.5 (2026-10)
 
 - Nowy kurs w Moodle daje powiadomienie z folderem, do którego trafią jego pliki; gdy plan studiów nie ma do niego pasującego przedmiotu, wiadomość to mówi i odsyła do `/przypisz`.

@@ -35,6 +35,7 @@ Changes take effect on the next run. The Telegram bot reads `.env` only at start
 |---|---|---|
 | `DOWNLOAD_DIR` | `downloads` | Relative to the project or absolute, e.g. inside your OneDrive folder. |
 | `MAX_FILE_MB` | `0` | Skip files bigger than N MB (0 = no limit). Skipped files are fetched automatically once you raise the limit. |
+| `SUBMITTED_FILES` | `1` | Also keep the files you handed in to assignments, in `Submitted work/<assignment>/` of each subject (checked hourly, no notification). `0` = off. |
 
 ### Semesters and subject cards
 
