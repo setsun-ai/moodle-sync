@@ -64,6 +64,7 @@ Semestr 2/...
 - **Włączenie przenosi już pobrane pliki.** Dla bezpieczeństwa pierwsze uruchomienie zatrzyma się i poprosi
   o jednorazowe potwierdzenie: `python -m moodle_sync download --reorganize`. Kopia w chmurze też się przeniesie.
 - Gdy katalog nie działa, używany jest plan zapisany przy ostatnim udanym sprawdzeniu.
+- **Własne nazwy, karty, kilka semestrów:** w `/przypisz` kurs może dostać własną nazwę folderu (✏️) i drugi semestr (➕ - jeden kurs Moodle dla „Projekt I” i „Projekt II”, pliki dzielone według dat); `/karta` dodaje Twój link do karty przedmiotu, którego nie ma w katalogu (np. z innej uczelni).
 - **Nazwy folderów pochodzą z planu** (czytelnie zapisane, gdy katalog używa wielkich liter), a kursy z Moodle trafiają do nich. Gdy automatyczne dopasowanie jest błędne albo go brak, `/przypisz` w bocie przypisze kurs do dowolnego przedmiotu – albo do całego modułu obieralnego, np. dla kursu z innej uczelni.
 - **Moduły obieralne:** zaznacz swój wybór komendą `/obieralne` w bocie Telegram. Opcje są ponumerowane i mają link do karty przedmiotu, bo kilka może mieć tę samą nazwę; „inna uczelnia” obejmuje obieralne spoza katalogu. Obieralny, do którego masz kurs w Moodle, liczy się jako wybrany; bot przypomina o modułach bez wyboru.
 - Przedmioty bez opublikowanej karty w katalogu są wypisane w `plan` i zgłoszone raz w powiadomieniu.
@@ -109,6 +110,14 @@ echo '{"only": ["fragment nazwy kursu"]}' > ~/moodle-sync-2/courses.json
 sudo sed "s#^Environment=\(.*\)#Environment=\1 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2#" /etc/systemd/system/moodle-sync.service | sudo tee /etc/systemd/system/moodle-sync-2.service
 sudo cp /etc/systemd/system/moodle-sync.timer /etc/systemd/system/moodle-sync-2.timer
 sudo systemctl daemon-reload && sudo systemctl enable --now moodle-sync-2.timer
+```
+
+Kalendarz Google dla drugiego Moodle: skopiuj pliki Google z pierwszej kopii i nadaj stronie własną etykietę -
+powstaną kalendarze „UG – terminy” i „UG – zajęcia”, obok kalendarzy pierwszej uczelni:
+
+```bash
+cp ~/moodle-sync/client_secret.json ~/moodle-sync/google_token.json ~/moodle-sync-2/
+MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
 ### Chmura (rclone): zobacz [Chmura](storage.md)

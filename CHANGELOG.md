@@ -2,6 +2,16 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.5.0 (2026-10)
+
+- **Fixed: duplicated folders in Google Drive.** Moves ran three at a time, and Google Drive allows several folders with the same name - three moves into a new folder created it three times ("English" x3). Target folders are now created one by one before moving. `/cleanup` also finds duplicated folders and merges them (`rclone dedupe`).
+- **Errors you can read:** rclone's own messages now reach the log and the error notification (they used to show only the commands), the notification leads with the error lines, and `/errors` (`/bledy`) shows the last sync step by step with the full output of failed steps.
+- **No false alarm after deliberate changes:** an update, `/assign`, `/electives` or `courses.json` moving many files is done right away with a "files moved" notification; the fuse (and its message, now pointing to `/reorganize`) is kept for unexplained mass moves such as a broken `.env`.
+- **`/assign`:** each course shows when it started and how many files it has (two "English" courses are told apart), ✏️ renames its folder, ➕ adds another semester - one Moodle course for two subjects, files split by their dates.
+- **`/card` (`/karta`):** your own link (PDF or page) to the card of a subject the catalogue has none for, e.g. a course from another university.
+- **Calendar:** online classes get their join link (Teams, Zoom, Meet, Webex, BigBlueButton…) as the event's location and at the top of its description.
+- Readable names keep proper nouns ("Język Python"); the setup wizard says plainly which login method to pick and what to type for the cloud remote and folder; docs: Google Calendar for a second Moodle site.
+
 ## 1.4.0 (2026-10)
 
 - **Folders are named after the study plan**, always: a subject in capitals becomes readable ("Laboratorium dyplomowe I", "Modelowanie QSAR, QSPR"), and the Moodle courses go into those folders - no more one folder per Moodle spelling. Switching moves files once (`/reorganize`).

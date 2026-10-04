@@ -97,7 +97,7 @@ class Tee(io.TextIOBase):
 
     def __init__(self, target):
         self.target = target
-        self.tail = deque(maxlen=15)
+        self.tail = deque(maxlen=60)
         self._partial = ""
 
     def write(self, s):
@@ -136,7 +136,10 @@ def alert(state: dict, step: str, output: str) -> None:
     if previous and previous["sig"] == signature and time.time() - previous["ts"] < ALERT_REPEAT_HOURS * 3600:
         return
     alerts[step] = {"sig": signature, "ts": time.time()}
-    last_lines = "\n".join(output.splitlines()[-6:])
+    # rclone / Moodle error lines first: the last lines alone are often just commands
+    lines = output.splitlines()
+    errors = [line for line in lines if "ERROR" in line or "BŁĄD" in line or "Traceback" in line][-4:]
+    last_lines = "\n".join(errors + [line for line in lines[-4:] if line not in errors])
     message = f"{t(hint_key)}\n\n{last_lines}" if hint_key else last_lines
     notify("errors", t("notify_error_title", step=step), message, urgent=True)
 
@@ -225,6 +228,9 @@ def _run() -> int:
                 steps.append([name, t("result_error", code=code), code])
                 alert(state, name, output)
         state["last_run"] = {"start": started, "end": time.time(), "steps": steps}
+        # the last 40 lines of each failed step - the bot's /errors shows them
+        state["last_errors"] = {name: "\n".join(output.splitlines()[-40:])
+                                for name, code, output in results if code not in (0, 2)}
         try:
             weekly_summary(state)
         except Exception as e:

@@ -154,3 +154,27 @@ class TestCalendarRecovery:
         assert any(c[0] == "POST" and "/calendars/new3/events" in c[1] for c in google.calls)
         assert len(sent) == 1                                # a refill is not a "new deadline"
         assert state_mod.load()["calendar"]["calendars"]["deadlines"] == "new3"
+
+
+
+class TestMeetingLinks:
+    def test_link_from_description_goes_to_location(self):
+        e = {"id": 1, "name": "Lecture 5", "eventtype": "attendance", "courseid": 0, "timestart": 1_700_000_000,
+             "timeduration": 5400,
+             "description": '<p>Online: <a href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_X">join</a></p>'}
+        _, body = calendar_sync.build_event(e, {}, cfg={})
+        assert body["location"] == "https://teams.microsoft.com/l/meetup-join/19%3ameeting_X"
+        assert "https://teams.microsoft.com/l/meetup-join/19%3ameeting_X" in body["description"]
+
+    def test_meeting_activity_links_to_its_page(self):
+        e = {"id": 2, "name": "Seminar", "eventtype": "meeting_start", "courseid": 0, "timestart": 1_700_000_000,
+             "modulename": "bigbluebuttonbn", "instance": 44, "description": ""}
+        urls = {"bigbluebuttonbn:44": "https://m.example/mod/bigbluebuttonbn/view.php?id=9"}
+        _, body = calendar_sync.build_event(e, {}, cfg={}, module_urls=urls)
+        assert body["location"] == "https://m.example/mod/bigbluebuttonbn/view.php?id=9"
+
+    def test_no_link_no_location(self):
+        e = {"id": 3, "name": "Essay", "eventtype": "due", "courseid": 0, "timestart": 1_700_000_000,
+             "description": "<p>Upload a PDF</p>"}
+        _, body = calendar_sync.build_event(e, {}, cfg={})
+        assert "location" not in body

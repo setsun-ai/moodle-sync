@@ -50,7 +50,9 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/forum` | start a discussion in a course forum (`MOODLE_ACTIONS=1`) |
 | `/attendance` `/obecnosc`, or send a link / QR photo | mark attendance (`MOODLE_ACTIONS=1`) |
 | `/electives` `/obieralne` | pick your elective subjects (study plan) |
-| `/assign` `/przypisz` | put a Moodle course under a subject or module of the plan |
+| `/assign` `/przypisz` | put a Moodle course under a subject or module of the plan, rename its folder, add a semester |
+| `/card` `/karta` | your own link to the card of a subject outside the catalogue |
+| `/errors` `/bledy` | the last sync step by step, with the full output of failed steps |
 | `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
 | `/sync` | run a sync now |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |

@@ -122,6 +122,42 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "cal_join": {"pl": "Dołącz do zajęć online",
+        "en": "Join the online class"},
+    "ui_map_facts": {"pl": "od {start}, plików: {n}",
+        "en": "since {start}, files: {n}"},
+    "ui_map_add": {"pl": "➕ Też inny semestr",
+        "en": "➕ Another semester too"},
+    "ui_map_rename": {"pl": "✏️ Nazwa folderu",
+        "en": "✏️ Folder name"},
+    "ui_map_pick_sem_add": {"pl": "📂 <b>{course}</b> – w którym semestrze jeszcze? Pliki rozdzielę według dat.",
+        "en": "📂 <b>{course}</b> – which other semester? Files are split by their dates."},
+    "ui_map_rename_first": {"pl": "Najpierw przypisz kurs do przedmiotu.",
+        "en": "Assign the course to a subject first."},
+    "ui_map_rename_prompt": {"pl": "✏️ Obecna nazwa folderu: <b>{current}</b>\nNapisz nową (kropka = z powrotem nazwa z planu).",
+        "en": "✏️ Current folder name: <b>{current}</b>\nType a new one (a dot = back to the plan's name)."},
+    "ui_card_none": {"pl": "Wszystko, co bierzesz, ma kartę w katalogu.",
+        "en": "Everything you take has a card in the catalogue."},
+    "ui_card_pick": {"pl": "📄 Przedmioty bez karty w katalogu – do którego dodać link? (🔗 = już masz swój link)",
+        "en": "📄 Subjects without a card in the catalogue - which one gets a link? (🔗 = has your link)"},
+    "ui_card_prompt": {"pl": "Wyślij link do karty przedmiotu (PDF albo strona). Minus „-” usuwa Twój link.",
+        "en": "Send the link to the subject card (PDF or a web page). A minus \"-\" removes your link."},
+    "ui_card_bad": {"pl": "To nie wygląda na link do PDF-a ani strony.",
+        "en": "That doesn't look like a link to a PDF or a page."},
+    "ui_card_removed": {"pl": "Usunięto link.",
+        "en": "Link removed."},
+    "ui_card_saved": {"pl": "✅ Pobrałem kartę ({kind}, {size}) – trafi do folderu przedmiotu przy najbliższej synchronizacji.",
+        "en": "✅ Got the card ({kind}, {size}) - it lands in the subject's folder on the next sync."},
+    "ui_err_title": {"pl": "🩺 <b>Ostatnia synchronizacja</b> ({when})",
+        "en": "🩺 <b>Last sync</b> ({when})"},
+    "ui_err_none": {"pl": "Bez błędów. 👍",
+        "en": "No errors. 👍"},
+    "bot_cmd_card": {"pl": "Dodaj link do karty przedmiotu spoza katalogu",
+        "en": "Add a card link for a subject outside the catalogue"},
+    "bot_cmd_errors": {"pl": "Szczegóły ostatnich błędów",
+        "en": "Details of the last errors"},
+    "ui_cu_duplicates": {"pl": "📁 Zdublowane foldery/pliki w chmurze: {n} – zostaną scalone",
+        "en": "📁 Duplicated folders/files in the cloud: {n} - they'll be merged"},
     "ui_el_external": {"pl": "🌐 Spoza katalogu (inna uczelnia)",
         "en": "🌐 Not in the catalogue (another university)"},
     "ui_map_title": {"pl": "📂 Kursy z Moodle i ich foldery (✓ automatycznie, ✋ Twój wybór, ❓ brak przedmiotu). Dotknij kursu, żeby zmienić:",
@@ -363,10 +399,18 @@ MESSAGES: dict[str, dict[str, str]] = {
                                 "(and check the Google Cloud app is 'In production')."},
     "hint_rclone_token": {"pl": "rclone nie może odświeżyć logowania do chmury: rclone config reconnect <remote>:",
                           "en": "rclone can't refresh the cloud login: rclone config reconnect <remote>:"},
-    "hint_mass_move": {"pl": "Nic nie zostało przeniesione. Najczęstsza przyczyna: literówka albo sklejona linia w .env "
-                             "- sprawdź: python -m moodle_sync doctor",
-                       "en": "Nothing was moved. The most common cause: a typo or a glued line in .env "
-                             "- check: python -m moodle_sync doctor"},
+    "hint_mass_move": {"pl": "Bezpiecznik: zmiana ustawień w .env przeniosłaby wiele plików, więc niczego nie ruszyłem. "
+                             "Jeśli to zamierzone, zatwierdź /reorganize w bocie. Jeśli nie - sprawdź, czy w .env nie ma "
+                             "sklejonej linii: python -m moodle_sync doctor",
+                       "en": "Fuse: a change in .env would move many files, so nothing was touched. If it's intended, "
+                             "confirm with /reorganize in the bot. If not, look for a glued line in .env: "
+                             "python -m moodle_sync doctor"},
+    "files_relocated_title": {"pl": "Przeniesiono pliki do nowych folderów ({n})",
+                              "en": "Files moved into the new folders ({n})"},
+    "files_relocated_body": {"pl": "Po zmianie planu, przypisań albo aktualizacji. Dysk dogoni przy tej synchronizacji.",
+                             "en": "After a change of the plan, assignments or an update. The cloud follows in this sync."},
+    "cleanup_duplicates": {"pl": "W chmurze: zdublowane foldery/pliki o tej samej nazwie: {n} (zostaną scalone)",
+                           "en": "Cloud: duplicated folders/files with the same name: {n} (they'll be merged)"},
     "hint_network": {"pl": "Brak sieci / DNS - sprawdź połączenie z internetem.",
                      "en": "No network / DNS - check the internet connection."},
     "weekly_title": {"pl": "Działam — podsumowanie tygodnia", "en": "Still running — weekly summary"},
@@ -380,13 +424,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
                        "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
                        "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
-                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/karta — link do karty przedmiotu spoza katalogu\n/bledy — szczegóły ostatnich błędów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
                        "/grades — latest grades\n/courses — browse courses and materials\n/today — what's new today (/today 1, /today 12.10)\n"
                        "/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
-                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/assign — assign Moodle courses to subjects\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
+                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/assign — assign Moodle courses to subjects\n/card — a card link for a subject outside the catalogue\n/errors — details of the last errors\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
                        "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},
@@ -521,10 +565,17 @@ MESSAGES: dict[str, dict[str, str]] = {
     "wiz_token_header": {"pl": "2/6  Dostęp do Twojego konta (token)", "en": "2/6  Access to your account (token)"},
     "wiz_token_keep": {"pl": "Obecny token działa ({name}). Zostawić go?", "en": "The current token works ({name}). Keep it?"},
     "wiz_token_existing_invalid": {"pl": "Obecny token nie działa - zdobądźmy nowy.", "en": "The current token doesn't work - let's get a new one."},
-    "wiz_login_sso": {"pl": "Twoja uczelnia loguje przez przeglądarkę (SSO) - polecana metoda: przeglądarka.",
-                      "en": "Your school logs in via the browser (SSO) - recommended method: browser."},
-    "wiz_login_password": {"pl": "Twoja uczelnia używa zwykłego logowania - polecana metoda: login i hasło.",
-                           "en": "Your school uses a normal login form - recommended method: username and password."},
+    "wiz_login_sso": {"pl": "Ten Moodle loguje przez przeglądarkę (SSO: konto uczelniane / Microsoft / Google).\n"
+                            "Wybierz „przeglądarka” - login i hasło Moodle tu nie zadziałają.",
+                      "en": "This Moodle logs in through the browser (SSO: university / Microsoft / Google account).\n"
+                            "Pick \"browser\" - a Moodle username and password won't work here."},
+    "wiz_login_password": {"pl": "Ten Moodle loguje zwykłym formularzem (login i hasło Moodle).\n"
+                                 "Wybierz „login i hasło” - logowanie przez przeglądarkę pokaże tu błąd "
+                                 "„Wtyczka nie jest włączona lub skonfigurowana”.",
+                           "en": "This Moodle uses a normal login form (Moodle username and password).\n"
+                                 "Pick \"username and password\" - the browser method would show "
+                                 "\"The plugin is not enabled or configured\" here."},
+    "wiz_recommended": {"pl": "polecane dla tego Moodle", "en": "recommended for this Moodle"},
     "wiz_method_prompt": {"pl": "Jak zdobyć token?", "en": "How to get the token?"},
     "wiz_method_sso": {"pl": "Przez przeglądarkę (SSO, np. logowanie uczelniane / Microsoft / Google)",
                        "en": "Via the browser (SSO, e.g. university / Microsoft / Google login)"},
@@ -614,8 +665,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     "wiz_storage_no_remotes": {"pl": "rclone nie ma żadnego remote'a - uruchom 'rclone config' (docs/pl/storage.md), potem ponownie kreator.",
                                "en": "rclone has no remotes - run 'rclone config' (docs/en/storage.md), then the wizard again."},
     "wiz_storage_remotes": {"pl": "Remote'y rclone: {remotes}", "en": "rclone remotes: {remotes}"},
-    "wiz_storage_remote": {"pl": "Którego użyć (puste = bez chmury)", "en": "Which one to use (empty = no cloud)"},
-    "wiz_storage_dest": {"pl": "Folder docelowy w chmurze", "en": "Target folder in the cloud"},
+    "wiz_storage_remote": {"pl": "Nazwa remote'u - to, co na liście wyżej stoi przed dwukropkiem, np. gdrive "
+                                 "(puste = bez chmury)",
+                           "en": "Remote name - what stands before the colon in the list above, e.g. gdrive "
+                                 "(empty = no cloud)"},
+    "wiz_storage_dest": {"pl": "Folder w chmurze na materiały, np. Studia/Moodle (powstanie sam; niczego w nim nie usuwam)",
+                         "en": "Folder in the cloud for the materials, e.g. Studies/Moodle (created if needed; "
+                               "nothing in it is deleted)"},
     "wiz_calendar_header": {"pl": "6/6  Kalendarz Google (opcjonalne)", "en": "6/6  Google Calendar (optional)"},
     "wiz_calendar_ok": {"pl": "Kalendarz Google już skonfigurowany.", "en": "Google Calendar already configured."},
     "wiz_calendar_help": {"pl": "Wymaga jednorazowej konfiguracji w Google Cloud (~10 min): docs/pl/google-calendar.md\n"

@@ -2,6 +2,16 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.5.0 (2026-10)
+
+- **Naprawione: zdublowane foldery na Dysku Google.** Przenosiny szły po trzy naraz, a Dysk Google pozwala na kilka folderów o tej samej nazwie - trzy przenosiny do nowego folderu tworzyły go trzy razy („Język angielski” x3). Teraz foldery docelowe powstają po kolei, przed przenosinami. `/porzadki` znajduje też zdublowane foldery i je scala (`rclone dedupe`).
+- **Czytelne błędy:** komunikaty rclone trafiają teraz do logu i do powiadomienia (wcześniej były tam tylko komendy), powiadomienie zaczyna się od linii z błędem, a `/bledy` (`/errors`) pokazuje ostatnią synchronizację krok po kroku z pełnym wynikiem kroków z błędem.
+- **Bez fałszywego alarmu po świadomych zmianach:** aktualizacja, `/przypisz`, `/obieralne` albo `courses.json` przenoszące wiele plików wykonują się od razu z powiadomieniem „przeniesiono pliki”; bezpiecznik (z komunikatem wskazującym `/reorganize`) zostaje dla niewyjaśnionych przenosin, np. po zepsutym `.env`.
+- **`/przypisz`:** przy każdym kursie data rozpoczęcia i liczba plików (dwa „Język angielski” da się rozróżnić), ✏️ zmienia nazwę folderu, ➕ dodaje kolejny semestr - jeden kurs Moodle dla dwóch przedmiotów, pliki dzielone według dat.
+- **`/karta` (`/card`):** Twój link (PDF albo strona) do karty przedmiotu, którego nie ma w katalogu, np. kursu z innej uczelni.
+- **Kalendarz:** zajęcia online dostają link do spotkania (Teams, Zoom, Meet, Webex, BigBlueButton…) w polu lokalizacji i na początku opisu.
+- Czytelne nazwy zachowują nazwy własne („Język Python”); kreator jasno mówi, którą metodę logowania wybrać i co wpisać jako remote i folder w chmurze; dokumentacja: kalendarz Google dla drugiego Moodle.
+
 ## 1.4.0 (2026-10)
 
 - **Foldery zawsze nazywają się jak w planie studiów:** przedmiot zapisany wielkimi literami dostaje czytelną nazwę („Laboratorium dyplomowe I”, „Modelowanie QSAR, QSPR”), a kursy z Moodle trafiają do tych folderów – koniec z osobnym folderem dla każdej pisowni z Moodle. Zmiana raz przenosi pliki (`/reorganize`).

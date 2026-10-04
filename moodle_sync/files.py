@@ -97,6 +97,10 @@ def iter_course_files(course_contents: list, course: dict):
                 }
 
 
+# "modname:instance" -> the activity's page; the calendar step uses it for "join" links
+MODULE_URLS: dict = {}
+
+
 def collect_files(courses: list) -> list:
     """All tracked files from all courses, without duplicates (by id)."""
     files = {}
@@ -106,6 +110,10 @@ def collect_files(courses: list) -> list:
         except moodle.MoodleError as e:
             print(t("course_skipped", course=course["fullname"], error=e))
             continue
+        for section in contents:
+            for module in section.get("modules", []):
+                if module.get("url") and module.get("instance"):
+                    MODULE_URLS[f"{module.get('modname')}:{module['instance']}"] = module["url"]
         for f in iter_course_files(contents, course):
             files.setdefault(f["id"], f)
     return list(files.values())
@@ -167,8 +175,30 @@ def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
         return
     plan = studyplan.load_plan(state)
     layout = studyplan.course_layout(courses, cfg, plan, state)
+    splits = studyplan.course_splits(courses, plan, state)
     for f in files:
-        f["semester_folder"], f["plan_subject"] = layout.get(f["course_id"], (None, None))
+        if f["course_id"] in splits:  # one course for several semesters: by the file's date
+            _, f["semester_folder"], f["plan_subject"] = studyplan.pick_by_date(
+                splits[f["course_id"]], f.get("timemodified") or 0, plan)
+        else:
+            f["semester_folder"], f["plan_subject"] = layout.get(f["course_id"], (None, None))
+
+
+# Bump when the code changes where files go, so the next run moves them without the fuse.
+LAYOUT_VERSION = 5
+
+
+def layout_signature(cfg: dict, state: dict) -> str:
+    """
+    What you decide about the layout on purpose: courses.json, your assignments,
+    electives and folder names in the bot, and this code's layout version. A change of
+    THESE explains a mass move; a change of .env (e.g. LANGUAGE lost in a glued line)
+    does not - that's what the fuse is for.
+    """
+    import hashlib
+
+    picked = {k: state.get(k) for k in ("course_map", "electives", "folder_names")}
+    return hashlib.sha1(json.dumps([LAYOUT_VERSION, cfg, picked], sort_keys=True, default=str).encode()).hexdigest()
 
 
 def relative_path(f: dict, cfg: dict | None = None) -> Path:
@@ -372,7 +402,10 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
 
     plan = plan_paths(files, downloaded, cfg)
     moves = planned_moves(files, plan, downloaded)
-    if is_mass_move(len(moves), downloaded) and not reorganize:
+    signature = layout_signature(cfg, state)
+    # a deliberate change (an update, /assign, /electives, courses.json) moves files without the fuse
+    intended = state.get("layout_sig") != signature
+    if is_mass_move(len(moves), downloaded) and not reorganize and not intended:
         print(t("files_mass_move", n=len(moves)))
         for old, new in list(moves.items())[:5]:
             print(f"    {old}\n -> {new}")
@@ -381,6 +414,12 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
             return 0
         return 1  # nothing downloaded either - new files would land in the new layout
     relocate(moves, downloaded, state, dry_run)
+    if not dry_run:
+        if moves and intended:
+            notify("files", t("files_relocated_title", n=len(moves)), t("files_relocated_body"))
+        state["layout_sig"] = signature
+        state["module_urls"] = MODULE_URLS
+        state_mod.save(state)
 
     pending = sorted((f for f in files if is_pending(f, downloaded)), key=lambda f: plan[f["id"]].as_posix())
 

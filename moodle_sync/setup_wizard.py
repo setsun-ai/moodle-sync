@@ -123,8 +123,9 @@ def step_token(url: str, public: dict) -> dict:
 
     sso = public.get("typeoflogin", 1) != 1
     print(t("wiz_login_sso") if sso else t("wiz_login_password"))
-    methods = [("sso", t("wiz_method_sso")), ("password", t("wiz_method_password")),
-               ("paste", t("wiz_method_paste"))]
+    recommended = "sso" if sso else "password"
+    methods = [(key, t(f"wiz_method_{key}") + (" ← " + t("wiz_recommended") if key == recommended else ""))
+               for key in ("sso", "password", "paste")]
     while True:
         method = choose(t("wiz_method_prompt"), methods, "sso" if sso else "password")
         if method == "sso":

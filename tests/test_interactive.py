@@ -379,13 +379,114 @@ def test_assign_a_course_in_the_bot(bot, monkeypatch):
     monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
     monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 10, "fullname": "English B2 group 4", "startdate": 0}])
     interactive.handle_command("przypisz", [], "1")
-    assert "❓ English B2 group 4 → —" in str(bot["sent"][-1][1])
+    text = bot["sent"][-1][0]
+    assert "❓ <b>English B2 group 4</b>" in text and "→ —" in text
     click("mc:10")
     click("ms:10:1")
     labels = [r[0][0] for r in bot["edits"][-1][1]]
     assert labels[0] == "Jezyk angielski I"
     click("mk:10:0")
     assert state_mod.load()["course_map"] == {"10": "1|JEZYK ANGIELSKI I|9"}
-    assert "✋ English B2 group 4 → Jezyk angielski I" in str(bot["edits"][-1][1])
+    assert "✋ <b>English B2 group 4</b>" in bot["edits"][-1][0]
+    assert "Semester 1/Jezyk angielski I" in bot["edits"][-1][0]
     click("mr:10")
     assert state_mod.load()["course_map"] == {}
+
+
+
+PLAN_2SEM = ('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+             '<div class="data-table__row"><div class="cell"><span class="cell__inner">PROJECT I</span></div>'
+             '<a href="/pl/subjects/11/card.pdf">x</a></div>'
+             '<div><h3><strong>Semestr: 2</strong>&nbsp;(2026/2027 - zimowy)</h3></div>'
+             '<div class="data-table__row"><div class="cell"><span class="cell__inner">PROJECT II</span></div>'
+             '<a href="/pl/subjects/12/card.pdf">x</a></div>'
+             '<div class="data-table__row"><div class="cell"><span class="cell__inner">SEMINAR</span></div></div>')
+
+
+def test_one_course_for_two_semesters_and_folder_names(bot, monkeypatch):
+    from moodle_sync import state as state_mod, studyplan
+
+    plan = studyplan.parse_plan(PLAN_2SEM)
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 7, "fullname": "Team project", "startdate": 0}])
+    interactive.handle_command("przypisz", [], "1")
+    click("mc:7")
+    click("ms:7:1")
+    click("mk:7:0")
+    click("ma:7")
+    click("mas:7:2")
+    click("mka:7:0")
+    assert state_mod.load()["course_map"] == {"7": ["1|PROJECT I|11", "2|PROJECT II|12"]}
+    assert "Semester 1/Project I + Semester 2/Project II" in bot["edits"][-1][0]
+
+    from datetime import datetime
+    splits = studyplan.course_splits(moodle.my_courses(), plan, state_mod.load())
+    old = datetime(2026, 4, 1).timestamp()
+    new = datetime(2026, 11, 5).timestamp()
+    assert studyplan.pick_by_date(splits[7], old, plan)[1:] == ("Semester 1", "Project I")
+    assert studyplan.pick_by_date(splits[7], new, plan)[1:] == ("Semester 2", "Project II")
+
+    click("mc:7")
+    click("mf:7")
+    interactive.on_text({"text": "ZPB – nasz projekt", "message_id": 4}, "1")
+    assert state_mod.load()["folder_names"] == {"1|PROJECT I|11": "ZPB – nasz projekt"}
+    assert studyplan.course_layout(moodle.my_courses(), {}, plan, state_mod.load())[7][1] == "ZPB – nasz projekt"
+
+
+def test_own_card_link(bot, monkeypatch):
+    from moodle_sync import state as state_mod, studyplan
+
+    plan = studyplan.parse_plan(PLAN_2SEM)
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+
+    class Resp:
+        content, headers = b"%PDF-1.4 card", {"Content-Type": "application/pdf"}
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(interactive.requests, "get", lambda url, **kw: Resp())
+    interactive.handle_command("karta", [], "1")
+    assert "Semester 2: Seminar" in str(bot["sent"][-1][1])
+    click("ck:0")
+    interactive.on_text({"text": "https://uni.example/syllabus.pdf", "message_id": 5}, "1")
+    st = state_mod.load()
+    assert st["custom_cards"] == {"2|SEMINAR|": {"url": "https://uni.example/syllabus.pdf", "ext": ".pdf"}}
+    missing = []
+    cards = studyplan.planned_cards([], plan, {}, set(), missing, st)
+    assert cards["custom:2|SEMINAR|"][0].as_posix() == "Semester 2/Seminar/Subject card.pdf"
+    assert missing == []
+    assert studyplan.card_url("custom:2|SEMINAR|", st) == "https://uni.example/syllabus.pdf"
+
+
+def test_errors_command_shows_the_full_output(bot):
+    from moodle_sync import state as state_mod
+
+    state_mod.save({"last_run": {"end": 1_700_000_000, "steps": [["Upload to cloud", "ERROR (code 1)", 1]]},
+                    "last_errors": {"Upload to cloud": "$ rclone moveto a b\n  ERROR : a: directory not found"}})
+    interactive.handle_command("bledy", [], "1")
+    text = bot["sent"][-1][0]
+    assert "❌ Upload to cloud" in text and "directory not found" in text
+
+
+def test_folders_are_created_before_parallel_moves(monkeypatch):
+    from moodle_sync import state as state_mod, storage
+
+    calls = []
+    monkeypatch.setattr(storage, "remote_files", lambda: {"Old/a.pdf", "Old/b.pdf", "Old/c.pdf"})
+    monkeypatch.setattr(storage, "rclone", lambda *args, quiet=False: calls.append(args) or 0)
+    state_mod.save({"remote_moves": [{"from": f"Old/{n}.pdf", "to": f"Sem 2/New/{n}.pdf"} for n in "abc"]})
+    storage.apply_remote_moves(dry_run=False)
+    mkdirs = [c for c in calls if c[0] == "mkdir"]
+    first_move = next(i for i, c in enumerate(calls) if c[0] == "moveto")
+    assert len(mkdirs) == 1 and calls.index(mkdirs[0]) < first_move  # one folder, created once, before moving
+
+
+def test_duplicate_folders_are_found():
+    from moodle_sync import storage
+
+    items = [{"Path": "Sem 1/English", "IsDir": True}, {"Path": "Sem 1/English", "IsDir": True},
+             {"Path": "Sem 1/English/a.pdf", "Size": 1}, {"Path": "Sem 1/Bio", "IsDir": True}]
+    assert storage.duplicate_paths(items) == ["Sem 1/English"]

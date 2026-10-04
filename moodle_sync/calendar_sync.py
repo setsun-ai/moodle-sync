@@ -25,7 +25,9 @@ Other calendars (Outlook, Apple): use the subscription URL printed by
 """
 
 import hashlib
+import html
 import json
+import re
 import time
 from datetime import datetime, timezone
 
@@ -51,6 +53,23 @@ TYPE_ICONS = {"due": "⏰", "close": "⏰", "open": "▶"}
 # "To do" events: we can tell whether you've already dealt with them.
 DONE_CHECK_TYPES = {"due", "close"}
 DONE_CHECK_MODULES = {"assign", "quiz"}
+
+
+# Online classes: links to these are put into the event's location (clickable in Google Calendar).
+MEETING_LINK = re.compile(r"https?://[^\s\"'<>]*(?:teams\.microsoft\.com|teams\.live\.com|zoom\.us|meet\.google\.com|"
+                          r"webex\.com|meet\.jit\.si|clickmeeting|whereby\.com|bigbluebutton|/mod/bigbluebuttonbn/|"
+                          r"/mod/zoom/|/mod/teams/|/mod/googlemeet/|/mod/jitsi/)[^\s\"'<>]*", re.I)
+MEETING_MODULES = {"bigbluebuttonbn", "zoom", "teams", "googlemeet", "jitsi", "webex", "msteams"}
+
+
+def meeting_link(e: dict, module_urls: dict | None = None) -> str | None:
+    """A link to join an online class: from the event's description, or the meeting activity itself."""
+    m = MEETING_LINK.search(html.unescape(e.get("description") or ""))
+    if m:
+        return m.group(0).rstrip(".,);")
+    if e.get("modulename") in MEETING_MODULES:
+        return (module_urls or {}).get(f"{e['modulename']}:{e.get('instance')}")
+    return None
 
 
 def calendar_names() -> dict:
@@ -141,7 +160,8 @@ def rfc3339(ts: int) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def build_event(e: dict, courses_by_id: dict, done: bool | None = None, cfg: dict | None = None) -> tuple[str, dict]:
+def build_event(e: dict, courses_by_id: dict, done: bool | None = None, cfg: dict | None = None,
+                module_urls: dict | None = None) -> tuple[str, dict]:
     """(calendar key, Google event body) for a Moodle event."""
     etype = e.get("eventtype", "")
     course = courses_by_id.get(e.get("courseid"))
@@ -158,7 +178,9 @@ def build_event(e: dict, courses_by_id: dict, done: bool | None = None, cfg: dic
     end = start + (e.get("timeduration") or 0)
 
     course_url = f"{base}/course/view.php?id={course['id']}" if course else base
+    join = meeting_link(e, module_urls)
     description = "\n\n".join(part for part in [
+        f"🔗 {t('cal_join')}: {join}" if join else "",
         clean_text(e.get("description", ""), lang),
         f"{t('cal_course')}: {clean_text(course['fullname'], lang)}" if course else "",
         f"Moodle: {base}/calendar/view.php?view=day&time={start}",
@@ -176,6 +198,8 @@ def build_event(e: dict, courses_by_id: dict, done: bool | None = None, cfg: dic
         "source": {"title": "Moodle", "url": course_url},
         "status": "confirmed",
     }
+    if join:
+        body["location"] = join  # Google Calendar shows it as a link at the top of the event
     return calendar, body
 
 
@@ -300,7 +324,7 @@ def run(dry_run: bool = False) -> int:
         done = is_done(e, open_ids)
         if done is None and open_ids is None and prev:
             done = prev.get("done")  # timeline unavailable - keep the previous state
-        cal, body = build_event(e, courses_by_id, done, cfg)
+        cal, body = build_event(e, courses_by_id, done, cfg, state.get("module_urls"))
         fp = fingerprint(cal, body)
         if prev is None or prev["fp"] != fp:
             to_upsert.append((mid, cal, body, fp, prev, done))

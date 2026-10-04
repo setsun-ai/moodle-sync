@@ -50,7 +50,9 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/forum` | załóż wątek na forum kursu (`MOODLE_ACTIONS=1`) |
 | `/obecnosc` `/attendance` albo wyślij link / zdjęcie QR | zaznacz obecność (`MOODLE_ACTIONS=1`) |
 | `/obieralne` `/electives` | wybierz przedmioty obieralne (plan studiów) |
-| `/przypisz` `/assign` | przypisz kurs z Moodle do przedmiotu albo modułu z planu |
+| `/przypisz` `/assign` | przypisz kurs z Moodle do przedmiotu albo modułu z planu, zmień nazwę folderu, dodaj semestr |
+| `/karta` `/card` | Twój link do karty przedmiotu spoza katalogu |
+| `/bledy` `/errors` | ostatnia synchronizacja krok po kroku, z pełnym wynikiem kroków z błędem |
 | `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
 | `/sync` | synchronizuj teraz |
 | `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |

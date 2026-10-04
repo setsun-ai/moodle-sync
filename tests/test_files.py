@@ -104,8 +104,10 @@ def test_mass_move_is_blocked_until_confirmed(monkeypatch):
     monkeypatch.setattr(files, "collect_files", lambda courses: course_files)
     monkeypatch.setattr(files, "download_file", lambda f, dest: pytest.fail("must not download"))
     monkeypatch.setenv("LANGUAGE", "pl")
-    state.save({"downloaded": {f["id"]: {"path": files.relative_path(f, {}).as_posix(), "key": files.logical_key(f)}
-                               for f in course_files}})
+    st = {"downloaded": {f["id"]: {"path": files.relative_path(f, {}).as_posix(), "key": files.logical_key(f)}
+                         for f in course_files}}
+    st["layout_sig"] = files.layout_signature({}, st)  # a steady state: no deliberate layout change
+    state.save(st)
 
     monkeypatch.setenv("LANGUAGE", "en")  # the accident: every folder would become English
     assert files.run() == 1
@@ -115,6 +117,26 @@ def test_mass_move_is_blocked_until_confirmed(monkeypatch):
     assert files.run(reorganize=True) == 0  # explicitly confirmed
     assert "Lectures" in state.load()["downloaded"]["url:0"]["path"]
     assert len(state.load()["remote_moves"]) == 30
+
+
+def test_deliberate_layout_change_moves_without_the_fuse(monkeypatch):
+    """/assign, /electives, courses.json or a new layout version: moved at once, with a notification."""
+    from moodle_sync import moodle
+
+    sent = []
+    course_files = [make_file(id=f"url:{i}", module_id=i, filename=f"w{i}.pdf") for i in range(30)]
+    monkeypatch.setattr(moodle, "my_courses", lambda: [])
+    monkeypatch.setattr(files, "collect_files", lambda courses: course_files)
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False: sent.append(title))
+    st = {"downloaded": {f["id"]: {"path": files.relative_path(f, {}).as_posix(), "key": files.logical_key(f)}
+                         for f in course_files}}
+    st["layout_sig"] = files.layout_signature({}, st)
+    state.save(st)
+    (config.DATA_DIR / "courses.json").write_text(json.dumps({"names": {"algo": "Algorithms 2"}}), encoding="utf-8")
+    assert files.run() == 0
+    assert state.load()["downloaded"]["url:0"]["path"].startswith("Algorithms 2/")
+    assert sent == ["Files moved into the new folders (30)"]
+    assert files.run() == 0 and len(sent) == 1  # steady again
 
 
 class TestNetMoves:

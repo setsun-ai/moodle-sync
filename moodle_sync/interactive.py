@@ -93,7 +93,8 @@ COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": 
             "forum": "forum", "attendance": "attendance", "obecnosc": "attendance", "obecność": "attendance",
             "submit": "submit", "oddaj": "submit", "electives": "electives", "obieralne": "electives",
             "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup", "assign": "assign",
-            "przypisz": "assign"}
+            "przypisz": "assign", "card": "card", "karta": "card", "errors": "errors", "bledy": "errors",
+            "błędy": "errors"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -105,7 +106,8 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
     try:
         {"courses": show_courses, "today": lambda c: show_day(c, parse_day(args)),
          "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
-         "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign}[kind](chat)
+         "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign, "card": show_cards,
+         "errors": show_errors}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -477,8 +479,34 @@ def save_elective(chat: str, message_id: int, i: int) -> None:
 
 # --- assigning Moodle courses to subjects of the plan ---------------------------------------------------
 
+def course_facts(course: dict, state: dict) -> str:
+    """What tells two courses with the same name apart: when it started and how many files it has."""
+    started = datetime.fromtimestamp(course["startdate"]).strftime("%m.%Y") if course.get("startdate") else "?"
+    prefix = f"{course['id']}:"
+    n = sum(1 for e in state.get("downloaded", {}).values() if e.get("path") and str(e.get("key", "")).startswith(prefix))
+    return t("ui_map_facts", start=started, n=n)
+
+
+def targets_text(course_id: int, assigned: dict, state: dict, plan: list) -> str:
+    chosen = (state.get("course_map") or {}).get(str(course_id))
+    keys = chosen if isinstance(chosen, list) else None
+    if keys:
+        parts = []
+        for key in keys:
+            found = studyplan.find_by_key(plan, key)
+            if found:
+                parts.append(f"{studyplan.semester_folder(found[0]['number'])}/"
+                             f"{studyplan.subject_folder(key, found[1]['name'], state)}")
+        return " + ".join(parts) or "—"
+    a = assigned[course_id]
+    if not a["subject"]:
+        return "—"
+    where = studyplan.semester_folder(a["semester"]) + "/" if a["semester"] else ""
+    return where + studyplan.subject_folder(a["key"], a["subject"], state)
+
+
 def show_assign(chat: str, message_id: int | None = None) -> None:
-    """Every Moodle course with where its files go; tap one to put it under another subject or module."""
+    """Every Moodle course with where its files go; tap one to change it."""
     from .files import course_display_name
 
     if not studyplan.plan_url():
@@ -489,25 +517,33 @@ def show_assign(chat: str, message_id: int | None = None) -> None:
     cfg = config.load_courses_config()
     courses = moodle.my_courses()
     assigned = studyplan.assign_courses(courses, plan, cfg, state)
-    rows = []
-    for c in courses:
+    lines, rows = [t("ui_map_title")], []
+    for n, c in enumerate(courses, 1):
         a = assigned[c["id"]]
         mark = "✋" if a["manual"] else ("✓" if a["subject"] else "❓")
-        target = studyplan.readable(a["subject"]) if a["subject"] else "—"
-        rows.append([(f"{mark} {course_display_name(c['fullname'], cfg)} → {target}", f"mc:{c['id']}")])
-    text = t("ui_map_title")
+        name = course_display_name(c["fullname"], cfg)
+        lines.append(f"{n}. {mark} <b>{esc(name)}</b> ({course_facts(c, state)})\n    → "
+                     f"{esc(targets_text(c['id'], assigned, state, plan))}")
+        rows.append([(f"{n}. {mark} {name}", f"mc:{c['id']}")])
+    text = "\n".join(lines)
     (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
 
 
-def assign_semesters(chat: str, message_id: int, course_id: int) -> None:
-    plan = studyplan.load_plan(state_mod.load())
-    rows = [[(studyplan.semester_folder(sem["number"]), f"ms:{course_id}:{sem['number']}") for sem in plan]]
-    rows += [[(t("ui_map_auto"), f"mr:{course_id}"), (t("ui_map_none"), f"mn:{course_id}")],
-             [(t("ui_back"), "ml")]]
-    edit(chat, message_id, t("ui_map_pick_sem", course=esc(course_name(course_id))), rows)
+def assign_semesters(chat: str, message_id: int, course_id: int, add: bool = False) -> None:
+    state = state_mod.load()
+    plan = studyplan.load_plan(state)
+    course = next((c for c in moodle.my_courses() if c["id"] == course_id), {"id": course_id})
+    kind = "mas" if add else "ms"
+    rows = [[(studyplan.semester_folder(sem["number"]), f"{kind}:{course_id}:{sem['number']}") for sem in plan]]
+    if not add:
+        rows += [[(t("ui_map_add"), f"ma:{course_id}"), (t("ui_map_rename"), f"mf:{course_id}")],
+                 [(t("ui_map_auto"), f"mr:{course_id}"), (t("ui_map_none"), f"mn:{course_id}")]]
+    rows.append([(t("ui_back"), "ml")])
+    text = t("ui_map_pick_sem_add" if add else "ui_map_pick_sem", course=esc(course_name(course_id)))
+    edit(chat, message_id, f"{text}\n<i>{course_facts(course, state)}</i>", rows)
 
 
-def assign_subjects(chat: str, message_id: int, course_id: int, number: int) -> None:
+def assign_subjects(chat: str, message_id: int, course_id: int, number: int, add: bool = False) -> None:
     plan = studyplan.load_plan(state_mod.load())
     sem = next(x for x in plan if x["number"] == number)
     options, seen_modules = [], set()
@@ -522,17 +558,22 @@ def assign_subjects(chat: str, message_id: int, course_id: int, number: int) -> 
             label = studyplan.readable(subject["name"])
         options.append((label, studyplan.subject_key(sem, subject)))
     STATE["map_opts"] = [key for _, key in options]
-    rows = [[(label, f"mk:{course_id}:{i}")] for i, (label, _) in enumerate(options[:60])]
+    kind = "mka" if add else "mk"
+    rows = [[(label, f"{kind}:{course_id}:{i}")] for i, (label, _) in enumerate(options[:60])]
     rows.append([(t("ui_back"), f"mc:{course_id}")])
     edit(chat, message_id, t("ui_map_pick_subject", course=esc(course_name(course_id)),
                              semester=esc(studyplan.semester_folder(number))), rows)
 
 
-def save_assignment(chat: str, message_id: int, course_id: int, value: str | None) -> None:
+def save_assignment(chat: str, message_id: int, course_id: int, value: str | None, add: bool = False) -> None:
     def change(state):
         mapping = state.setdefault("course_map", {})
+        current = mapping.get(str(course_id))
         if value is None:
             mapping.pop(str(course_id), None)
+        elif add and current and current != "none":  # one course for several semesters
+            keys = current if isinstance(current, list) else [current]
+            mapping[str(course_id)] = keys + [value] if value not in keys else keys
         else:
             mapping[str(course_id)] = value
 
@@ -541,19 +582,100 @@ def save_assignment(chat: str, message_id: int, course_id: int, value: str | Non
         send(chat, t("ui_map_saved"))
 
 
+def ask_folder_name(chat: str, message_id: int, course_id: int) -> None:
+    state = state_mod.load()
+    plan = studyplan.load_plan(state)
+    a = studyplan.assign_courses([{"id": course_id, "fullname": course_name(course_id)}], plan,
+                                 config.load_courses_config(), state)[course_id]
+    chosen = (state.get("course_map") or {}).get(str(course_id))
+    key = chosen[0] if isinstance(chosen, list) else a["key"]
+    if not key:
+        edit(chat, message_id, t("ui_map_rename_first"), [[(t("ui_back"), f"mc:{course_id}")]])
+        return
+    STATE["await"], STATE["rename_key"] = "folder_name", key
+    current = studyplan.subject_folder(key, (studyplan.find_by_key(plan, key) or ({}, {"name": "?"}))[1]["name"], state)
+    edit(chat, message_id, t("ui_map_rename_prompt", current=esc(current)), [[(t("ui_cancel"), "x")]])
+
+
+# --- your own subject card links (subjects outside the catalogue) ------------------------------------
+
+def show_cards(chat: str) -> None:
+    if not studyplan.plan_url():
+        send(chat, t("plan_none"))
+        return
+    state = state_mod.load()
+    plan = studyplan.load_plan(state)
+    needed = studyplan.cards_needed(plan, moodle.my_courses(), config.load_courses_config(), state)
+    if not needed:
+        send(chat, t("ui_card_none"))
+        return
+    STATE["card_keys"] = [key for key, _, _ in needed]
+    custom = state.get("custom_cards") or {}
+    rows = [[(("🔗 " if key in custom else "📄✗ ") + label, f"ck:{i}")] for i, (key, label, _) in enumerate(needed[:30])]
+    send(chat, t("ui_card_pick"), rows + [[(t("ui_cancel"), "x")]])
+
+
+def ask_card_link(chat: str, message_id: int, index: int) -> None:
+    STATE["await"], STATE["card_key"] = "card_link", STATE["card_keys"][index]
+    edit(chat, message_id, t("ui_card_prompt"), [[(t("ui_cancel"), "x")]])
+
+
+def save_card_link(chat: str, url: str) -> None:
+    key = STATE.pop("card_key", None)
+    if not key or not re.match(r"https?://", url):
+        send(chat, t("ui_card_bad"))
+        return
+    if url.strip() == "-":
+        save_state(chat, lambda state: (state.get("custom_cards") or {}).pop(key, None))
+        send(chat, t("ui_card_removed"))
+        return
+    resp = requests.get(url, timeout=30, headers=studyplan.HEADERS)
+    resp.raise_for_status()
+    if resp.content.startswith(b"%PDF"):
+        ext = ".pdf"
+    elif "html" in resp.headers.get("Content-Type", ""):
+        ext = ".html"
+    else:
+        send(chat, t("ui_card_bad"))
+        return
+    if save_state(chat, lambda state: state.setdefault("custom_cards", {}).__setitem__(key, {"url": url, "ext": ext})):
+        send(chat, t("ui_card_saved", kind=ext[1:].upper(), size=assignments.human_size(len(resp.content))))
+
+
+# --- the last errors in full -------------------------------------------------------------------
+
+def show_errors(chat: str) -> None:
+    state = state_mod.load()
+    run = state.get("last_run") or {}
+    lines = [t("ui_err_title", when=datetime.fromtimestamp(run["end"]).strftime("%d.%m %H:%M") if run.get("end")
+               else "?")]
+    lines += [f"{'✅' if code == 0 else '⏭' if code == 2 else '❌'} {esc(name)}: {esc(result)}"
+              for name, result, code in run.get("steps", [])]
+    errors = state.get("last_errors") or {}
+    for name, output in errors.items():
+        lines += ["", f"<b>{esc(name)}</b>", f"<pre>{esc(output[-1500:])}</pre>"]
+    if not errors:
+        lines += ["", t("ui_err_none")]
+    send(chat, "\n".join(lines))
+
+
 # --- old copies left next to moved files -----------------------------------------------------------
 
 def show_cleanup(chat: str) -> None:
     send(chat, t("ui_cu_searching"))
     found = storage.find_stale()
     STATE["cleanup"] = found
-    local, remote = found["local"], found["remote"] or []
-    if not local and not remote:
+    local, remote, dups = found["local"], found["remote"] or [], found.get("duplicates", [])
+    if not local and not remote and not dups:
         send(chat, t("ui_cu_none"))
         return
     lines = [t("ui_cu_found", local=len(local), remote=len(remote) if found["remote"] is not None else "–")]
-    lines += [f"• {esc(p)}" for p in (remote or local)[:10]]
-    send(chat, "\n".join(lines), [[(t("ui_cu_delete", n=len(local) + len(remote)), "cu!"), (t("ui_cancel"), "x")]])
+    if dups:
+        lines.append(t("ui_cu_duplicates", n=len(dups)))
+        lines += [f"• 📁 {esc(p)}" for p in dups[:8]]
+    lines += [f"• {esc(p)}" for p in (remote or local)[:8]]
+    send(chat, "\n".join(lines), [[(t("ui_cu_delete", n=len(local) + len(remote) + len(dups)), "cu!"),
+                                    (t("ui_cancel"), "x")]])
 
 
 def do_cleanup(chat: str, message_id: int) -> None:
@@ -589,6 +711,22 @@ def on_text(msg: dict, chat: str) -> bool:
         STATE["message"], STATE["await"] = text, None
         preview = f"<b>{esc(STATE['subject'])}</b>\n{esc(text)}"
         send(chat, t("ui_forum_preview") + "\n\n" + preview, [[(t("ui_send"), "fp"), (t("ui_cancel"), "x")]])
+    elif waiting == "folder_name":
+        key = STATE.pop("rename_key", None)
+        STATE["await"] = None
+
+        def change(state):
+            names = state.setdefault("folder_names", {})
+            if text in (".", "-"):
+                names.pop(key, None)
+            else:
+                names[key] = text[:80]
+
+        if key and save_state(chat, change):
+            send(chat, t("ui_map_saved"))
+    elif waiting == "card_link":
+        STATE["await"] = None
+        save_card_link(chat, text)
     elif waiting == "att_password":
         try:  # the password doesn't stay in the chat
             api("deleteMessage", chat_id=chat, message_id=msg["message_id"])
@@ -650,12 +788,18 @@ def on_callback(cq: dict, chat: str) -> None:
             show_assign(chat, message_id)
         elif kind == "mc":
             assign_semesters(chat, message_id, int(rest))
-        elif kind == "ms":
+        elif kind == "ma":
+            assign_semesters(chat, message_id, int(rest), add=True)
+        elif kind in ("ms", "mas"):
             course, number = rest.split(":")
-            assign_subjects(chat, message_id, int(course), int(number))
-        elif kind == "mk" and STATE.get("map_opts"):
+            assign_subjects(chat, message_id, int(course), int(number), add=kind == "mas")
+        elif kind in ("mk", "mka") and STATE.get("map_opts"):
             course, index = rest.split(":")
-            save_assignment(chat, message_id, int(course), STATE["map_opts"][int(index)])
+            save_assignment(chat, message_id, int(course), STATE["map_opts"][int(index)], add=kind == "mka")
+        elif kind == "mf":
+            ask_folder_name(chat, message_id, int(rest))
+        elif kind == "ck" and STATE.get("card_keys"):
+            ask_card_link(chat, message_id, int(rest))
         elif kind == "mr":
             save_assignment(chat, message_id, int(rest), None)
         elif kind == "mn":

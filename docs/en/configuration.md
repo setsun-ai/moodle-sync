@@ -64,6 +64,7 @@ Semester 2/...
 - **Switching it on moves your existing files.** To be safe, the first run stops and asks you to confirm once:
   `python -m moodle_sync download --reorganize`. The cloud copy is moved too.
 - If the catalogue is offline, the plan saved on the last successful check is used.
+- **Own folder names, cards, several semesters:** in `/assign` a course can get its own folder name (✏️), a second semester (➕ - one Moodle course for "Project I" and "Project II", files split by their dates); `/card` adds your own link to the card of a subject the catalogue has none for (e.g. from another university).
 - **Folder names come from the plan** (written readably when the catalogue uses capitals); Moodle courses are put into them. When the automatic match is wrong or missing, `/assign` in the bot puts a course under any subject - or a whole elective module, e.g. for a course taken at another university.
 - **Elective modules:** pick what you chose with `/electives` in the Telegram bot. Options are numbered and link to their subject cards, because several can share a name; "another university" covers electives from outside the catalogue. An elective you have a Moodle course for counts as chosen; the bot reminds you of modules without a choice.
 - Subjects whose card isn't published in the catalogue are listed in `plan` and notified once.
@@ -109,6 +110,14 @@ echo '{"only": ["part of the course name"]}' > ~/moodle-sync-2/courses.json
 sudo sed "s#^Environment=\(.*\)#Environment=\1 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2#" /etc/systemd/system/moodle-sync.service | sudo tee /etc/systemd/system/moodle-sync-2.service
 sudo cp /etc/systemd/system/moodle-sync.timer /etc/systemd/system/moodle-sync-2.timer
 sudo systemctl daemon-reload && sudo systemctl enable --now moodle-sync-2.timer
+```
+
+Google Calendar for the second site: copy the Google files of the first copy, and give the site its own label -
+its calendars are then "UG – deadlines" and "UG – classes", next to the first site's:
+
+```bash
+cp ~/moodle-sync/client_secret.json ~/moodle-sync/google_token.json ~/moodle-sync-2/
+MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
 ### Cloud (rclone): see [Storage](storage.md)

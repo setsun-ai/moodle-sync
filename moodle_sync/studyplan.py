@@ -298,7 +298,7 @@ def assign_courses(courses: list[dict], plan: list[dict] | None, cfg: dict, stat
         found = None
         chosen = manual.get(str(course["id"]))
         if plan and chosen and chosen != "none":
-            found = find_by_key(plan, chosen)
+            found = find_by_key(plan, chosen[0] if isinstance(chosen, list) else chosen)
         elif plan and not chosen:
             forced = _override(cfg, "plan", name)
             found = _find_subject(plan, forced) if forced else match_subject(name, plan, term)
@@ -364,6 +364,28 @@ def elective_modules(plan: list[dict], courses: list[dict], cfg: dict, state: di
     return list(modules.values())
 
 
+def cards_needed(plan: list[dict], courses: list[dict], cfg: dict, state: dict) -> list[tuple[str, str, str]]:
+    """
+    What you take but has no card in the catalogue - a subject without a published card, or
+    an elective module you take at another university: [(key, label, current custom url or "")].
+    """
+    taken = chosen_keys(plan, state) | {a["key"] for a in assign_courses(courses, plan, cfg, state).values() if a["key"]}
+    custom = state.get("custom_cards") or {}
+    out = []
+    for sem in plan:
+        for subject in sem["subjects"]:
+            key = subject_key(sem, subject)
+            if subject["card"] is None and (not subject["elective"] or key in taken):
+                out.append((key, f"{semester_folder(sem['number'])}: {readable(subject['name'])}",
+                            custom.get(key, {}).get("url", "")))
+    for m in elective_modules(plan, courses, cfg, state):
+        if EXTERNAL in m["chosen"] or EXTERNAL in m["matched"]:
+            key = f"{m['semester']}|{m['module']}|"
+            out.append((key, f"{semester_folder(m['semester'])}: 🎓 {readable(m['module'])}",
+                        custom.get(key, {}).get("url", "")))
+    return out
+
+
 def pending_modules(plan, courses, cfg, state) -> list[dict]:
     """Elective modules with nothing chosen yet - the bot asks about them."""
     return [m for m in elective_modules(plan, courses, cfg, state) if not m["chosen"] and not m["matched"]]
@@ -383,6 +405,12 @@ _PLAIN = {"i", "w", "z", "na", "do", "od", "po", "dla", "bez", "nad", "pod", "pr
           "styl", "film", "test", "tryb", "las", "krew", "dziś", "dzis", "cel", "cele", "rola"}
 
 
+# words the catalogue writes in capitals that aren't lower-case words either
+_PROPER = {"python": "Python", "java": "Java", "javascript": "JavaScript", "linux": "Linux", "windows": "Windows",
+           "excel": "Excel", "matlab": "MATLAB", "mathematica": "Mathematica", "github": "GitHub", "polska": "Polska",
+           "europa": "Europa", "europejska": "Europejska", "gdańsk": "Gdańsk", "pomorze": "Pomorze"}
+
+
 def readable(name: str) -> str:
     """
     'MACHINE LEARNING I SIECI NEURONOWE' -> 'Machine learning i sieci neuronowe',
@@ -399,9 +427,16 @@ def readable(name: str) -> str:
         acronym = (2 <= len(core) <= 4 and core.isupper() and core.lower() not in _PLAIN
                    and sum(c in _VOWELS for c in core) <= 1)
         mixed = any(c.islower() for c in core)  # "WCh" was written that way on purpose
-        out.append(word if roman or acronym or mixed else word.lower())
+        proper = _PROPER.get(core.lower())
+        out.append(word if roman or acronym or mixed else word.lower().replace(core.lower(), proper)
+                   if proper else word.lower())
     text = " ".join(out)
     return text[:1].upper() + text[1:]
+
+
+def subject_folder(key: str | None, name: str, state: dict | None = None) -> str:
+    """Folder of a subject: your own name for it (bot: /assign → ✏️) or the plan's name, readable."""
+    return ((state or {}).get("folder_names") or {}).get(key or "") or readable(name)
 
 
 def course_layout(courses: list[dict], cfg: dict, plan: list[dict] | None, state: dict | None = None) -> dict:
@@ -410,8 +445,44 @@ def course_layout(courses: list[dict], cfg: dict, plan: list[dict] | None, state
     layout = {}
     for cid, a in assign_courses(courses, plan, cfg, state).items():
         layout[cid] = (semester_folder(a["semester"]) if folders and a["semester"] else None,
-                       readable(a["subject"]) if a["subject"] else None)
+                       subject_folder(a["key"], a["subject"], state) if a["subject"] else None)
     return layout
+
+
+def course_splits(courses: list[dict], plan: list[dict] | None, state: dict | None = None) -> dict:
+    """
+    Moodle courses you assigned to several semesters (one course for "Project I" and
+    "Project II"): course id -> [(semester number, semester folder, subject folder)].
+    Each file then goes to the semester its date falls into.
+    """
+    folders = semester_folders_enabled()
+    splits = {}
+    for course in courses:
+        chosen = ((state or {}).get("course_map") or {}).get(str(course["id"]))
+        if not plan or not isinstance(chosen, list) or len(chosen) < 2:
+            continue
+        options = []
+        for key in chosen:
+            found = find_by_key(plan, key)
+            if found:
+                sem, subject = found
+                options.append((sem["number"], semester_folder(sem["number"]) if folders else None,
+                                subject_folder(key, subject["name"], state)))
+        if options:
+            splits[course["id"]] = sorted(options)
+    return splits
+
+
+def pick_by_date(options: list[tuple], timestamp: float, plan: list[dict]) -> tuple:
+    """The (number, semester folder, folder) whose semester the date falls into; before the first -> the first."""
+    number = semester_by_term(term_of(timestamp), plan, None)
+    if number is not None:
+        for option in options:
+            if option[0] == number:
+                return option
+        if number > options[-1][0]:
+            return options[-1]
+    return options[0]
 
 
 # --- fetching ---------------------------------------------------------------------------------------
@@ -483,24 +554,36 @@ def planned_cards(courses: list[dict], plan: list[dict], cfg: dict, chosen: set 
     assigned = assign_courses(courses, plan, cfg, state)
     by_card = {}  # card -> folder name of the matching Moodle course (courses.json "names" wins)
     taken = set(chosen or ()) | {a["key"] for a in assigned.values() if a["key"]}
+    custom = (state or {}).get("custom_cards") or {}
     for course in courses:
         a = assigned[course["id"]]
         if a["card"]:
             # the same folder as the course's Moodle files (files.course_folder)
-            by_card[a["card"]] = _override(cfg, "names", course.get("fullname", "")) or readable(a["subject"])
+            by_card[a["card"]] = (_override(cfg, "names", course.get("fullname", ""))
+                                  or subject_folder(a["key"], a["subject"], state))
     cards = {}
     for sem in plan:
         for subject in sem["subjects"]:
             if subject["elective"] and subject_key(sem, subject) not in taken:
                 continue
             if subject["card"] is None:
-                if missing is not None:
+                if missing is not None and subject_key(sem, subject) not in custom:
                     missing.append(f"{semester_folder(sem['number'])}: {readable(subject['name'])}")
                 continue
             parts = [semester_folder(sem["number"])] if folders else []
-            parts += [sanitize_component(by_card.get(subject["card"]) or readable(subject["name"]), "Course", lang),
-                      card_filename()]
+            folder = by_card.get(subject["card"]) or subject_folder(subject_key(sem, subject), subject["name"], state)
+            parts += [sanitize_component(folder, "Course", lang), card_filename()]
             cards[subject["card"]] = (Path(*parts), subject["name"])
+    # your own links (bot: /card) - a subject without a published card, or one from another university
+    for key, link in custom.items():
+        found = find_by_key(plan, key)
+        if not found:
+            continue
+        sem, subject = found
+        parts = [semester_folder(sem["number"])] if folders else []
+        name = Path(card_filename()).stem + link.get("ext", ".pdf")
+        parts += [sanitize_component(subject_folder(key, subject["name"], state), "Course", lang), name]
+        cards["custom:" + key] = (Path(*parts), subject["name"])
     return cards
 
 
@@ -511,7 +594,9 @@ def notify_once(state: dict, key: str, items: list, title_key: str) -> None:
     state[key] = items
 
 
-def card_url(card: int) -> str:
+def card_url(card, state: dict | None = None) -> str:
+    if isinstance(card, str) and card.startswith("custom:"):
+        return ((state or {}).get("custom_cards") or {}).get(card[len("custom:"):], {}).get("url", "")
     parts = urlsplit(plan_url())
     lang = parts.path.strip("/").split("/")[0] or "pl"
     return f"{parts.scheme}://{parts.netloc}/{lang}/subjects/{card}/card.pdf"
@@ -552,8 +637,8 @@ def run(dry_run: bool = False, force: bool = False) -> int:
             print(f"[?] {rel.as_posix()}")
             continue
         try:
-            data = _get(card_url(card)).content
-            if not data.startswith(b"%PDF"):
+            data = _get(card_url(card, state)).content
+            if not data.startswith(b"%PDF") and not str(card).startswith("custom:"):
                 raise ValueError(t("plan_not_pdf"))
         except (requests.RequestException, ValueError) as e:
             failed += 1
@@ -616,7 +701,12 @@ def preview() -> int:
                     continue
                 tick = "✓ " + ", ".join(moodle_names) if moodle_names else "– " + t("plan_no_moodle")
                 card = "" if subject["card"] else "  📄✗ " + t("plan_no_card")
-                print(f"    {readable(subject['name'])}  [{tick}]{card}")
+                print(f"    {subject_folder(subject_key(sem, subject), subject['name'], st)}  [{tick}]{card}")
+            for module in sorted({x["module"] for x in sem["subjects"] if x.get("module")}):
+                key = f"{sem['number']}|{module}|"
+                names = [course_display_name(c["fullname"], cfg) for c in courses if assigned[c["id"]]["key"] == key]
+                if names:
+                    print(f"    🎓 {subject_folder(key, module, st)}  [✓ {', '.join(names)}]")
             print()
     elif study_start():
         print(t("plan_by_dates", start=config.env("STUDY_START")) + "\n")

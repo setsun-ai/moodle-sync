@@ -21,9 +21,11 @@ sent. --update also protects files you edited in the cloud (they're newer).
 
 import json
 import os
+import posixpath
 import shutil
 import subprocess
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from . import config, state as state_mod
@@ -53,10 +55,20 @@ BACKUP_FILES = ["state.json", "courses.json", "przedmioty.json"]
 
 
 def rclone(*args: str, quiet: bool = False) -> int:
+    """
+    Run rclone and pass its output through print(): only then does it reach the log,
+    the error notification and /errors in the bot (a child process writing straight
+    to the terminal would bypass them - errors used to show just the commands).
+    """
     cmd = [config.rclone_bin(), *args]
     if not quiet:
         print("$", " ".join(cmd), flush=True)
-    return subprocess.run(cmd).returncode
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                            errors="replace")
+    for line in proc.stdout:
+        if not quiet or "ERROR" in line:
+            print("  " + line.rstrip(), flush=True)
+    return proc.wait()
 
 
 def remote_configured() -> bool:
@@ -133,6 +145,13 @@ def apply_remote_moves(dry_run: bool) -> int:
             print(f"    {move['from']} -> {move['to']}")
         return 0
 
+    # Google Drive allows several folders with the same name. Three parallel moves into a
+    # folder that doesn't exist yet would each create it - three "Language I" folders. So
+    # the target folders are created first, one by one, parents before children.
+    for folder in sorted({posixpath.dirname(m["to"]) for m in moves if posixpath.dirname(m["to"])},
+                         key=lambda d: (d.count("/"), d)):
+        rclone("mkdir", target(folder), quiet=True)
+
     attempts = {m["from"]: m.get("attempts", 0) for m in queue}
     failed, pending, done = 0, list(moves), 0
     # A few moves in parallel: each is a separate rclone process that spends
@@ -190,25 +209,43 @@ def local_listing() -> list[tuple[str, int]]:
             if f.is_file() and not f.name.endswith((".part", ".relocating"))]
 
 
-def remote_listing() -> list[tuple[str, int]] | None:
+def remote_items() -> list[dict] | None:
     if not status()[0]:
         return None
-    out = subprocess.run([config.rclone_bin(), "lsjson", "-R", "--files-only", "--no-mimetype", "--no-modtime",
-                          target()], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    out = subprocess.run([config.rclone_bin(), "lsjson", "-R", "--no-mimetype", "--no-modtime", target()],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     if out.returncode != 0:
         return None
-    return [(item["Path"], item.get("Size", -1)) for item in json.loads(out.stdout or "[]")]
+    return json.loads(out.stdout or "[]")
+
+
+def remote_listing(items: list[dict] | None = None) -> list[tuple[str, int]] | None:
+    items = remote_items() if items is None else items
+    if items is None:
+        return None
+    return [(item["Path"], item.get("Size", -1)) for item in items if not item.get("IsDir")]
+
+
+def duplicate_paths(items: list[dict]) -> list[str]:
+    """Paths that exist more than once - Google Drive allows two folders (or files) with the same name."""
+    counts = Counter((item["Path"], bool(item.get("IsDir"))) for item in items)
+    return sorted(path for (path, _), n in counts.items() if n > 1)
 
 
 def find_stale() -> dict:
-    """{"local": [paths], "remote": [paths] or None when there's no cloud}."""
+    """{"local": [paths], "remote": [paths] or None when there's no cloud, "duplicates": [paths]}."""
     tracked = tracked_paths(state_mod.load())
-    remote = remote_listing()
+    items = remote_items()
     return {"local": stale_copies(local_listing(), tracked),
-            "remote": stale_copies(remote, tracked) if remote is not None else None}
+            "remote": stale_copies(remote_listing(items), tracked) if items is not None else None,
+            "duplicates": duplicate_paths(items) if items is not None else []}
 
 
 def remove_stale(found: dict) -> int:
+    if found.get("duplicates"):
+        # merge folders with the same name (their content ends up in one), and of two files
+        # with the same name in the same folder keep the newest
+        rclone("dedupe", "--dedupe-mode", "newest", target())
     root = config.download_dir()
     for path in found["local"]:
         (root / path).unlink(missing_ok=True)
@@ -223,7 +260,7 @@ def remove_stale(found: dict) -> int:
             rclone("rmdirs", target(), "--leave-root")
         finally:
             os.unlink(fh.name)
-    return len(found["local"]) + len(found["remote"] or [])
+    return len(found["local"]) + len(found["remote"] or []) + len(found.get("duplicates", []))
 
 
 def cleanup(apply: bool = False) -> int:
@@ -233,8 +270,12 @@ def cleanup(apply: bool = False) -> int:
         print(t("cleanup_found", where=label, n=len(items)))
         for path in items[:30]:
             print(f"    {path}")
+    if found["duplicates"]:
+        print(t("cleanup_duplicates", n=len(found["duplicates"])))
+        for path in found["duplicates"][:30]:
+            print(f"    {path}")
     if not apply:
-        if found["local"] or found["remote"]:
+        if found["local"] or found["remote"] or found["duplicates"]:
             print("\n" + t("cleanup_hint"))
         return 0
     print(t("cleanup_done", n=remove_stale(found)))

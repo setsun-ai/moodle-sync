@@ -217,6 +217,7 @@ class TestShoutingCatalogue:
         assert r("WYDZIAŁOWE PRZEDMIOTY OBIERALNE II (WCh)") == "Wydziałowe przedmioty obieralne II (WCh)"
         assert r("BIG DATA ANALYSIS - METODY PRZETWARZANIA DANYCH") == "Big data analysis - metody przetwarzania danych"
         assert r("EKOLOGICZNE, EKONOMICZNE I ETYCZNE PROBLEMY NA DZIŚ") == "Ekologiczne, ekonomiczne i etyczne problemy na dziś"
+        assert r("JĘZYK PYTHON") == "Język Python"
         assert r("Mathematics II") == "Mathematics II"
 
     def test_folders_are_named_after_the_plan(self, monkeypatch):
