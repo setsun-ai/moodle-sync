@@ -1,4 +1,4 @@
 """moodle-sync: Moodle -> cloud storage, calendar and notifications."""
 
-__version__ = "1.5.3"
+__version__ = "1.5.4"
 PROJECT_URL = "https://github.com/setsun-ai/moodle-sync"

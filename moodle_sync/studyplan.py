@@ -278,6 +278,23 @@ def _find_subject(plan: list[dict], name: str) -> tuple[dict, dict] | None:
     return None
 
 
+def narrow_module(found: tuple[dict, dict] | None, taken: set | None) -> tuple[dict, dict] | None:
+    """
+    A course assigned to a whole module that has one option ("Language I" -> "English I"),
+    or one option you picked, goes to that option - the same folder as its card.
+    """
+    if not found or not found[1].get("is_module"):
+        return found
+    sem, module = found
+    options = [s for s in sem["subjects"] if s.get("module") == module["name"]]
+    picked = [s for s in options if subject_key(sem, s) in (taken or set())]
+    if len(picked) == 1:
+        return sem, picked[0]
+    if len(options) == 1 and not picked:
+        return sem, options[0]
+    return found
+
+
 def find_by_key(plan: list[dict], key: str) -> tuple[dict, dict] | None:
     """The subject (or module) behind a subject_key, e.g. from /assign in the bot."""
     number, name, card = (key.split("|") + ["", ""])[:3]
@@ -318,7 +335,7 @@ def assign_courses(courses: list[dict], plan: list[dict] | None, cfg: dict, stat
         found = None
         chosen = manual.get(str(course["id"]))
         if plan and chosen and chosen != "none":
-            found = find_by_key(plan, chosen[0] if isinstance(chosen, list) else chosen)
+            found = narrow_module(find_by_key(plan, chosen[0] if isinstance(chosen, list) else chosen), taken)
         elif plan and not chosen:
             forced = _override(cfg, "plan", name)
             found = _find_subject(plan, forced) if forced else match_subject(name, plan, term, taken)
@@ -516,11 +533,11 @@ def course_splits(courses: list[dict], plan: list[dict] | None, state: dict | No
             continue
         options = []
         for key in keys:
-            found = find_by_key(plan, key)
+            found = narrow_module(find_by_key(plan, key), taken)
             if found:
                 sem, subject = found
                 options.append((sem["number"], semester_folder(sem["number"]) if folders else None,
-                                subject_folder(key, subject["name"], state)))
+                                subject_folder(subject_key(sem, subject), subject["name"], state)))
         if len(options) > 1:
             splits[course["id"]] = sorted(options)
     return splits

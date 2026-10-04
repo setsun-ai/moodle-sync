@@ -536,3 +536,50 @@ def test_long_module_has_pages(bot, monkeypatch):
     assert "⬜ 35. Option 35" in labels and "◀" in labels
     click("elt:0:34")
     assert "☑️ 35. Option 35" in [b[0] for row in bot["edits"][-1][1] for b in row]  # stays on page 2
+
+
+
+def test_misplaced_files_are_found_and_missing_ones_refetched():
+    from moodle_sync import storage
+
+    state = {"downloaded": {
+        "a": {"path": "Sem 1/Language I/Exercises/list1.pdf", "key": "1:1:/list1.pdf"},  # really in the old folder
+        "b": {"path": "Sem 1/Language I/Exercises/list2.pdf", "key": "1:2:/list2.pdf"},  # nowhere
+        "c": {"path": "Sem 1/Bio/Lectures/w1.pdf", "key": "2:3:/w1.pdf"},  # in place
+        "d": {"path": "Sem 1/Bio/Lectures/w2.pdf", "key": "2:4:/w2.pdf"}}}  # only local - the upload sends it
+    listing = [("Sem 1/English/Exercises/list1.pdf", 10), ("Sem 1/Bio/Lectures/w1.pdf", 5),
+               ("My notes/list2.pdf", 7)]  # same name, other folder: not taken for list2
+    moves, missing = storage.misplaced(listing, state, {"sem 1/bio/lectures/w2.pdf"})
+    assert moves == [{"from": "Sem 1/English/Exercises/list1.pdf", "to": "Sem 1/Language I/Exercises/list1.pdf"}]
+    assert missing == ["Sem 1/Language I/Exercises/list2.pdf"]
+
+
+def test_refetch_is_quiet(monkeypatch):
+    from conftest import make_file
+
+    from moodle_sync import files, state as state_mod
+
+    f = make_file(id="url:x")
+    sent = []
+    monkeypatch.setattr(moodle, "my_courses", lambda: [])
+    monkeypatch.setattr(files, "collect_files", lambda courses: [f])
+    monkeypatch.setattr(files, "download_file", lambda f, dest: 10)
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False: sent.append(title))
+    st = {"downloaded": {"url:x": {"path": None, "key": files.logical_key(f), "skipped": "redownload"}}}
+    st["layout_sig"] = files.layout_signature({}, st)
+    state_mod.save(st)
+    assert files.run() == 0
+    assert state_mod.load()["downloaded"]["url:x"]["path"] and sent == []
+
+
+def test_course_on_a_one_option_module_goes_to_that_option():
+    from moodle_sync import studyplan
+
+    plan = studyplan.parse_plan(
+        '<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+        '<div class="data-table__row"><div class="cell"><span class="cell__inner">Language I</span></div></div>'
+        '<div class="data-table__row secondary-row"><div class="cell"><div class="cell__inner">English I</div></div>'
+        '<a href="/pl/subjects/5/card.pdf">x</a></div>')
+    st = {"course_map": {"1": "1|Language I|"}}
+    got = studyplan.assign_courses([{"id": 1, "fullname": "English", "startdate": 0}], plan, {}, st)
+    assert got[1]["subject"] == "English I" and got[1]["card"] == 5  # the card's folder, not "Language I"

@@ -185,7 +185,7 @@ def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
 
 
 # Bump when the code changes where files go, so the next run moves them without the fuse.
-LAYOUT_VERSION = 6
+LAYOUT_VERSION = 7
 
 
 def layout_signature(cfg: dict, state: dict) -> str:
@@ -382,6 +382,8 @@ def is_pending(f: dict, downloaded: dict) -> bool:
     entry = downloaded.get(f["id"])
     if entry is None:
         return True
+    if entry.get("skipped") == "redownload":  # lost in the cloud (/cleanup): fetch it again
+        return True
     # Skipped as too large - retry if the limit has been raised since.
     return entry.get("skipped") == "too_large" and not too_large(f)
 
@@ -461,8 +463,10 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
             print("    " + t("error", error=moodle.redact(str(e))))
             continue
 
+        again = (downloaded.get(f["id"]) or {}).get("skipped") == "redownload"
         downloaded[f["id"]] = {"path": rel.as_posix(), "key": logical_key(f), "ts": int(time.time())}
-        done.append(rel)
+        if not again:  # a file fetched again after /cleanup isn't news
+            done.append(rel)
         state_mod.save(state)  # after every file: an interrupted run won't start over
 
     if dry_run:

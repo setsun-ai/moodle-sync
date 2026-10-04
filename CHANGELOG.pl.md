@@ -2,6 +2,11 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.5.4 (2026-10)
+
+- **`/porzadki` naprawia pliki, co do których stan i chmura się nie zgadzają:** gdy przeniesienie w chmurze się nie udało (błąd z duplikatami folderów, naprawiony w 1.5.0), moodle-sync uważał, że plik jest w nowym folderze, a on został w starym - stare foldery, których `/porzadki` nie widział. Teraz takie pliki są rozpoznawane po nazwie i folderze nad nimi i przenoszone na miejsce; pliki, których nie ma nigdzie, pobierają się ponownie z Moodle, bez powiadomienia „nowe materiały”.
+- Kurs przypisany do całego modułu z jedną opcją („Język obcy I” -> „Język angielski I”) albo z jedną opcją wybraną w `/obieralne` trafia do folderu tej opcji - tego samego co jego karta.
+
 ## 1.5.3 (2026-10)
 
 - Kurs z Moodle bez numeru części („Język angielski”) dopasowuje się teraz do swojej części planu („Język angielski I” albo „II”) według semestru, w którym się zaczął - wcześniej jego pliki zostawały w osobnym folderze obok folderu z kartą.

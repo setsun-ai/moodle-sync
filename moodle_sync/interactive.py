@@ -706,16 +706,20 @@ def show_cleanup(chat: str) -> None:
     found = storage.find_stale()
     STATE["cleanup"] = found
     local, remote, dups = found["local"], found["remote"] or [], found.get("duplicates", [])
-    if not local and not remote and not dups:
+    moved, missing = found.get("misplaced", []), found.get("missing", [])
+    if not local and not remote and not dups and not moved and not missing:
         send(chat, t("ui_cu_none"))
         return
     lines = [t("ui_cu_found", local=len(local), remote=len(remote) if found["remote"] is not None else "–")]
     if dups:
         lines.append(t("ui_cu_duplicates", n=len(dups)))
         lines += [f"• 📁 {esc(p)}" for p in dups[:8]]
+    if moved or missing:
+        lines.append(t("ui_cu_misplaced", moved=len(moved), missing=len(missing)))
+        lines += [f"• {esc(m['from'])} → {esc(m['to'])}" for m in moved[:6]]
     lines += [f"• {esc(p)}" for p in (remote or local)[:8]]
-    send(chat, "\n".join(lines), [[(t("ui_cu_delete", n=len(local) + len(remote) + len(dups)), "cu!"),
-                                    (t("ui_cancel"), "x")]])
+    total = len(local) + len(remote) + len(dups) + len(moved) + len(missing)
+    send(chat, "\n".join(lines), [[(t("ui_cu_fix", n=total), "cu!"), (t("ui_cancel"), "x")]])
 
 
 def do_cleanup(chat: str, message_id: int) -> None:

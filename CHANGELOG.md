@@ -2,6 +2,11 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.5.4 (2026-10)
+
+- **`/cleanup` repairs files the state and the cloud disagree about:** when a move in the cloud had failed (the duplicate-folder bug fixed in 1.5.0), moodle-sync believed the file was in the new folder while it stayed in the old one - old folders that `/cleanup` didn't see. Now such files are found by name and the folder above them and moved into place; files found nowhere are fetched again from Moodle, without a "new materials" message.
+- A course assigned to a whole module with one option ("Language I" -> "English I"), or with one option picked in `/electives`, goes to that option's folder - the same as its card.
+
 ## 1.5.3 (2026-10)
 
 - A Moodle course without the part number ("English") now matches its part of the plan ("English I" or "English II") by the semester it started in - before, its files stayed in a folder of their own next to the card's.

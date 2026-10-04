@@ -232,13 +232,53 @@ def duplicate_paths(items: list[dict]) -> list[str]:
     return sorted(path for (path, _), n in counts.items() if n > 1)
 
 
+def misplaced(listing: list[tuple[str, int]], state: dict, local: set[str]) -> tuple[list[dict], list[str]]:
+    """
+    Files moodle-sync believes are at path X while the cloud has them elsewhere - left
+    behind when a move in the cloud failed after the state had already been updated.
+    Returns (moves [{"from": where it really is, "to": X}], paths found nowhere). A file
+    is recognised by its name and the folder right above it ("Cwiczenia/list3.pdf"),
+    and only when exactly one untracked file fits. Pure - see tests.
+    """
+    remote = {p.casefold() for p, _ in listing}
+    tracked = {e["path"] for e in state.get("downloaded", {}).values() if e.get("path")}
+    tracked |= {e["path"] for e in state.get("syllabi", {}).values() if e.get("path")}
+    tracked_cf = {p.casefold() for p in tracked}
+
+    def tail(path: str) -> str:
+        return "/".join(path.split("/")[-2:]).casefold()
+
+    candidates: dict = {}
+    for path, _ in listing:
+        if path.casefold() not in tracked_cf:
+            candidates.setdefault(tail(path), []).append(path)
+    moves, missing = [], []
+    for path in sorted(tracked):
+        if path.casefold() in remote or path.casefold() in local:
+            continue  # in place, or the next upload sends the local copy
+        found = candidates.get(tail(path), [])
+        if len(found) == 1:
+            moves.append({"from": found.pop(), "to": path})
+        else:
+            missing.append(path)
+    return moves, missing
+
+
 def find_stale() -> dict:
-    """{"local": [paths], "remote": [paths] or None when there's no cloud, "duplicates": [paths]}."""
-    tracked = tracked_paths(state_mod.load())
+    """
+    {"local": [paths], "remote": [paths] or None when there's no cloud, "duplicates": [paths],
+    "misplaced": [moves], "missing": [paths]}.
+    """
+    state = state_mod.load()
+    tracked = tracked_paths(state)
     items = remote_items()
-    return {"local": stale_copies(local_listing(), tracked),
-            "remote": stale_copies(remote_listing(items), tracked) if items is not None else None,
-            "duplicates": duplicate_paths(items) if items is not None else []}
+    local = local_listing()
+    found = {"local": stale_copies(local, tracked),
+             "remote": stale_copies(remote_listing(items), tracked) if items is not None else None,
+             "duplicates": duplicate_paths(items) if items is not None else [], "misplaced": [], "missing": []}
+    if items is not None:
+        found["misplaced"], found["missing"] = misplaced(remote_listing(items), state, {p.casefold() for p, _ in local})
+    return found
 
 
 def remove_stale(found: dict) -> int:
@@ -246,6 +286,22 @@ def remove_stale(found: dict) -> int:
         # merge folders with the same name (their content ends up in one), and of two files
         # with the same name in the same folder keep the newest
         rclone("dedupe", "--dedupe-mode", "newest", target())
+    moves = found.get("misplaced") or []
+    for folder in sorted({posixpath.dirname(m["to"]) for m in moves if posixpath.dirname(m["to"])},
+                         key=lambda d: (d.count("/"), d)):
+        rclone("mkdir", target(folder), quiet=True)
+    for move in moves:  # one by one: they're few, and parallel moves made duplicate folders before
+        _move_one(move)
+    if found.get("missing"):
+        state = state_mod.load()
+        missing = {p.casefold() for p in found["missing"]}
+        for entry in state.get("downloaded", {}).values():
+            if entry.get("path") and entry["path"].casefold() in missing:
+                entry["skipped"], entry["path"] = "redownload", None  # fetched again, quietly, on the next sync
+        for entry in state.get("syllabi", {}).values():
+            if entry.get("path", "").casefold() in missing:
+                entry["checked"], entry["sha"] = 0, ""
+        state_mod.save(state)
     root = config.download_dir()
     for path in found["local"]:
         (root / path).unlink(missing_ok=True)
@@ -260,7 +316,8 @@ def remove_stale(found: dict) -> int:
             rclone("rmdirs", target(), "--leave-root")
         finally:
             os.unlink(fh.name)
-    return len(found["local"]) + len(found["remote"] or []) + len(found.get("duplicates", []))
+    return (len(found["local"]) + len(found["remote"] or []) + len(found.get("duplicates", []))
+            + len(found.get("misplaced", [])) + len(found.get("missing", [])))
 
 
 def cleanup(apply: bool = False) -> int:
@@ -274,8 +331,12 @@ def cleanup(apply: bool = False) -> int:
         print(t("cleanup_duplicates", n=len(found["duplicates"])))
         for path in found["duplicates"][:30]:
             print(f"    {path}")
+    if found["misplaced"] or found["missing"]:
+        print(t("cleanup_misplaced", moved=len(found["misplaced"]), missing=len(found["missing"])))
+        for move in found["misplaced"][:30]:
+            print(f"    {move['from']}\n -> {move['to']}")
     if not apply:
-        if found["local"] or found["remote"] or found["duplicates"]:
+        if found["local"] or found["remote"] or found["duplicates"] or found["misplaced"] or found["missing"]:
             print("\n" + t("cleanup_hint"))
         return 0
     print(t("cleanup_done", n=remove_stale(found)))

@@ -122,6 +122,12 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "ui_cu_misplaced": {"pl": "📦 Pliki w złym miejscu: przeniosę {moved}, pobiorę ponownie z Moodle {missing} (po cichu)",
+        "en": "📦 Files in the wrong place: {moved} to move, {missing} to fetch again from Moodle (quietly)"},
+    "ui_cu_fix": {"pl": "🧹 Napraw ({n})",
+        "en": "🧹 Fix ({n})"},
+    "cleanup_misplaced": {"pl": "Pliki w złym miejscu w chmurze: do przeniesienia {moved}, do ponownego pobrania {missing}",
+        "en": "Files in the wrong place in the cloud: {moved} to move, {missing} to fetch again"},
     "ui_el_overview": {"pl": "🎓 <b>Przedmioty obieralne</b> – dotknij modułu, żeby wybrać (✅ wybrane, ❓ bez wyboru):",
         "en": "🎓 <b>Elective subjects</b> – tap a module to choose (✅ chosen, ❓ no choice yet):"},
     "cal_join": {"pl": "Dołącz do zajęć online",
