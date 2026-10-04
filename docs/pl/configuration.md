@@ -112,11 +112,12 @@ sudo cp /etc/systemd/system/moodle-sync.timer /etc/systemd/system/moodle-sync-2.
 sudo systemctl daemon-reload && sudo systemctl enable --now moodle-sync-2.timer
 ```
 
-Kalendarz Google dla drugiego Moodle: skopiuj pliki Google z pierwszej kopii i nadaj stronie własną etykietę -
+Kalendarz Google dla drugiego Moodle: skopiuj logowanie Google z pierwszej kopii (`google_token.json` -
+`client_secret.json` jest potrzebny tylko przy pierwszym logowaniu i może go tu nie być) i nadaj stronie własną etykietę -
 powstaną kalendarze „UG – terminy” i „UG – zajęcia”, obok kalendarzy pierwszej uczelni:
 
 ```bash
-cp ~/moodle-sync/client_secret.json ~/moodle-sync/google_token.json ~/moodle-sync-2/
+cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 

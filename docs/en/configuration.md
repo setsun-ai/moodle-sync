@@ -112,11 +112,12 @@ sudo cp /etc/systemd/system/moodle-sync.timer /etc/systemd/system/moodle-sync-2.
 sudo systemctl daemon-reload && sudo systemctl enable --now moodle-sync-2.timer
 ```
 
-Google Calendar for the second site: copy the Google files of the first copy, and give the site its own label -
+Google Calendar for the second site: copy the first copy's Google login (`google_token.json` - `client_secret.json`
+is needed only for the first login and may not be on this machine), and give the site its own label -
 its calendars are then "UG – deadlines" and "UG – classes", next to the first site's:
 
 ```bash
-cp ~/moodle-sync/client_secret.json ~/moodle-sync/google_token.json ~/moodle-sync-2/
+cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
