@@ -182,3 +182,34 @@ def test_too_large_is_retried_after_raising_the_limit(monkeypatch):
     assert files.too_large(f) and not files.is_pending(f, downloaded)
     monkeypatch.setenv("MAX_FILE_MB", "100")
     assert files.is_pending(f, downloaded)
+
+
+def test_new_course_is_announced_once(monkeypatch):
+    from moodle_sync import moodle
+
+    sent = []
+    courses = [{"id": 1, "fullname": "Algorithms", "startdate": 0}]
+    monkeypatch.setattr(moodle, "my_courses", lambda: courses)
+    monkeypatch.setattr(files, "collect_files", lambda courses: [])
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False: sent.append((title, message)))
+    assert files.run() == 0 and sent == []  # the first run only remembers what's there
+    courses.append({"id": 2, "fullname": "Databases [2026/27]", "startdate": 0})
+    assert files.run() == 0
+    assert sent == [("New Moodle courses (1)", "• Databases [2026/27] → Databases [2026/27]")]
+    assert files.run() == 0 and len(sent) == 1
+
+
+def test_new_course_outside_the_plan_asks_for_assign(monkeypatch):
+    from moodle_sync import studyplan
+
+    plan = studyplan.parse_plan('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - zimowy)</h3></div>'
+                                '<div class="data-table__row"><div class="cell"><span class="cell__inner">'
+                                'CHEMOINFORMATYKA</span></div><a href="/pl/subjects/31/card.pdf">x</a></div>')
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+    st = {"known_courses": []}
+    lines = files.new_courses([{"id": 7, "fullname": "Chemoinformatyka 2025/2026", "startdate": 0},
+                               {"id": 8, "fullname": "Kompetencje informacyjne", "startdate": 0}], {}, st)
+    assert lines[0].endswith("→ Semester 1/Chemoinformatyka")
+    assert "/assign" in lines[1] and "/assign" not in lines[0]
+    assert st["known_courses"] == [7, 8]

@@ -2,6 +2,12 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.5.5 (2026-10)
+
+- Nowy kurs w Moodle daje powiadomienie z folderem, do którego trafią jego pliki; gdy plan studiów nie ma do niego pasującego przedmiotu, wiadomość to mówi i odsyła do `/przypisz`.
+- Nazwy przedmiotów zapisane w katalogu Wielkimi Literami Na Początku Słów dostają zwykłą pisownię, tak jak nazwy WIELKIMI LITERAMI („Zespołowy Projekt Badawczy I” -> „Zespołowy projekt badawczy I”); pliki przeniosą się przy najbliższej synchronizacji, bez bezpiecznika.
+- `/status` pokazuje zainstalowaną wersję.
+
 ## 1.5.4 (2026-10)
 
 - **`/porzadki` naprawia pliki, co do których stan i chmura się nie zgadzają:** gdy przeniesienie w chmurze się nie udało (błąd z duplikatami folderów, naprawiony w 1.5.0), moodle-sync uważał, że plik jest w nowym folderze, a on został w starym - stare foldery, których `/porzadki` nie widział. Teraz takie pliki są rozpoznawane po nazwie i folderze nad nimi i przenoszone na miejsce; pliki, których nie ma nigdzie, pobierają się ponownie z Moodle, bez powiadomienia „nowe materiały”.

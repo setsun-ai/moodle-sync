@@ -219,6 +219,11 @@ class TestShoutingCatalogue:
         assert r("EKOLOGICZNE, EKONOMICZNE I ETYCZNE PROBLEMY NA DZIŚ") == "Ekologiczne, ekonomiczne i etyczne problemy na dziś"
         assert r("JĘZYK PYTHON") == "Język Python"
         assert r("Mathematics II") == "Mathematics II"
+        assert r("Zespołowy Projekt Badawczy I") == "Zespołowy projekt badawczy I"
+        assert r("Programowanie W Python") == "Programowanie w Python"
+        assert r("Analiza Danych QSAR") == "Analiza danych QSAR"
+        assert r("Machine learning i sieci neuronowe") == "Machine learning i sieci neuronowe"
+        assert r("Big Data") == "Big Data"  # too short to be sure
 
     def test_folders_are_named_after_the_plan(self, monkeypatch):
         page = ('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - zimowy)</h3></div>'

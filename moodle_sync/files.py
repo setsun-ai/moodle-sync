@@ -184,8 +184,36 @@ def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
             f["semester_folder"], f["plan_subject"] = layout.get(f["course_id"], (None, None))
 
 
+def new_courses(courses: list, cfg: dict, state: dict) -> list[str]:
+    """
+    Moodle courses not seen before, with the folder their files go to - or a note that the
+    study plan has no match for them (then /assign). The first run only remembers the courses.
+    """
+    known = state.get("known_courses")
+    state["known_courses"] = sorted(set(known or []) | {c["id"] for c in courses})
+    if known is None:
+        return []
+    fresh = [c for c in courses if c["id"] not in set(known)]
+    if not fresh:
+        return []
+    planned = bool(studyplan.plan_url())
+    plan = studyplan.load_plan(state) if planned else None
+    assigned = studyplan.assign_courses(fresh, plan, cfg, state) if plan else {}
+    layout = studyplan.course_layout(fresh, cfg, plan, state) if planned or studyplan.study_start() else {}
+    lines = []
+    for c in fresh:
+        semester, subject = layout.get(c["id"], (None, None))
+        named = _override(cfg, "names", c["fullname"])
+        folder = named or subject or course_display_name(c["fullname"], cfg)
+        line = f"{course_display_name(c['fullname'], cfg)} → {'/'.join(p for p in (semester, folder) if p)}"
+        if plan and not named and not assigned[c["id"]]["key"]:
+            line += "\n   " + t("files_new_course_unmatched")
+        lines.append(line)
+    return lines
+
+
 # Bump when the code changes where files go, so the next run moves them without the fuse.
-LAYOUT_VERSION = 7
+LAYOUT_VERSION = 8
 
 
 def layout_signature(cfg: dict, state: dict) -> str:
@@ -421,7 +449,10 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
             notify("files", t("files_relocated_title", n=len(moves)), t("files_relocated_body"))
         state["layout_sig"] = signature
         state["module_urls"] = MODULE_URLS
+        fresh = new_courses(courses, cfg, state)
         state_mod.save(state)
+        if fresh:
+            notify("files", t("files_new_courses_title", n=len(fresh)), bullet_list(fresh))
 
     pending = sorted((f for f in files if is_pending(f, downloaded)), key=lambda f: plan[f["id"]].as_posix())
 

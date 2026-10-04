@@ -448,13 +448,22 @@ _PROPER = {"python": "Python", "java": "Java", "javascript": "JavaScript", "linu
            "europa": "Europa", "europejska": "Europejska", "gdańsk": "Gdańsk", "pomorze": "Pomorze"}
 
 
+def title_case(name: str) -> bool:
+    """'Zespołowy Projekt Badawczy I' - every longer word capitalised, as one of ten same-named options."""
+    words = [re.sub(r"[^\w]", "", w) for w in name.split()]
+    long = [w for w in words if len(w) > 3 and not (w.isupper() and len(w) <= 4)]  # not acronyms
+    return len(long) >= 2 and all(w[0].isupper() and w[1:].islower() for w in long)
+
+
 def readable(name: str) -> str:
     """
     'MACHINE LEARNING I SIECI NEURONOWE' -> 'Machine learning i sieci neuronowe',
     'LABORATORIUM DYPLOMOWE I' -> 'Laboratorium dyplomowe I', 'MODELOWANIE QSAR, QSPR' ->
-    'Modelowanie QSAR, QSPR'. Names that aren't in capitals stay as they are.
+    'Modelowanie QSAR, QSPR', 'Zespołowy Projekt Badawczy I' -> 'Zespołowy projekt badawczy I'.
+    Other names stay as they are.
     """
-    if not shouting(name):
+    titled = not shouting(name)
+    if titled and not title_case(name):
         return name
     words = name.split()
     out = []
@@ -463,7 +472,8 @@ def readable(name: str) -> str:
         roman = _ROMAN.match(core) and (i == len(words) - 1 or words[i + 1].startswith("("))
         acronym = (2 <= len(core) <= 4 and core.isupper() and core.lower() not in _PLAIN
                    and sum(c in _VOWELS for c in core) <= 1)
-        mixed = any(c.islower() for c in core)  # "WCh" was written that way on purpose
+        capitalised = titled and core[:1].isupper() and core[1:].islower()
+        mixed = any(c.islower() for c in core) and not capitalised  # "WCh" was written that way on purpose
         proper = _PROPER.get(core.lower())
         out.append(word if roman or acronym or mixed else word.lower().replace(core.lower(), proper)
                    if proper else word.lower())

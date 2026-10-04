@@ -413,6 +413,9 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "en": "Fuse: a change in .env would move many files, so nothing was touched. If it's intended, "
                              "confirm with /reorganize in the bot. If not, look for a glued line in .env: "
                              "python -m moodle_sync doctor"},
+    "files_new_courses_title": {"pl": "Nowe kursy w Moodle ({n})", "en": "New Moodle courses ({n})"},
+    "files_new_course_unmatched": {"pl": "❓ nie pasuje do planu studiów – przypisz go w /przypisz",
+                                   "en": "❓ not in the study plan – assign it with /assign"},
     "files_relocated_title": {"pl": "Przeniesiono pliki do nowych folderów ({n})",
                               "en": "Files moved into the new folders ({n})"},
     "files_relocated_body": {"pl": "Po zmianie planu, przypisań albo aktualizacji. Dysk dogoni przy tej synchronizacji.",

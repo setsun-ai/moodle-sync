@@ -2,6 +2,12 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.5.5 (2026-10)
+
+- A new Moodle course gets a notification with the folder its files go to; when the study plan has no match for it, the message says so and points to `/assign`.
+- Subject names written In Title Case in the catalogue become sentence case, like the CAPITALS ("Team Research Project I" -> "Team research project I"); files move on the next sync, without the fuse.
+- `/status` shows the installed version.
+
 ## 1.5.4 (2026-10)
 
 - **`/cleanup` repairs files the state and the cloud disagree about:** when a move in the cloud had failed (the duplicate-folder bug fixed in 1.5.0), moodle-sync believed the file was in the new folder while it stayed in the old one - old folders that `/cleanup` didn't see. Now such files are found by name and the folder above them and moved into place; files found nowhere are fetched again from Moodle, without a "new materials" message.

@@ -87,7 +87,7 @@ def cmd_grades(chat_id: str) -> str:
 def cmd_status(chat_id: str) -> str:
     state = state_mod.load()
     last = state.get("last_run")
-    lines = ["🤖 <b>" + esc(t("bot_status_header")) + "</b>"]
+    lines = ["🤖 <b>" + esc(t("bot_status_header")) + "</b> · moodle-sync " + esc(__version__)]
     if last:
         lines.append(esc(t("bot_last_run", when=fmt_when(last["end"]), secs=int(last["end"] - last["start"]))))
         for step in last["steps"]:
