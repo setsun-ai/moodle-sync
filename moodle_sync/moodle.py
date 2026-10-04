@@ -99,6 +99,9 @@ def my_courses() -> list:
     """Courses the user is enrolled in, minus those listed in courses.json -> "skip"."""
     courses = call("core_enrol_get_users_courses", userid=site_info()["userid"])
     cfg = config.load_courses_config()
+    only = [fragment.casefold() for fragment in cfg.get("only", [])]
+    if only:  # e.g. a second Moodle site where you follow just one inter-university course
+        courses = [c for c in courses if any(f in c.get("fullname", "").casefold() for f in only)]
     return [c for c in courses if not course_skipped(c, cfg)]
 
 

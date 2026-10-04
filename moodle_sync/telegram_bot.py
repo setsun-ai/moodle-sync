@@ -198,15 +198,16 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
     "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None), "start": (cmd_help, None),
 }
 # Menu in Telegram: Polish names for Polish users, English otherwise.
-MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "kursy", "dzis", "oddaj", "forum", "obecnosc", "plan", "status",
-                     "sync", "reorganize", "update", "rollback", "pomoc"],
+MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "kursy", "dzis", "oddaj", "forum", "obecnosc", "plan", "obieralne",
+                     "status", "sync", "reorganize", "porzadki", "update", "rollback", "pomoc"],
               "en": ["deadlines", "new", "grades", "courses", "today", "submit", "forum", "attendance", "plan",
-                     "status", "sync", "reorganize", "update", "rollback", "help"]}
+                     "electives", "status", "sync", "reorganize", "cleanup", "update", "rollback", "help"]}
 MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help", "kursy": "bot_cmd_courses", "courses": "bot_cmd_courses",
                      "dzis": "bot_cmd_today", "today": "bot_cmd_today", "oddaj": "bot_cmd_submit",
                      "submit": "bot_cmd_submit", "forum": "bot_cmd_forum", "obecnosc": "bot_cmd_attendance",
-                     "attendance": "bot_cmd_attendance"}
+                     "attendance": "bot_cmd_attendance", "obieralne": "bot_cmd_electives",
+                     "electives": "bot_cmd_electives", "porzadki": "bot_cmd_cleanup", "cleanup": "bot_cmd_cleanup"}
 
 
 def command_of(text: str) -> str:

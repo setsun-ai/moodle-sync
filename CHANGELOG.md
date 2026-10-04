@@ -2,6 +2,13 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.3.0 (2026-10)
+
+- **Elective subjects:** the study plan now knows which alternatives belong to which elective module. `/electives` (`/obieralne`) in the bot shows each module with a toggle per subject; what you pick gets its card and folder. An elective you already have a Moodle course for counts as chosen, and the bot reminds you once about modules without a choice.
+- **Subjects without a card** in the catalogue are no longer skipped silently: `plan` marks them and you get one message listing them (again only when the list changes).
+- **Old copies after moving:** `upload --cleanup` (and `/cleanup` in the bot) finds files left behind when a move to the new folders failed - same name and size as a file moodle-sync keeps elsewhere - and deletes them, locally and in the cloud, after you confirm.
+- **A second Moodle site:** `courses.json` → `only` syncs just the courses you list; docs show how to run a second copy (e.g. one inter-university course) with its own data folder and timer, into the same cloud folder.
+
 ## 1.2.2 (2026-10)
 
 - **Attendance without the private token** (some universities never hand it out, and their key can't be reset): a QR link or photo gets an "✋ Open attendance" button - one tap, you're logged in as usual and the QR password is already in the link; `/attendance` lists the attendance activities of your courses as such buttons. This works without `MOODLE_ACTIONS` too.

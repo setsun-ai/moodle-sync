@@ -100,3 +100,10 @@ If you edit `courses.json` or the category rules, the next run **moves** already
 - in the cloud: with `rclone moveto`, without uploading them again.
 
 With option A, the desktop app handles the move by itself.
+
+## Old copies after moving files
+
+If moving a file to its new folder in the cloud fails three times, the old copy stays next to the new one.
+`python -m moodle_sync upload --cleanup` lists such copies (same name and size as a file moodle-sync keeps
+elsewhere); `--cleanup --yes` deletes them, locally and in the cloud. Your own files are never touched.
+In the Telegram bot: `/cleanup`.

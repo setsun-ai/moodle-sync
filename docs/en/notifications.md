@@ -49,6 +49,8 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/submit` `/oddaj`, or just send a file | submit it to an assignment (needs `MOODLE_ACTIONS=1`, see [Configuration](configuration.md)) |
 | `/forum` | start a discussion in a course forum (`MOODLE_ACTIONS=1`) |
 | `/attendance` `/obecnosc`, or send a link / QR photo | mark attendance (`MOODLE_ACTIONS=1`) |
+| `/electives` `/obieralne` | pick your elective subjects (study plan) |
+| `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
 | `/sync` | run a sync now |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
 | `/rollback` | go back to the version before the last `/update` |

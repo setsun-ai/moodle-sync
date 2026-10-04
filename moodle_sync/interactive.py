@@ -20,7 +20,7 @@ from pathlib import Path
 
 import requests
 
-from . import assignments, attendance, config, coursebrowse, moodle, notify
+from . import assignments, attendance, config, coursebrowse, moodle, notify, state as state_mod, storage, studyplan
 from .i18n import t
 from .textutil import clean_text
 
@@ -91,7 +91,8 @@ def fail(chat: str, error: Exception) -> None:
 
 COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": "today", "dziś": "today",
             "forum": "forum", "attendance": "attendance", "obecnosc": "attendance", "obecność": "attendance",
-            "submit": "submit", "oddaj": "submit"}
+            "submit": "submit", "oddaj": "submit", "electives": "electives", "obieralne": "electives",
+            "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -102,7 +103,8 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
     STATE.clear()
     try:
         {"courses": show_courses, "today": lambda c: show_day(c, parse_day(args)),
-         "forum": start_forum, "attendance": start_attendance, "submit": explain_submit}[kind](chat)
+         "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
+         "electives": show_electives, "cleanup": show_cleanup}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -401,6 +403,89 @@ def on_photo(msg: dict, chat: str) -> None:
     open_attendance(chat, link["url"], link["qrpass"])
 
 
+# --- elective subjects -------------------------------------------------------------------------
+
+def show_electives(chat: str) -> None:
+    """One message per elective module, with a toggle button per subject and "save"."""
+    if not studyplan.plan_url():
+        send(chat, t("plan_none"))
+        return
+    state = state_mod.load()
+    plan = studyplan.load_plan(state)
+    modules = studyplan.elective_modules(plan, moodle.my_courses(), config.load_courses_config(), state)
+    if not modules:
+        send(chat, t("ui_el_none"))
+        return
+    STATE["el_modules"] = modules
+    STATE["el_sel"] = {i: set(m["chosen"] or m["matched"]) for i, m in enumerate(modules)}
+    for i, m in enumerate(modules[:12]):
+        send(chat, elective_text(m), elective_rows(i))
+
+
+def elective_text(m: dict) -> str:
+    return t("ui_el_module", semester=esc(studyplan.semester_folder(m["semester"])),
+             module=esc(studyplan.readable(m["module"])))
+
+
+def elective_rows(i: int) -> list:
+    m, selected = STATE["el_modules"][i], STATE["el_sel"][i]
+    rows = [[(("☑️ " if name in selected else "⬜ ") + studyplan.readable(name), f"elt:{i}:{j}")]
+            for j, name in enumerate(m["options"][:25])]
+    return rows + [[(t("ui_el_save"), f"els:{i}")]]
+
+
+def toggle_elective(chat: str, message_id: int, i: int, j: int) -> None:
+    name = STATE["el_modules"][i]["options"][j]
+    STATE["el_sel"][i] ^= {name}
+    edit(chat, message_id, elective_text(STATE["el_modules"][i]), elective_rows(i))
+
+
+def save_elective(chat: str, message_id: int, i: int) -> None:
+    from .runner import SingleInstance
+
+    m, selected = STATE["el_modules"][i], sorted(STATE["el_sel"][i])
+    with SingleInstance() as lock:  # a running sync would overwrite state.json
+        if not lock.acquired:
+            send(chat, "⏳ " + esc(t("bot_sync_busy")))
+            return
+        state = state_mod.load()
+        state.setdefault("electives", {})[m["key"]] = selected
+        state_mod.save(state)
+    chosen = ", ".join(studyplan.readable(n) for n in selected) or "—"
+    edit(chat, message_id, elective_text(m) + "\n" + t("ui_el_saved", subjects=esc(chosen)))
+
+
+# --- old copies left next to moved files -----------------------------------------------------------
+
+def show_cleanup(chat: str) -> None:
+    send(chat, t("ui_cu_searching"))
+    found = storage.find_stale()
+    STATE["cleanup"] = found
+    local, remote = found["local"], found["remote"] or []
+    if not local and not remote:
+        send(chat, t("ui_cu_none"))
+        return
+    lines = [t("ui_cu_found", local=len(local), remote=len(remote) if found["remote"] is not None else "–")]
+    lines += [f"• {esc(p)}" for p in (remote or local)[:10]]
+    send(chat, "\n".join(lines), [[(t("ui_cu_delete", n=len(local) + len(remote)), "cu!"), (t("ui_cancel"), "x")]])
+
+
+def do_cleanup(chat: str, message_id: int) -> None:
+    from .runner import SingleInstance
+
+    found = STATE.pop("cleanup", None)
+    if not found:
+        edit(chat, message_id, t("ui_expired"))
+        return
+    with SingleInstance() as lock:
+        if not lock.acquired:
+            edit(chat, message_id, "⏳ " + esc(t("bot_sync_busy")))
+            return
+        edit(chat, message_id, t("ui_cu_working"))
+        n = storage.remove_stale(found)
+    edit(chat, message_id, t("ui_cu_done", n=n))
+
+
 # --- text replies and buttons ------------------------------------------------------------------
 
 def on_text(msg: dict, chat: str) -> bool:
@@ -470,6 +555,13 @@ def on_callback(cq: dict, chat: str) -> None:
             choose_status(chat, message_id, rest)
         elif data == "ao":
             do_attendance(chat, message_id)
+        elif kind == "elt" and STATE.get("el_modules"):
+            i, j = rest.split(":")
+            toggle_elective(chat, message_id, int(i), int(j))
+        elif kind == "els" and STATE.get("el_modules"):
+            save_elective(chat, message_id, int(rest))
+        elif data == "cu!":
+            do_cleanup(chat, message_id)
         else:
             edit(chat, message_id, t("ui_expired"))
     except attendance.NotAvailable as e:

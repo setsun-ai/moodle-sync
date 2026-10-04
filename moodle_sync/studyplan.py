@@ -116,25 +116,35 @@ def normalize_plan_url(url: str) -> str:
 def parse_plan(page: str) -> list[dict]:
     """
     Subject list page -> [{"number": 1, "year": 2025, "season": "winter",
-    "subjects": [{"name", "card", "elective"}]}]. Rows without a card are
-    module headers ("Elective subjects ..."); their alternatives come as
-    secondary rows and are marked elective.
+    "subjects": [{"name", "card", "elective", "module"}]}]. A row without a card
+    followed by secondary rows is a module ("Elective subjects ..."): its
+    alternatives are marked elective, with the module's name. A row without a
+    card and without alternatives is a subject whose card isn't published
+    (card None) - reported, not silently skipped.
     """
     semesters = []
     heads = list(_SEMESTER.finditer(page))
     for i, head in enumerate(heads):
         chunk = page[head.end(): heads[i + 1].start() if i + 1 < len(heads) else len(page)]
         rows = list(_ROW.finditer(chunk))
-        subjects, seen = [], set()
+        subjects, seen, module = [], set(), None
         for j, row in enumerate(rows):
             body = chunk[row.end(): rows[j + 1].start() if j + 1 < len(rows) else len(chunk)]
             cell = _FIRST_CELL.search(body)
             card = _CARD.search(body)
             name = _text(cell.group(1)) if cell else ""
-            if not name or not card or (name, card.group(1)) in seen:
+            secondary = bool(row.group(1))
+            if not secondary:
+                module = None
+                if not card and j + 1 < len(rows) and rows[j + 1].group(1):
+                    module = name  # a module header: its alternatives follow
+                    continue
+            card_id = int(card.group(1)) if card else None
+            if not name or (name, card_id) in seen:
                 continue
-            seen.add((name, card.group(1)))
-            subjects.append({"name": name, "card": int(card.group(1)), "elective": bool(row.group(1))})
+            seen.add((name, card_id))
+            subjects.append({"name": name, "card": card_id, "elective": secondary,
+                             "module": module if secondary else None})
         season = "winter" if head.group(4).lower() in ("zimowy", "winter") else "summer"
         semesters.append({"number": int(head.group(1)), "year": int(head.group(2)), "season": season,
                           "subjects": subjects})
@@ -268,8 +278,50 @@ def assign_courses(courses: list[dict], plan: list[dict] | None, cfg: dict) -> d
             semester = semester_by_term(term, plan, start)
         out[course["id"]] = {"semester": int(semester) if semester else None,
                              "subject": found[1]["name"] if found else None,
-                             "card": found[1]["card"] if found else None}
+                             "card": found[1]["card"] if found else None,
+                             "key": subject_key(*found) if found else None}
     return out
+
+
+def subject_key(sem: dict, subject: dict) -> str:
+    return f"{sem['number']}|{subject['name']}"
+
+
+def module_key(sem: dict, subject: dict) -> str:
+    return f"{sem['number']}|{subject['module']}"
+
+
+def chosen_keys(plan: list[dict], state: dict) -> set:
+    """Subjects picked in elective modules (bot: /electives), as subject keys."""
+    picks = state.get("electives", {})
+    return {subject_key(sem, subj) for sem in plan for subj in sem["subjects"]
+            if subj["elective"] and subj["name"] in picks.get(module_key(sem, subj), [])}
+
+
+def elective_modules(plan: list[dict], courses: list[dict], cfg: dict, state: dict) -> list[dict]:
+    """
+    Elective modules: [{"key", "semester", "module", "options": [names], "chosen": [names], "matched": [names]}].
+    "matched" = alternatives you already have a Moodle course for (those count as chosen).
+    """
+    matched = {a["key"] for a in assign_courses(courses, plan, cfg).values() if a["key"]}
+    picks = state.get("electives", {})
+    modules = {}
+    for sem in plan:
+        for subj in sem["subjects"]:
+            if not subj["elective"]:
+                continue
+            key = module_key(sem, subj)
+            m = modules.setdefault(key, {"key": key, "semester": sem["number"], "module": subj["module"] or "?",
+                                         "options": [], "chosen": picks.get(key, []), "matched": []})
+            m["options"].append(subj["name"])
+            if subject_key(sem, subj) in matched:
+                m["matched"].append(subj["name"])
+    return list(modules.values())
+
+
+def pending_modules(plan, courses, cfg, state) -> list[dict]:
+    """Elective modules with nothing chosen yet - the bot asks about them."""
+    return [m for m in elective_modules(plan, courses, cfg, state) if not m["chosen"] and not m["matched"]]
 
 
 def shouting(name: str) -> bool:
@@ -356,12 +408,14 @@ def search_programs(query: str, catalog: str = "") -> list[dict]:
 
 # --- subject cards -------------------------------------------------------------------------------
 
-def planned_cards(courses: list[dict], plan: list[dict], cfg: dict) -> dict:
+def planned_cards(courses: list[dict], plan: list[dict], cfg: dict, chosen: set | None = None,
+                  missing: list | None = None) -> dict:
     """
     Card id -> relative path of its PDF. Compulsory subjects of every semester,
-    plus elective ones only when you have a matching Moodle course (nobody
+    plus electives you have a Moodle course for or picked in /electives (nobody
     wants all fifteen alternatives). The folder is the same as for the
-    course's Moodle files, so the card lands next to its materials.
+    course's Moodle files, so the card lands next to its materials. Subjects
+    you take whose card isn't published are appended to `missing`.
     """
     from .files import course_display_name  # files imports this module
 
@@ -369,6 +423,7 @@ def planned_cards(courses: list[dict], plan: list[dict], cfg: dict) -> dict:
     folders = semester_folders_enabled()
     assigned = assign_courses(courses, plan, cfg)
     by_card = {}  # card -> folder name of the matching Moodle course (courses.json "names" wins)
+    taken = set(chosen or ()) | {a["key"] for a in assigned.values() if a["key"]}
     for course in courses:
         a = assigned[course["id"]]
         if a["card"]:
@@ -378,13 +433,24 @@ def planned_cards(courses: list[dict], plan: list[dict], cfg: dict) -> dict:
     cards = {}
     for sem in plan:
         for subject in sem["subjects"]:
-            if subject["elective"] and subject["card"] not in by_card:
+            if subject["elective"] and subject_key(sem, subject) not in taken:
+                continue
+            if subject["card"] is None:
+                if missing is not None:
+                    missing.append(f"{semester_folder(sem['number'])}: {readable(subject['name'])}")
                 continue
             parts = [semester_folder(sem["number"])] if folders else []
             parts += [sanitize_component(by_card.get(subject["card"]) or readable(subject["name"]), "Course", lang),
                       card_filename()]
             cards[subject["card"]] = (Path(*parts), subject["name"])
     return cards
+
+
+def notify_once(state: dict, key: str, items: list, title_key: str) -> None:
+    """A message about this exact list only once (e.g. cards still missing), again when the list changes."""
+    if items and state.get(key) != items:
+        notify("files", t(title_key, n=len(items)), bullet_list(items))
+    state[key] = items
 
 
 def card_url(card: int) -> str:
@@ -403,7 +469,9 @@ def run(dry_run: bool = False, force: bool = False) -> int:
     state = state_mod.load()
     plan = load_plan(state)
     cfg = config.load_courses_config()
-    cards = planned_cards(moodle.my_courses(), plan, cfg)
+    courses = moodle.my_courses()
+    missing = []
+    cards = planned_cards(courses, plan, cfg, chosen_keys(plan, state), missing)
     known = state.setdefault("syllabi", {})
     root = config.download_dir()
     new, changed, failed = [], [], 0
@@ -447,6 +515,10 @@ def run(dry_run: bool = False, force: bool = False) -> int:
         time.sleep(0.3)  # a public university website - no hurry
 
     if not dry_run:
+        notify_once(state, "syllabi_missing", sorted(missing), "plan_cards_missing")
+        pending = [f"{semester_folder(m['semester'])}: {readable(m['module'])}"
+                   for m in pending_modules(plan, courses, cfg, state)]
+        notify_once(state, "electives_pending", pending, "plan_electives_pending")
         state_mod.save(state)
         if new:
             notify("files", t("plan_cards_new", n=len(new)), bullet_list(new))
@@ -467,6 +539,8 @@ def preview() -> int:
     courses = moodle.my_courses()
     plan = load_plan(force=True) if plan_url() else None
     assigned = assign_courses(courses, plan, cfg)
+    st = state_mod.load()
+    chosen = chosen_keys(plan, st) if plan else set()
     now_term = term_of(time.time())
     current = semester_by_term(now_term, plan, study_start())
 
@@ -478,11 +552,13 @@ def preview() -> int:
             print(f"■ {semester_folder(sem['number'])}  ({sem['year']}/{sem['year'] + 1} {season}){mark}")
             for subject in sem["subjects"]:
                 moodle_names = [course_display_name(c["fullname"], cfg) for c in courses
-                                if assigned[c["id"]]["card"] == subject["card"]]
-                if subject["elective"] and not moodle_names:
+                                if assigned[c["id"]]["key"] == subject_key(sem, subject)]
+                picked = subject_key(sem, subject) in chosen
+                if subject["elective"] and not moodle_names and not picked:
                     continue
                 tick = "✓ " + ", ".join(moodle_names) if moodle_names else "– " + t("plan_no_moodle")
-                print(f"    {subject['name']}  [{tick}]")
+                card = "" if subject["card"] else "  📄✗ " + t("plan_no_card")
+                print(f"    {readable(subject['name'])}  [{tick}]{card}")
             print()
     elif study_start():
         print(t("plan_by_dates", start=config.env("STUDY_START")) + "\n")
@@ -490,6 +566,14 @@ def preview() -> int:
         print(t("plan_none"))
         return 2
 
+    if plan:
+        pending = pending_modules(plan, courses, cfg, st)
+        if pending:
+            print(t("plan_electives_pending", n=len(pending)) + ":")
+            for m in pending:
+                print(f"    {semester_folder(m['semester'])}: {readable(m['module'])} – "
+                      + ", ".join(readable(o) for o in m["options"][:6]) + ("…" if len(m["options"]) > 6 else ""))
+            print("    " + t("plan_electives_hint") + "\n")
     loose = [c for c in courses if not assigned[c["id"]]["subject"]]
     if loose:
         print(t("plan_unmatched"))

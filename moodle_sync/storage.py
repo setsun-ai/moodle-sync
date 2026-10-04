@@ -19,8 +19,12 @@ the time the file was modified in Moodle, so only new or replaced files are
 sent. --update also protects files you edited in the cloud (they're newer).
 """
 
+import json
+import os
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
 
 from . import config, state as state_mod
 from .i18n import t
@@ -155,6 +159,86 @@ def apply_remote_moves(dry_run: bool) -> int:
     state_mod.save(state)
     rclone("rmdirs", target(), "--leave-root")  # empty folders left after moves
     return failed
+
+
+# --- stale copies (python -m moodle_sync upload --cleanup, bot: /cleanup) -------------------------
+
+def tracked_paths(state: dict) -> set[str]:
+    """Where moodle-sync keeps its files now (downloads + subject cards), casefolded."""
+    paths = {e["path"] for e in state.get("downloaded", {}).values() if e.get("path")}
+    paths |= {e["path"] for e in state.get("syllabi", {}).values() if e.get("path")}
+    return {p.casefold() for p in paths}
+
+
+def stale_copies(listing: list[tuple[str, int]], tracked: set[str]) -> list[str]:
+    """
+    Files that are an old copy of a tracked file: not at a tracked path, but with
+    the same name and size as a tracked file elsewhere (e.g. left behind when a
+    move to the new folders failed). Your own files with other names are never
+    touched. Pure - see tests.
+    """
+    signatures = {(Path(p).name.casefold(), size) for p, size in listing if p.casefold() in tracked}
+    return sorted(p for p, size in listing
+                  if p.casefold() not in tracked and (Path(p).name.casefold(), size) in signatures)
+
+
+def local_listing() -> list[tuple[str, int]]:
+    root = config.download_dir()
+    if not root.is_dir():
+        return []
+    return [(f.relative_to(root).as_posix(), f.stat().st_size) for f in root.rglob("*")
+            if f.is_file() and not f.name.endswith((".part", ".relocating"))]
+
+
+def remote_listing() -> list[tuple[str, int]] | None:
+    if not status()[0]:
+        return None
+    out = subprocess.run([config.rclone_bin(), "lsjson", "-R", "--files-only", "--no-mimetype", "--no-modtime",
+                          target()], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if out.returncode != 0:
+        return None
+    return [(item["Path"], item.get("Size", -1)) for item in json.loads(out.stdout or "[]")]
+
+
+def find_stale() -> dict:
+    """{"local": [paths], "remote": [paths] or None when there's no cloud}."""
+    tracked = tracked_paths(state_mod.load())
+    remote = remote_listing()
+    return {"local": stale_copies(local_listing(), tracked),
+            "remote": stale_copies(remote, tracked) if remote is not None else None}
+
+
+def remove_stale(found: dict) -> int:
+    root = config.download_dir()
+    for path in found["local"]:
+        (root / path).unlink(missing_ok=True)
+    if found["local"] and root.exists():
+        from .files import _remove_empty_dirs
+        _remove_empty_dirs(root)
+    if found["remote"]:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as fh:
+            fh.write("\n".join(found["remote"]) + "\n")
+        try:
+            rclone("delete", target(), "--files-from-raw", fh.name)
+            rclone("rmdirs", target(), "--leave-root")
+        finally:
+            os.unlink(fh.name)
+    return len(found["local"]) + len(found["remote"] or [])
+
+
+def cleanup(apply: bool = False) -> int:
+    found = find_stale()
+    for where, label in (("local", t("cleanup_local")), ("remote", t("cleanup_remote"))):
+        items = found[where] or []
+        print(t("cleanup_found", where=label, n=len(items)))
+        for path in items[:30]:
+            print(f"    {path}")
+    if not apply:
+        if found["local"] or found["remote"]:
+            print("\n" + t("cleanup_hint"))
+        return 0
+    print(t("cleanup_done", n=remove_stale(found)))
+    return 0
 
 
 def backup_state() -> None:

@@ -307,3 +307,61 @@ def test_attendance_links_without_private_token(bot, monkeypatch):
     interactive.handle_command("obecnosc", [], "1")
     button = interactive.kb(bot["sent"][-1][1])["inline_keyboard"][0][0]
     assert button == {"text": "✋ LCMS: Obecność", "url": "https://m.example/mod/attendance/view.php?id=5"}
+
+
+
+def test_stale_copies_only_same_name_and_size():
+    from moodle_sync import storage
+
+    listing = [("Semestr 1/Algo/Lectures/w1.pdf", 100), ("Algo/Lectures/w1.pdf", 100),  # left behind
+               ("Algo/Lectures/w1-notes.pdf", 100), ("Algo/Lectures/w2.pdf", 999),  # not copies
+               ("Semestr 1/Algo/Lectures/w2.pdf", 200), ("My own/w1.pdf", 5)]
+    tracked = {"semestr 1/algo/lectures/w1.pdf", "semestr 1/algo/lectures/w2.pdf"}
+    assert storage.stale_copies(listing, tracked) == ["Algo/Lectures/w1.pdf"]
+
+
+def test_only_filter_for_a_second_site(monkeypatch, tmp_path):
+    import json
+
+    from moodle_sync import config
+
+    (tmp_path / "courses.json").write_text(json.dumps({"only": ["inter-university"]}), encoding="utf-8")
+    monkeypatch.setattr(moodle, "site_info", lambda **kw: {"userid": 1})
+    monkeypatch.setattr(moodle, "call", lambda fn, **kw: [{"id": 1, "fullname": "Chemistry"},
+                                                          {"id": 2, "fullname": "Inter-University Seminar"}])
+    assert config.courses_file() == tmp_path / "courses.json"
+    assert [c["id"] for c in moodle.my_courses()] == [2]
+
+
+def test_electives_in_the_bot(bot, monkeypatch):
+    from moodle_sync import state as state_mod, studyplan
+
+    plan = studyplan.parse_plan(
+        '<div><h3><strong>Semestr: 2</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+        '<div class="data-table__row"><div class="cell"><span class="cell__inner">MODULE X</span></div></div>'
+        '<div class="data-table__row secondary-row"><div class="cell"><div class="cell__inner">ALPHA</div></div>'
+        '<a href="/pl/subjects/1/card.pdf">x</a></div>'
+        '<div class="data-table__row secondary-row"><div class="cell"><div class="cell__inner">BETA</div></div>'
+        '<a href="/pl/subjects/2/card.pdf">x</a></div>')
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+    interactive.handle_command("obieralne", [], "1")
+    text, rows = bot["sent"][-1]
+    assert "MODULE X" not in text and "Module x" in text
+    assert [r[0][0] for r in rows[:2]] == ["⬜ Alpha", "⬜ Beta"]
+    click("elt:0:1")
+    assert any(r[0][0] == "☑️ Beta" for r in bot["edits"][-1][1])
+    click("els:0")
+    assert state_mod.load()["electives"] == {"2|MODULE X": ["BETA"]}
+
+
+def test_cleanup_in_the_bot(bot, monkeypatch):
+    from moodle_sync import storage
+
+    removed = []
+    monkeypatch.setattr(storage, "find_stale", lambda: {"local": ["a/x.pdf"], "remote": ["a/x.pdf", "b/y.pdf"]})
+    monkeypatch.setattr(storage, "remove_stale", lambda found: removed.append(found) or 3)
+    interactive.handle_command("porzadki", [], "1")
+    assert "local 1, cloud 2" in bot["sent"][-1][0] and removed == []
+    click("cu!")
+    assert removed and "3" in bot["edits"][-1][0]

@@ -122,6 +122,48 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "ui_el_none": {"pl": "W Twoim planie nie ma modułów obieralnych.",
+        "en": "Your study plan has no elective modules."},
+    "ui_el_module": {"pl": "🎓 <b>{semester}: {module}</b>\nZaznacz, co wybrano, i zapisz:",
+        "en": "🎓 <b>{semester}: {module}</b>\nTick what you chose and save:"},
+    "ui_el_save": {"pl": "💾 Zapisz",
+        "en": "💾 Save"},
+    "ui_el_saved": {"pl": "✅ Zapisano: {subjects}. Karty i foldery pojawią się przy najbliższej synchronizacji.",
+        "en": "✅ Saved: {subjects}. Cards and folders appear on the next sync."},
+    "ui_cu_searching": {"pl": "🔎 Szukam starych kopii plików (lokalnie i w chmurze)…",
+        "en": "🔎 Looking for old copies of files (local and cloud)…"},
+    "ui_cu_none": {"pl": "✅ Nie ma starych kopii – wszystko jest na swoim miejscu.",
+        "en": "✅ No old copies - everything is where it should be."},
+    "ui_cu_found": {"pl": "🧹 Stare kopie (ta sama nazwa i rozmiar co plik w nowym miejscu): lokalnie {local}, w chmurze {remote}",
+        "en": "🧹 Old copies (same name and size as a file in its new place): local {local}, cloud {remote}"},
+    "ui_cu_delete": {"pl": "🗑 Usuń {n}",
+        "en": "🗑 Delete {n}"},
+    "ui_cu_working": {"pl": "⏳ Usuwam…",
+        "en": "⏳ Deleting…"},
+    "ui_cu_done": {"pl": "✅ Usunięto {n} starych kopii.",
+        "en": "✅ Deleted {n} old copies."},
+    "plan_cards_missing": {"pl": "Przedmioty bez karty w katalogu ({n})",
+        "en": "Subjects without a card in the catalogue ({n})"},
+    "plan_electives_pending": {"pl": "Moduły obieralne bez wyboru ({n}) – wybierz w bocie: /obieralne",
+        "en": "Elective modules without a choice ({n}) - pick in the bot: /electives"},
+    "plan_electives_hint": {"pl": "Wybierz w bocie Telegram: /obieralne",
+        "en": "Pick them in the Telegram bot: /electives"},
+    "plan_no_card": {"pl": "brak karty w katalogu",
+        "en": "no card in the catalogue"},
+    "cleanup_found": {"pl": "{where}: stare kopie: {n}",
+        "en": "{where}: old copies: {n}"},
+    "cleanup_local": {"pl": "Lokalnie",
+        "en": "Local"},
+    "cleanup_remote": {"pl": "W chmurze",
+        "en": "Cloud"},
+    "cleanup_hint": {"pl": "Usuń je: python -m moodle_sync upload --cleanup --yes  (albo /porzadki w bocie)",
+        "en": "Delete them: python -m moodle_sync upload --cleanup --yes  (or /cleanup in the bot)"},
+    "cleanup_done": {"pl": "Usunięto: {n}",
+        "en": "Deleted: {n}"},
+    "bot_cmd_electives": {"pl": "Wybierz przedmioty obieralne",
+        "en": "Pick your elective subjects"},
+    "bot_cmd_cleanup": {"pl": "Usuń stare kopie plików po przenosinach",
+        "en": "Delete old copies left after moving files"},
     "ui_att_open": {"pl": "✋ Otwórz obecność",
         "en": "✋ Open attendance"},
     "ui_att_open_link": {"pl": "Otwórz stronę obecności – zalogujesz się jak zwykle, a hasło z kodu QR jest już w linku. Wybierz „Obecny” i zapisz.",
@@ -320,13 +362,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
                        "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
                        "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
-                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
                        "/grades — latest grades\n/courses — browse courses and materials\n/today — what's new today (/today 1, /today 12.10)\n"
                        "/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
-                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/status — status of the sync\n/sync — sync now\n"
+                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
                        "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},

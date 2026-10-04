@@ -71,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("upload", help="only upload to the cloud")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--check", action="store_true", help="only test the rclone remote")
+    p.add_argument("--cleanup", action="store_true", help="list old copies left next to moved files")
+    p.add_argument("--yes", action="store_true", help="with --cleanup: delete them")
     p = sub.add_parser("calendar", help="only sync the calendar")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--auth", action="store_true", help="log in to Google (one time)")
@@ -118,6 +120,8 @@ def main(argv: list[str] | None = None) -> int:
         return set_setting(args.key, args.value)
     if cmd == "upload":
         from . import storage
+        if args.cleanup:
+            return storage.cleanup(apply=args.yes)
         return storage.check() if args.check else storage.run(dry_run=args.dry_run)
     if cmd == "calendar":
         from . import calendar_sync

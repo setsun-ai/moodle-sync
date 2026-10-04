@@ -2,6 +2,13 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.3.0 (2026-10)
+
+- **Przedmioty obieralne:** plan studiów wie teraz, które przedmioty należą do którego modułu obieralnego. `/obieralne` (`/electives`) w bocie pokazuje każdy moduł z przełącznikiem przy każdym przedmiocie; wybrane dostają kartę i folder. Obieralny, do którego masz już kurs w Moodle, liczy się jako wybrany, a bot raz przypomina o modułach bez wyboru.
+- **Przedmioty bez karty** w katalogu nie są już po cichu pomijane: `plan` je oznacza, a Ty dostajesz jedną wiadomość z ich listą (kolejną dopiero, gdy lista się zmieni).
+- **Stare kopie po przenosinach:** `upload --cleanup` (i `/porzadki` w bocie) znajduje pliki, które zostały po nieudanym przeniesieniu do nowych folderów – ta sama nazwa i rozmiar co plik trzymany przez moodle-sync gdzie indziej – i po potwierdzeniu usuwa je lokalnie i w chmurze.
+- **Drugi Moodle:** `courses.json` → `only` synchronizuje tylko wskazane kursy; dokumentacja pokazuje, jak uruchomić drugą kopię (np. jeden kurs międzyuczelniany) z osobnym folderem danych i timerem, do tego samego folderu w chmurze.
+
 ## 1.2.2 (2026-10)
 
 - **Obecność bez „private tokenu”** (część uczelni go nie wydaje, a klucza nie da się zresetować): link albo zdjęcie QR dostaje przycisk „✋ Otwórz obecność” – jedno dotknięcie, logujesz się jak zwykle, a hasło z QR jest już w linku; `/obecnosc` pokazuje moduły obecności z Twoich kursów jako takie przyciski. Działa też bez `MOODLE_ACTIONS`.

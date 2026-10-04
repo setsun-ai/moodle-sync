@@ -64,6 +64,8 @@ Semestr 2/...
 - **Włączenie przenosi już pobrane pliki.** Dla bezpieczeństwa pierwsze uruchomienie zatrzyma się i poprosi
   o jednorazowe potwierdzenie: `python -m moodle_sync download --reorganize`. Kopia w chmurze też się przeniesie.
 - Gdy katalog nie działa, używany jest plan zapisany przy ostatnim udanym sprawdzeniu.
+- **Moduły obieralne:** zaznacz swój wybór komendą `/obieralne` w bocie Telegram (obieralny, do którego masz już kurs w Moodle, liczy się jako wybrany); bot przypomina o modułach bez wyboru.
+- Przedmioty bez opublikowanej karty w katalogu są wypisane w `plan` i zgłoszone raz w powiadomieniu.
 
 ### Bot Telegram: oddawanie zadań, fora, obecność
 
@@ -78,6 +80,35 @@ Semestr 2/...
   `zbarimg` (`sudo apt install zbar-tools`).
 - Bez „private tokenu” (część uczelni go nie wydaje – w *Kluczach bezpieczeństwa* nie ma przycisku resetu): linki obecności, zdjęcia QR i `/obecnosc` dają przycisk „✋ Otwórz obecność”, który otwiera stronę w telefonie.
 - Telegram pozwala botom pobierać pliki do 20 MB.
+
+### Drugi Moodle (np. jeden kurs międzyuczelniany)
+
+Ta sama kopia kodu może obsługiwać drugą stronę z osobnym folderem danych (`MOODLE_SYNC_DATA_DIR`): własnym
+`.env`, tokenem i `courses.json`, a pliki trafiają do tego samego folderu w chmurze.
+
+```bash
+mkdir -p ~/moodle-sync-2
+cd ~/moodle-sync && MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync setup
+```
+
+W kreatorze podaj adres drugiego Moodle; bota Telegram pomiń (wystarczy bot pierwszej kopii – powiadomienia z obu
+przyjdą na ten sam czat). Potem w tym samym terminalu:
+
+```bash
+export MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2
+.venv/bin/python -m moodle_sync set STATE_BACKUP_DEST _moodle_sync_2   # nigdy wspólna kopia stanu
+.venv/bin/python -m moodle_sync set SYLLABUS 0                         # karty pobiera pierwsza kopia
+echo '{"only": ["fragment nazwy kursu"]}' > ~/moodle-sync-2/courses.json
+```
+
+`only` (w `courses.json`) synchronizuje tylko kursy, których nazwa zawiera któryś fragment. Ustaw ten sam
+`STUDY_PLAN_URL`, a kurs trafi do właściwego folderu semestru. Drugi timer na Raspberry Pi / serwerze:
+
+```bash
+sudo sed "s#^Environment=\(.*\)#Environment=\1 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2#" /etc/systemd/system/moodle-sync.service | sudo tee /etc/systemd/system/moodle-sync-2.service
+sudo cp /etc/systemd/system/moodle-sync.timer /etc/systemd/system/moodle-sync-2.timer
+sudo systemctl daemon-reload && sudo systemctl enable --now moodle-sync-2.timer
+```
 
 ### Chmura (rclone): zobacz [Chmura](storage.md)
 
@@ -136,6 +167,7 @@ python -m moodle_sync courses
 - **`default_category`:** kategoria dla plików, których nie rozpoznała żadna reguła. Użyj wbudowanego klucza (`lectures`, `exercises`, `labs`, `projects`, `other`) albo dowolnej nazwy folderu.
 - **`skip`:** całkowicie pomijaj te kursy (pliki, kalendarz, ogłoszenia, oceny).
 - **`plan`:** który to przedmiot z planu studiów, gdy nazwa w Moodle tego nie mówi (`"Matematyka dla inżynierów": "Matematyka II"`).
+- **`only`:** synchronizuj tylko kursy, których nazwa zawiera któryś z tych fragmentów (np. drugi Moodle, zobacz niżej).
 - **`semester`:** wymuszony semestr kursu (`"Piaskownica": 1`).
 - **`category_rules`:** własne reguły, sprawdzane **przed** wbudowanymi. `pattern` to [wyrażenie regularne](https://regex101.com) dopasowywane do tekstu **bez polskich znaków, małymi literami** (pisz `wyklad`, nie `Wykład`).
 

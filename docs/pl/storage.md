@@ -100,3 +100,10 @@ Gdy zmienisz `courses.json` albo reguły kategorii, kolejny przebieg **przeniesi
 - w chmurze: przez `rclone moveto`, bez ponownego wysyłania.
 
 W opcji A przeniesienie obsłuży sama aplikacja na komputerze.
+
+## Stare kopie po przenosinach
+
+Jeśli przeniesienie pliku do nowego folderu w chmurze trzy razy się nie uda, stara kopia zostaje obok nowej.
+`python -m moodle_sync upload --cleanup` wypisuje takie kopie (ta sama nazwa i rozmiar co plik, który moodle-sync
+trzyma gdzie indziej); `--cleanup --yes` je usuwa, lokalnie i w chmurze. Twoich własnych plików nie rusza.
+W bocie Telegram: `/porzadki`.

@@ -49,6 +49,8 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/oddaj` `/submit` albo po prostu wyślij plik | oddaj go do zadania (wymaga `MOODLE_ACTIONS=1`, zobacz [Konfiguracja](configuration.md)) |
 | `/forum` | załóż wątek na forum kursu (`MOODLE_ACTIONS=1`) |
 | `/obecnosc` `/attendance` albo wyślij link / zdjęcie QR | zaznacz obecność (`MOODLE_ACTIONS=1`) |
+| `/obieralne` `/electives` | wybierz przedmioty obieralne (plan studiów) |
+| `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
 | `/sync` | synchronizuj teraz |
 | `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |
 | `/rollback` | wróć do wersji sprzed ostatniego `/update` |

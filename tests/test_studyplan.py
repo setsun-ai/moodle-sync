@@ -94,9 +94,9 @@ class TestTermsAndMatching:
                    {"id": 3, "fullname": "Sandbox", "startdate": 0}]
         cfg = {"plan": {"for engineers": "Mathematics II"}, "semester": {"sandbox": 1}}
         got = studyplan.assign_courses(courses, PLAN, cfg)
-        assert got[1] == {"semester": 2, "subject": "Mathematics II", "card": 21}
-        assert got[2] == {"semester": 2, "subject": None, "card": None}  # by its start date
-        assert got[3] == {"semester": 1, "subject": None, "card": None}
+        assert got[1] == {"semester": 2, "subject": "Mathematics II", "card": 21, "key": "2|Mathematics II"}
+        assert got[2] == {"semester": 2, "subject": None, "card": None, "key": None}  # by its start date
+        assert got[3] == {"semester": 1, "subject": None, "card": None, "key": None}
 
 
 @pytest.fixture
@@ -225,3 +225,52 @@ class TestShoutingCatalogue:
         cards = {path.as_posix() for path, _ in studyplan.planned_cards(courses, plan, {}).values()}
         assert cards == {"Semester 1/Chemoinformatyka [2025_26]/Subject card.pdf",
                          "Semester 1/Otwarte bazy danych/Subject card.pdf"}
+
+
+
+ELECTIVE_PAGE = ('<div><h3><strong>Semestr: 2</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+                 + row("Proteomics", 41) + row("Safety training", None)
+                 + row("Elective module A", None) + row("Option one", 42, secondary=True)
+                 + row("Option two", 43, secondary=True) + row("Option three", None, secondary=True))
+ELECTIVE_PLAN = studyplan.parse_plan(ELECTIVE_PAGE)
+
+
+class TestElectivesAndMissingCards:
+    def test_modules_and_subjects_without_card(self):
+        subjects = ELECTIVE_PLAN[0]["subjects"]
+        assert [(x["name"], x["card"], x["elective"], x["module"]) for x in subjects] == [
+            ("Proteomics", 41, False, None), ("Safety training", None, False, None),
+            ("Option one", 42, True, "Elective module A"), ("Option two", 43, True, "Elective module A"),
+            ("Option three", None, True, "Elective module A")]
+
+    def test_pending_choice_then_cards_of_the_pick(self, monkeypatch):
+        monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
+        st = {}
+        pending = studyplan.pending_modules(ELECTIVE_PLAN, [], {}, st)
+        assert [(m["module"], m["options"]) for m in pending] == [
+            ("Elective module A", ["Option one", "Option two", "Option three"])]
+        missing = []
+        cards = studyplan.planned_cards([], ELECTIVE_PLAN, {}, studyplan.chosen_keys(ELECTIVE_PLAN, st), missing)
+        assert set(cards) == {41} and missing == ["Semester 2: Safety training"]
+
+        st["electives"] = {"2|Elective module A": ["Option two", "Option three"]}
+        assert studyplan.pending_modules(ELECTIVE_PLAN, [], {}, st) == []
+        missing = []
+        cards = studyplan.planned_cards([], ELECTIVE_PLAN, {}, studyplan.chosen_keys(ELECTIVE_PLAN, st), missing)
+        assert set(cards) == {41, 43}
+        assert missing == ["Semester 2: Safety training", "Semester 2: Option three"]
+
+    def test_a_moodle_course_counts_as_the_choice(self, monkeypatch):
+        monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
+        courses = [{"id": 1, "fullname": "Option one 2025/26", "startdate": ts(2026, 2, 20)}]
+        assert studyplan.pending_modules(ELECTIVE_PLAN, courses, {}, {}) == []
+        assert 42 in studyplan.planned_cards(courses, ELECTIVE_PLAN, {})
+
+    def test_missing_list_notified_once(self, monkeypatch):
+        sent = []
+        monkeypatch.setattr(studyplan, "notify", lambda kind, title, message="", urgent=False: sent.append(title))
+        st = {}
+        studyplan.notify_once(st, "syllabi_missing", ["A"], "plan_cards_missing")
+        studyplan.notify_once(st, "syllabi_missing", ["A"], "plan_cards_missing")
+        studyplan.notify_once(st, "syllabi_missing", ["A", "B"], "plan_cards_missing")
+        assert sent == ["Subjects without a card in the catalogue (1)", "Subjects without a card in the catalogue (2)"]
