@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.2.2 (2026-10)
+
+- **Obecność bez „private tokenu”** (część uczelni go nie wydaje, a klucza nie da się zresetować): link albo zdjęcie QR dostaje przycisk „✋ Otwórz obecność” – jedno dotknięcie, logujesz się jak zwykle, a hasło z QR jest już w linku; `/obecnosc` pokazuje moduły obecności z Twoich kursów jako takie przyciski. Działa też bez `MOODLE_ACTIONS`.
+
 ## 1.2.1 (2026-10)
 
 - Plany studiów pisane WIELKIMI LITERAMI nie dają już krzyczących folderów: przedmiot z kursem w Moodle zachowuje nazwę kursu, pozostałe dostają zwykłą pisownię („Otwarte bazy danych”).

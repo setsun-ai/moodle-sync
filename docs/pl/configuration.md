@@ -76,6 +76,7 @@ Semestr 2/...
 
 - Kody QR: wyślij botowi link (zeskanuj kod aparatem telefonu i udostępnij go) albo zdjęcie kodu, jeśli masz
   `zbarimg` (`sudo apt install zbar-tools`).
+- Bez „private tokenu” (część uczelni go nie wydaje – w *Kluczach bezpieczeństwa* nie ma przycisku resetu): linki obecności, zdjęcia QR i `/obecnosc` dają przycisk „✋ Otwórz obecność”, który otwiera stronę w telefonie.
 - Telegram pozwala botom pobierać pliki do 20 MB.
 
 ### Chmura (rclone): zobacz [Chmura](storage.md)

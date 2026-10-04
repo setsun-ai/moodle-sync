@@ -48,7 +48,9 @@ def api(method: str, **params) -> dict:
 
 
 def kb(rows: list) -> dict:
-    return {"inline_keyboard": [[{"text": text[:60], "callback_data": data[:64]} for text, data in row]
+    """Rows of (text, callback data) - or (text, https://...) for a button that opens a page."""
+    return {"inline_keyboard": [[{"text": text[:60], "url": data} if data.startswith("http")
+                                 else {"text": text[:60], "callback_data": data[:64]} for text, data in row]
                                 for row in rows if row]}
 
 
@@ -304,12 +306,16 @@ def post_forum(chat: str, message_id: int) -> None:
 
 # --- attendance ------------------------------------------------------------------------------------
 
+def links_only() -> bool:
+    """Without MOODLE_ACTIONS or the private token the bot only opens attendance pages for you."""
+    return not (actions_enabled() and config.env("MOODLE_PRIVATE_TOKEN"))
+
+
 def start_attendance(chat: str) -> None:
-    if not actions_enabled():
-        send(chat, t("ui_actions_off"))
-        return
-    if not config.env("MOODLE_PRIVATE_TOKEN"):
-        send(chat, t("ui_att_no_private"))
+    if links_only():  # the activities of your courses, one tap from Telegram
+        modules = attendance.attendance_modules(moodle.my_courses())
+        rows = [[(f"✋ {m['course']}: {m['name']}", m["url"])] for m in modules[:20]]
+        send(chat, t("ui_att_open_pick") if rows else t("ui_att_no_modules"), rows)
         return
     send(chat, t("ui_att_searching"))
     sessions = attendance.today_sessions(moodle.my_courses())
@@ -322,11 +328,8 @@ def start_attendance(chat: str) -> None:
 
 
 def open_attendance(chat: str, url: str, qrpass: str = "") -> None:
-    if not actions_enabled():
-        send(chat, t("ui_actions_off"))
-        return
-    if not config.env("MOODLE_PRIVATE_TOKEN"):
-        send(chat, t("ui_att_no_private"))
+    if links_only():  # a page you open yourself: logged in as usual, the QR password already in the link
+        send(chat, t("ui_att_open_link"), [[(t("ui_att_open"), url)]])
         return
     try:
         form, message, _final = attendance.open_session(url)

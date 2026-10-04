@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.2.2 (2026-10)
+
+- **Attendance without the private token** (some universities never hand it out, and their key can't be reset): a QR link or photo gets an "✋ Open attendance" button - one tap, you're logged in as usual and the QR password is already in the link; `/attendance` lists the attendance activities of your courses as such buttons. This works without `MOODLE_ACTIONS` too.
+
 ## 1.2.1 (2026-10)
 
 - Study plans written in CAPITALS no longer give SHOUTING folders: a subject with a Moodle course keeps the course's name, the others get normal capitalisation ("Otwarte bazy danych").

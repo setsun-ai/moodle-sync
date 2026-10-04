@@ -76,6 +76,7 @@ Semester 2/...
 
 - QR codes: send the bot the link (scan the code with your phone's camera and share it), or a photo of the code if
   `zbarimg` is installed (`sudo apt install zbar-tools`).
+- No private token (some universities don't issue it - the reset button in *Security keys* is missing): attendance links, QR photos and `/attendance` give an "✋ Open attendance" button instead, which opens the page on your phone.
 - Telegram lets bots download files up to 20 MB.
 
 ### Cloud (rclone): see [Storage](storage.md)

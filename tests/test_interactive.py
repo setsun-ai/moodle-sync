@@ -292,3 +292,18 @@ def test_attendance_password_is_asked_and_deleted(bot, monkeypatch):
     assert ("deleteMessage", {"chat_id": "1", "message_id": 9}) in bot["calls"]
     click("ao")
     assert submitted == ["letmein"]
+
+
+def test_attendance_links_without_private_token(bot, monkeypatch):
+    monkeypatch.setenv("MOODLE_ACTIONS", "1")  # no MOODLE_PRIVATE_TOKEN: the university doesn't hand it out
+    link = "https://m.example/mod/attendance/attendance.php?qrpass=QQ&sessid=77"
+    interactive.on_text({"text": link, "message_id": 3}, "1")
+    button = interactive.kb(bot["sent"][-1][1])["inline_keyboard"][0][0]
+    assert button == {"text": "✋ Open attendance", "url": link}
+
+    monkeypatch.setattr(moodle, "course_contents", lambda cid: [{"modules": [
+        {"modname": "attendance", "name": "Obecność", "url": "https://m.example/mod/attendance/view.php?id=5"},
+        {"modname": "resource", "name": "x", "url": "u"}]}])
+    interactive.handle_command("obecnosc", [], "1")
+    button = interactive.kb(bot["sent"][-1][1])["inline_keyboard"][0][0]
+    assert button == {"text": "✋ LCMS: Obecność", "url": "https://m.example/mod/attendance/view.php?id=5"}

@@ -122,6 +122,14 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "ui_att_open": {"pl": "✋ Otwórz obecność",
+        "en": "✋ Open attendance"},
+    "ui_att_open_link": {"pl": "Otwórz stronę obecności – zalogujesz się jak zwykle, a hasło z kodu QR jest już w linku. Wybierz „Obecny” i zapisz.",
+        "en": "Open the attendance page - you're logged in as usual and the QR password is already in the link. Pick \"Present\" and save."},
+    "ui_att_open_pick": {"pl": "✋ Obecność w Twoich kursach – otwórz właściwą:",
+        "en": "✋ Attendance in your courses - open the right one:"},
+    "ui_att_no_modules": {"pl": "Twoje kursy nie mają modułów obecności.",
+        "en": "Your courses have no attendance activities."},
     "ui_courses": {"pl": "📚 Twoje kursy:",
         "en": "📚 Your courses:"},
     "ui_back": {"pl": "↩️ Wróć",

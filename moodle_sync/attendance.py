@@ -214,6 +214,25 @@ def submit(form: dict, status: str, password: str = "") -> tuple[bool, str]:
     return not still_form, page_message(resp.text)
 
 
+def attendance_modules(courses: list[dict]) -> list[dict]:
+    """Attendance activities of your courses (web service only, no web session): [{"course", "name", "url"}]."""
+    from .files import course_display_name
+
+    cfg = config.load_courses_config()
+    found = []
+    for course in courses:
+        try:
+            contents = moodle.course_contents(course["id"])
+        except moodle.MoodleError:
+            continue
+        for section in contents:
+            for module in section.get("modules", []):
+                if module.get("modname") == "attendance" and module.get("uservisible", True) and module.get("url"):
+                    found.append({"course": course_display_name(course.get("fullname", ""), cfg),
+                                  "name": _text(module.get("name", "")), "url": module["url"]})
+    return found
+
+
 def today_sessions(courses: list[dict]) -> list[dict]:
     """Sessions you can mark now, from the attendance activities of your courses."""
     found = []
