@@ -64,7 +64,8 @@ Semester 2/...
 - **Switching it on moves your existing files.** To be safe, the first run stops and asks you to confirm once:
   `python -m moodle_sync download --reorganize`. The cloud copy is moved too.
 - If the catalogue is offline, the plan saved on the last successful check is used.
-- **Elective modules:** pick what you chose with `/electives` in the Telegram bot (an elective you already have a Moodle course for counts as chosen); the bot reminds you of modules without a choice.
+- **Folder names come from the plan** (written readably when the catalogue uses capitals); Moodle courses are put into them. When the automatic match is wrong or missing, `/assign` in the bot puts a course under any subject - or a whole elective module, e.g. for a course taken at another university.
+- **Elective modules:** pick what you chose with `/electives` in the Telegram bot. Options are numbered and link to their subject cards, because several can share a name; "another university" covers electives from outside the catalogue. An elective you have a Moodle course for counts as chosen; the bot reminds you of modules without a choice.
 - Subjects whose card isn't published in the catalogue are listed in `plan` and notified once.
 
 ### Telegram bot: submitting, forums, attendance

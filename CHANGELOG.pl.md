@@ -2,6 +2,12 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.4.0 (2026-10)
+
+- **Foldery zawsze nazywają się jak w planie studiów:** przedmiot zapisany wielkimi literami dostaje czytelną nazwę („Laboratorium dyplomowe I”, „Modelowanie QSAR, QSPR”), a kursy z Moodle trafiają do tych folderów – koniec z osobnym folderem dla każdej pisowni z Moodle. Zmiana raz przenosi pliki (`/reorganize`).
+- **`/przypisz` (`/assign`)**: każdy kurs z Moodle z jego folderem (✓ automatycznie, ✋ Twój wybór, ❓ brak); dotknij kursu, żeby przypisać go do dowolnego przedmiotu z dowolnego semestru, do całego modułu obieralnego (np. kurs z innej uczelni), do żadnego przedmiotu albo z powrotem automatycznie.
+- **`/obieralne`**: opcje są ponumerowane i mają link do swojej karty przedmiotu – dziesięć opcji „Zespołowy projekt badawczy I” rozróżnisz po karcie; wybór zapisuje się po karcie. Nowa opcja „🌐 inna uczelnia” dla obieralnych spoza katalogu.
+
 ## 1.3.0 (2026-10)
 
 - **Przedmioty obieralne:** plan studiów wie teraz, które przedmioty należą do którego modułu obieralnego. `/obieralne` (`/electives`) w bocie pokazuje każdy moduł z przełącznikiem przy każdym przedmiocie; wybrane dostają kartę i folder. Obieralny, do którego masz już kurs w Moodle, liczy się jako wybrany, a bot raz przypomina o modułach bez wyboru.

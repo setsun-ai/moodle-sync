@@ -347,12 +347,12 @@ def test_electives_in_the_bot(bot, monkeypatch):
     monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
     interactive.handle_command("obieralne", [], "1")
     text, rows = bot["sent"][-1]
-    assert "MODULE X" not in text and "Module x" in text
-    assert [r[0][0] for r in rows[:2]] == ["⬜ Alpha", "⬜ Beta"]
+    assert "MODULE X" not in text and "Module X" in text and "/subjects/2/card.pdf" in text
+    assert [r[0][0] for r in rows[:3]] == ["⬜ 1. Alpha", "⬜ 2. Beta", "⬜ 🌐 Not in the catalogue (another university)"]
     click("elt:0:1")
-    assert any(r[0][0] == "☑️ Beta" for r in bot["edits"][-1][1])
+    assert any(r[0][0] == "☑️ 2. Beta" for r in bot["edits"][-1][1])
     click("els:0")
-    assert state_mod.load()["electives"] == {"2|MODULE X": ["BETA"]}
+    assert state_mod.load()["electives"] == {"2|MODULE X": ["2"]}
 
 
 def test_cleanup_in_the_bot(bot, monkeypatch):
@@ -365,3 +365,27 @@ def test_cleanup_in_the_bot(bot, monkeypatch):
     assert "local 1, cloud 2" in bot["sent"][-1][0] and removed == []
     click("cu!")
     assert removed and "3" in bot["edits"][-1][0]
+
+
+
+def test_assign_a_course_in_the_bot(bot, monkeypatch):
+    from moodle_sync import state as state_mod, studyplan
+
+    plan = studyplan.parse_plan(
+        '<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - zimowy)</h3></div>'
+        '<div class="data-table__row"><div class="cell"><span class="cell__inner">JEZYK ANGIELSKI I</span></div>'
+        '<a href="/pl/subjects/9/card.pdf">x</a></div>')
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 10, "fullname": "English B2 group 4", "startdate": 0}])
+    interactive.handle_command("przypisz", [], "1")
+    assert "❓ English B2 group 4 → —" in str(bot["sent"][-1][1])
+    click("mc:10")
+    click("ms:10:1")
+    labels = [r[0][0] for r in bot["edits"][-1][1]]
+    assert labels[0] == "Jezyk angielski I"
+    click("mk:10:0")
+    assert state_mod.load()["course_map"] == {"10": "1|JEZYK ANGIELSKI I|9"}
+    assert "✋ English B2 group 4 → Jezyk angielski I" in str(bot["edits"][-1][1])
+    click("mr:10")
+    assert state_mod.load()["course_map"] == {}

@@ -122,10 +122,28 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "ui_el_external": {"pl": "🌐 Spoza katalogu (inna uczelnia)",
+        "en": "🌐 Not in the catalogue (another university)"},
+    "ui_map_title": {"pl": "📂 Kursy z Moodle i ich foldery (✓ automatycznie, ✋ Twój wybór, ❓ brak przedmiotu). Dotknij kursu, żeby zmienić:",
+        "en": "📂 Moodle courses and their folders (✓ automatic, ✋ your choice, ❓ no subject). Tap a course to change it:"},
+    "ui_map_pick_sem": {"pl": "📂 <b>{course}</b> – który semestr?",
+        "en": "📂 <b>{course}</b> – which semester?"},
+    "ui_map_pick_subject": {"pl": "📂 <b>{course}</b> – który przedmiot ({semester})? 🎓 = cały moduł obieralny, np. dla kursu z innej uczelni.",
+        "en": "📂 <b>{course}</b> – which subject ({semester})? 🎓 = the whole elective module, e.g. for a course from another university."},
+    "ui_map_auto": {"pl": "♻️ Automatycznie",
+        "en": "♻️ Automatic"},
+    "ui_map_none": {"pl": "🚫 Bez przedmiotu",
+        "en": "🚫 No subject"},
+    "ui_map_saved": {"pl": "✅ Zapisano. Pliki przeniosą się przy najbliższej synchronizacji (przy wielu plikach potwierdź przez /reorganize).",
+        "en": "✅ Saved. Files move on the next sync (with many files, confirm with /reorganize)."},
+    "plan_assign_hint": {"pl": "Przypisz je w bocie Telegram: /przypisz",
+        "en": "Assign them in the Telegram bot: /assign"},
+    "bot_cmd_assign": {"pl": "Przypisz kursy z Moodle do przedmiotów",
+        "en": "Assign Moodle courses to subjects"},
     "ui_el_none": {"pl": "W Twoim planie nie ma modułów obieralnych.",
         "en": "Your study plan has no elective modules."},
-    "ui_el_module": {"pl": "🎓 <b>{semester}: {module}</b>\nZaznacz, co wybrano, i zapisz:",
-        "en": "🎓 <b>{semester}: {module}</b>\nTick what you chose and save:"},
+    "ui_el_module": {"pl": "🎓 <b>{semester}: {module}</b>\nZaznacz swój wybór i zapisz (📄 = karta przedmiotu, po niej poznasz swoją opcję):",
+        "en": "🎓 <b>{semester}: {module}</b>\nTick your choice and save (📄 = the subject card, it tells which option is yours):"},
     "ui_el_save": {"pl": "💾 Zapisz",
         "en": "💾 Save"},
     "ui_el_saved": {"pl": "✅ Zapisano: {subjects}. Karty i foldery pojawią się przy najbliższej synchronizacji.",
@@ -362,13 +380,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
                        "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
                        "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
-                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
                        "/grades — latest grades\n/courses — browse courses and materials\n/today — what's new today (/today 1, /today 12.10)\n"
                        "/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
-                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
+                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/assign — assign Moodle courses to subjects\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
                        "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},

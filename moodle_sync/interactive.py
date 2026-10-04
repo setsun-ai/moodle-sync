@@ -92,7 +92,8 @@ def fail(chat: str, error: Exception) -> None:
 COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": "today", "dziś": "today",
             "forum": "forum", "attendance": "attendance", "obecnosc": "attendance", "obecność": "attendance",
             "submit": "submit", "oddaj": "submit", "electives": "electives", "obieralne": "electives",
-            "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup"}
+            "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup", "assign": "assign",
+            "przypisz": "assign"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -104,7 +105,7 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
     try:
         {"courses": show_courses, "today": lambda c: show_day(c, parse_day(args)),
          "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
-         "electives": show_electives, "cleanup": show_cleanup}[kind](chat)
+         "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -405,8 +406,26 @@ def on_photo(msg: dict, chat: str) -> None:
 
 # --- elective subjects -------------------------------------------------------------------------
 
+def save_state(chat: str, change) -> bool:
+    """Apply change(state) under the sync lock (a running sync would overwrite state.json)."""
+    from .runner import SingleInstance
+
+    with SingleInstance() as lock:
+        if not lock.acquired:
+            send(chat, "⏳ " + esc(t("bot_sync_busy")))
+            return False
+        state = state_mod.load()
+        change(state)
+        state_mod.save(state)
+    return True
+
+
 def show_electives(chat: str) -> None:
-    """One message per elective module, with a toggle button per subject and "save"."""
+    """
+    One message per elective module: numbered options with a link to each one's subject
+    card (options often share a name - the card tells which one is yours), a toggle per
+    option, "another university", and "save".
+    """
     if not studyplan.plan_url():
         send(chat, t("plan_none"))
         return
@@ -423,36 +442,103 @@ def show_electives(chat: str) -> None:
 
 
 def elective_text(m: dict) -> str:
-    return t("ui_el_module", semester=esc(studyplan.semester_folder(m["semester"])),
-             module=esc(studyplan.readable(m["module"])))
+    lines = [t("ui_el_module", semester=esc(studyplan.semester_folder(m["semester"])),
+               module=esc(studyplan.readable(m["module"])))]
+    for n, option in enumerate(m["options"][:25], 1):
+        name = esc(studyplan.readable(option["name"]))
+        lines.append(f'{n}. <a href="{esc(studyplan.card_url(option["card"]))}">{name}</a> 📄' if option["card"]
+                     else f"{n}. {name}")
+    return "\n".join(lines)
 
 
 def elective_rows(i: int) -> list:
     m, selected = STATE["el_modules"][i], STATE["el_sel"][i]
-    rows = [[(("☑️ " if name in selected else "⬜ ") + studyplan.readable(name), f"elt:{i}:{j}")]
-            for j, name in enumerate(m["options"][:25])]
+    rows = [[(("☑️ " if o["id"] in selected else "⬜ ") + f"{n}. " + studyplan.readable(o["name"]), f"elt:{i}:{n - 1}")]
+            for n, o in enumerate(m["options"][:25], 1)]
+    external = studyplan.EXTERNAL in selected
+    rows.append([(("☑️ " if external else "⬜ ") + t("ui_el_external"), f"elx:{i}")])
     return rows + [[(t("ui_el_save"), f"els:{i}")]]
 
 
-def toggle_elective(chat: str, message_id: int, i: int, j: int) -> None:
-    name = STATE["el_modules"][i]["options"][j]
-    STATE["el_sel"][i] ^= {name}
+def toggle_elective(chat: str, message_id: int, i: int, option: str) -> None:
+    STATE["el_sel"][i] ^= {option}
     edit(chat, message_id, elective_text(STATE["el_modules"][i]), elective_rows(i))
 
 
 def save_elective(chat: str, message_id: int, i: int) -> None:
-    from .runner import SingleInstance
-
     m, selected = STATE["el_modules"][i], sorted(STATE["el_sel"][i])
-    with SingleInstance() as lock:  # a running sync would overwrite state.json
-        if not lock.acquired:
-            send(chat, "⏳ " + esc(t("bot_sync_busy")))
-            return
-        state = state_mod.load()
-        state.setdefault("electives", {})[m["key"]] = selected
-        state_mod.save(state)
-    chosen = ", ".join(studyplan.readable(n) for n in selected) or "—"
-    edit(chat, message_id, elective_text(m) + "\n" + t("ui_el_saved", subjects=esc(chosen)))
+    if not save_state(chat, lambda state: state.setdefault("electives", {}).__setitem__(m["key"], selected)):
+        return
+    names = {o["id"]: f"{n}. {studyplan.readable(o['name'])}" for n, o in enumerate(m["options"], 1)}
+    names[studyplan.EXTERNAL] = t("ui_el_external")
+    chosen = ", ".join(names.get(x, x) for x in selected) or "—"
+    edit(chat, message_id, elective_text(m) + "\n\n" + t("ui_el_saved", subjects=esc(chosen)))
+
+
+# --- assigning Moodle courses to subjects of the plan ---------------------------------------------------
+
+def show_assign(chat: str, message_id: int | None = None) -> None:
+    """Every Moodle course with where its files go; tap one to put it under another subject or module."""
+    from .files import course_display_name
+
+    if not studyplan.plan_url():
+        send(chat, t("plan_none"))
+        return
+    state = state_mod.load()
+    plan = studyplan.load_plan(state)
+    cfg = config.load_courses_config()
+    courses = moodle.my_courses()
+    assigned = studyplan.assign_courses(courses, plan, cfg, state)
+    rows = []
+    for c in courses:
+        a = assigned[c["id"]]
+        mark = "✋" if a["manual"] else ("✓" if a["subject"] else "❓")
+        target = studyplan.readable(a["subject"]) if a["subject"] else "—"
+        rows.append([(f"{mark} {course_display_name(c['fullname'], cfg)} → {target}", f"mc:{c['id']}")])
+    text = t("ui_map_title")
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
+
+
+def assign_semesters(chat: str, message_id: int, course_id: int) -> None:
+    plan = studyplan.load_plan(state_mod.load())
+    rows = [[(studyplan.semester_folder(sem["number"]), f"ms:{course_id}:{sem['number']}") for sem in plan]]
+    rows += [[(t("ui_map_auto"), f"mr:{course_id}"), (t("ui_map_none"), f"mn:{course_id}")],
+             [(t("ui_back"), "ml")]]
+    edit(chat, message_id, t("ui_map_pick_sem", course=esc(course_name(course_id))), rows)
+
+
+def assign_subjects(chat: str, message_id: int, course_id: int, number: int) -> None:
+    plan = studyplan.load_plan(state_mod.load())
+    sem = next(x for x in plan if x["number"] == number)
+    options, seen_modules = [], set()
+    for subject in sem["subjects"]:
+        if subject["elective"]:
+            if subject["module"] not in seen_modules:  # the module itself, e.g. for a course from elsewhere
+                seen_modules.add(subject["module"])
+                options.append(("🎓 " + studyplan.readable(subject["module"]),
+                                studyplan.subject_key(sem, studyplan.module_entry(subject))))
+            label = "   ↳ " + studyplan.readable(subject["name"]) + (f" #{subject['card']}" if subject["card"] else "")
+        else:
+            label = studyplan.readable(subject["name"])
+        options.append((label, studyplan.subject_key(sem, subject)))
+    STATE["map_opts"] = [key for _, key in options]
+    rows = [[(label, f"mk:{course_id}:{i}")] for i, (label, _) in enumerate(options[:60])]
+    rows.append([(t("ui_back"), f"mc:{course_id}")])
+    edit(chat, message_id, t("ui_map_pick_subject", course=esc(course_name(course_id)),
+                             semester=esc(studyplan.semester_folder(number))), rows)
+
+
+def save_assignment(chat: str, message_id: int, course_id: int, value: str | None) -> None:
+    def change(state):
+        mapping = state.setdefault("course_map", {})
+        if value is None:
+            mapping.pop(str(course_id), None)
+        else:
+            mapping[str(course_id)] = value
+
+    if save_state(chat, change):
+        show_assign(chat, message_id)
+        send(chat, t("ui_map_saved"))
 
 
 # --- old copies left next to moved files -----------------------------------------------------------
@@ -556,8 +642,24 @@ def on_callback(cq: dict, chat: str) -> None:
         elif data == "ao":
             do_attendance(chat, message_id)
         elif kind == "elt" and STATE.get("el_modules"):
-            i, j = rest.split(":")
-            toggle_elective(chat, message_id, int(i), int(j))
+            i, j = (int(x) for x in rest.split(":"))
+            toggle_elective(chat, message_id, i, STATE["el_modules"][i]["options"][j]["id"])
+        elif kind == "elx" and STATE.get("el_modules"):
+            toggle_elective(chat, message_id, int(rest), studyplan.EXTERNAL)
+        elif data == "ml":
+            show_assign(chat, message_id)
+        elif kind == "mc":
+            assign_semesters(chat, message_id, int(rest))
+        elif kind == "ms":
+            course, number = rest.split(":")
+            assign_subjects(chat, message_id, int(course), int(number))
+        elif kind == "mk" and STATE.get("map_opts"):
+            course, index = rest.split(":")
+            save_assignment(chat, message_id, int(course), STATE["map_opts"][int(index)])
+        elif kind == "mr":
+            save_assignment(chat, message_id, int(rest), None)
+        elif kind == "mn":
+            save_assignment(chat, message_id, int(rest), "none")
         elif kind == "els" and STATE.get("el_modules"):
             save_elective(chat, message_id, int(rest))
         elif data == "cu!":

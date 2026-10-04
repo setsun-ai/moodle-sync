@@ -64,7 +64,8 @@ Semestr 2/...
 - **Włączenie przenosi już pobrane pliki.** Dla bezpieczeństwa pierwsze uruchomienie zatrzyma się i poprosi
   o jednorazowe potwierdzenie: `python -m moodle_sync download --reorganize`. Kopia w chmurze też się przeniesie.
 - Gdy katalog nie działa, używany jest plan zapisany przy ostatnim udanym sprawdzeniu.
-- **Moduły obieralne:** zaznacz swój wybór komendą `/obieralne` w bocie Telegram (obieralny, do którego masz już kurs w Moodle, liczy się jako wybrany); bot przypomina o modułach bez wyboru.
+- **Nazwy folderów pochodzą z planu** (czytelnie zapisane, gdy katalog używa wielkich liter), a kursy z Moodle trafiają do nich. Gdy automatyczne dopasowanie jest błędne albo go brak, `/przypisz` w bocie przypisze kurs do dowolnego przedmiotu – albo do całego modułu obieralnego, np. dla kursu z innej uczelni.
+- **Moduły obieralne:** zaznacz swój wybór komendą `/obieralne` w bocie Telegram. Opcje są ponumerowane i mają link do karty przedmiotu, bo kilka może mieć tę samą nazwę; „inna uczelnia” obejmuje obieralne spoza katalogu. Obieralny, do którego masz kurs w Moodle, liczy się jako wybrany; bot przypomina o modułach bez wyboru.
 - Przedmioty bez opublikowanej karty w katalogu są wypisane w `plan` i zgłoszone raz w powiadomieniu.
 
 ### Bot Telegram: oddawanie zadań, fora, obecność

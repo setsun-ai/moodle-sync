@@ -94,9 +94,9 @@ class TestTermsAndMatching:
                    {"id": 3, "fullname": "Sandbox", "startdate": 0}]
         cfg = {"plan": {"for engineers": "Mathematics II"}, "semester": {"sandbox": 1}}
         got = studyplan.assign_courses(courses, PLAN, cfg)
-        assert got[1] == {"semester": 2, "subject": "Mathematics II", "card": 21, "key": "2|Mathematics II"}
-        assert got[2] == {"semester": 2, "subject": None, "card": None, "key": None}  # by its start date
-        assert got[3] == {"semester": 1, "subject": None, "card": None, "key": None}
+        assert got[1] == {"semester": 2, "subject": "Mathematics II", "card": 21, "key": "2|Mathematics II|21", "manual": False}
+        assert got[2] == {"semester": 2, "subject": None, "card": None, "key": None, "manual": False}  # by its start date
+        assert got[3] == {"semester": 1, "subject": None, "card": None, "key": None, "manual": False}
 
 
 @pytest.fixture
@@ -210,20 +210,25 @@ class TestCatalogAddress:
 
 class TestShoutingCatalogue:
     def test_readable_names(self):
-        assert studyplan.readable("MACHINE LEARNING I SIECI NEURONOWE") == "Machine learning i sieci neuronowe"
-        assert studyplan.readable("Mathematics II") == "Mathematics II"
-        assert studyplan.folder_subject("CHEMOINFORMATYKA") is None and studyplan.folder_subject("Databases") == "Databases"
+        r = studyplan.readable
+        assert r("MACHINE LEARNING I SIECI NEURONOWE") == "Machine learning i sieci neuronowe"
+        assert r("LABORATORIUM DYPLOMOWE I") == "Laboratorium dyplomowe I"
+        assert r("MODELOWANIE QSAR, QSPR") == "Modelowanie QSAR, QSPR"
+        assert r("WYDZIAŁOWE PRZEDMIOTY OBIERALNE II (WCh)") == "Wydziałowe przedmioty obieralne II (WCh)"
+        assert r("BIG DATA ANALYSIS - METODY PRZETWARZANIA DANYCH") == "Big data analysis - metody przetwarzania danych"
+        assert r("EKOLOGICZNE, EKONOMICZNE I ETYCZNE PROBLEMY NA DZIŚ") == "Ekologiczne, ekonomiczne i etyczne problemy na dziś"
+        assert r("Mathematics II") == "Mathematics II"
 
-    def test_moodle_name_wins_over_capitals(self, monkeypatch):
+    def test_folders_are_named_after_the_plan(self, monkeypatch):
         page = ('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - zimowy)</h3></div>'
                 + row("CHEMOINFORMATYKA", 31) + row("OTWARTE BAZY DANYCH", 32))
         plan = studyplan.parse_plan(page)
         monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
         courses = [{"id": 5, "fullname": "Chemoinformatyka [2025/26]", "startdate": ts(2025, 10, 1)}]
         layout = studyplan.course_layout(courses, {}, plan)
-        assert layout[5] == ("Semester 1", None)  # files keep the Moodle course name
+        assert layout[5] == ("Semester 1", "Chemoinformatyka")  # the catalogue's name, readable
         cards = {path.as_posix() for path, _ in studyplan.planned_cards(courses, plan, {}).values()}
-        assert cards == {"Semester 1/Chemoinformatyka [2025_26]/Subject card.pdf",
+        assert cards == {"Semester 1/Chemoinformatyka/Subject card.pdf",
                          "Semester 1/Otwarte bazy danych/Subject card.pdf"}
 
 
@@ -247,13 +252,13 @@ class TestElectivesAndMissingCards:
         monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
         st = {}
         pending = studyplan.pending_modules(ELECTIVE_PLAN, [], {}, st)
-        assert [(m["module"], m["options"]) for m in pending] == [
+        assert [(m["module"], [o["name"] for o in m["options"]]) for m in pending] == [
             ("Elective module A", ["Option one", "Option two", "Option three"])]
         missing = []
         cards = studyplan.planned_cards([], ELECTIVE_PLAN, {}, studyplan.chosen_keys(ELECTIVE_PLAN, st), missing)
         assert set(cards) == {41} and missing == ["Semester 2: Safety training"]
 
-        st["electives"] = {"2|Elective module A": ["Option two", "Option three"]}
+        st["electives"] = {"2|Elective module A": ["43", "name:Option three"]}
         assert studyplan.pending_modules(ELECTIVE_PLAN, [], {}, st) == []
         missing = []
         cards = studyplan.planned_cards([], ELECTIVE_PLAN, {}, studyplan.chosen_keys(ELECTIVE_PLAN, st), missing)
@@ -274,3 +279,28 @@ class TestElectivesAndMissingCards:
         studyplan.notify_once(st, "syllabi_missing", ["A"], "plan_cards_missing")
         studyplan.notify_once(st, "syllabi_missing", ["A", "B"], "plan_cards_missing")
         assert sent == ["Subjects without a card in the catalogue (1)", "Subjects without a card in the catalogue (2)"]
+
+
+class TestManualAssignment:
+    def test_course_map_wins_and_modules_can_be_targets(self, monkeypatch):
+        monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
+        courses = [{"id": 1, "fullname": "Proteomics", "startdate": ts(2026, 2, 20)},
+                   {"id": 2, "fullname": "Humanities seminar at another university", "startdate": 0}]
+        st = {"course_map": {"1": "none", "2": "2|Elective module A|"}}
+        got = studyplan.assign_courses(courses, ELECTIVE_PLAN, {}, st)
+        assert got[1]["subject"] is None and got[1]["manual"]
+        assert got[2]["subject"] == "Elective module A" and got[2]["semester"] == 2
+        layout = studyplan.course_layout(courses, {}, ELECTIVE_PLAN, st)
+        assert layout[2] == ("Semester 2", "Elective module A")
+        modules = studyplan.elective_modules(ELECTIVE_PLAN, courses, {}, st)
+        assert modules[0]["matched"] == [studyplan.EXTERNAL]  # the outside course fills the module
+        assert studyplan.pending_modules(ELECTIVE_PLAN, courses, {}, st) == []
+
+    def test_same_name_options_are_told_apart_by_card(self):
+        page = ('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - zimowy)</h3></div>'
+                + row("Team project", None) + row("Team project I", 51, secondary=True)
+                + row("Team project I", 52, secondary=True))
+        plan = studyplan.parse_plan(page)
+        st = {"electives": {"1|Team project": ["52"]}}
+        assert studyplan.chosen_keys(plan, st) == {"1|Team project I|52"}
+        assert set(studyplan.planned_cards([], plan, {}, studyplan.chosen_keys(plan, st))) == {52}

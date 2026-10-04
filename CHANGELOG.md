@@ -2,6 +2,12 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.4.0 (2026-10)
+
+- **Folders are named after the study plan**, always: a subject in capitals becomes readable ("Laboratorium dyplomowe I", "Modelowanie QSAR, QSPR"), and the Moodle courses go into those folders - no more one folder per Moodle spelling. Switching moves files once (`/reorganize`).
+- **`/assign` (`/przypisz`)**: every Moodle course with its folder (✓ automatic, ✋ your choice, ❓ none); tap one to put it under any subject of any semester, under a whole elective module (e.g. a course from another university), under no subject, or back to automatic.
+- **`/electives`**: options are numbered and link to their subject cards - ten options called "Team research project I" are told apart by the card; choices are stored per card. New "🌐 another university" option for electives taken outside the catalogue.
+
 ## 1.3.0 (2026-10)
 
 - **Elective subjects:** the study plan now knows which alternatives belong to which elective module. `/electives` (`/obieralne`) in the bot shows each module with a toggle per subject; what you pick gets its card and folder. An elective you already have a Moodle course for counts as chosen, and the bot reminds you once about modules without a choice.

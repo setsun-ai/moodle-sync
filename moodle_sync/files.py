@@ -166,7 +166,7 @@ def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
     if not (studyplan.plan_url() or studyplan.study_start()):
         return
     plan = studyplan.load_plan(state)
-    layout = studyplan.course_layout(courses, cfg, plan)
+    layout = studyplan.course_layout(courses, cfg, plan, state)
     for f in files:
         f["semester_folder"], f["plan_subject"] = layout.get(f["course_id"], (None, None))
 
