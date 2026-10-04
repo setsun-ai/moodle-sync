@@ -346,13 +346,16 @@ def test_electives_in_the_bot(bot, monkeypatch):
     monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
     monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
     interactive.handle_command("obieralne", [], "1")
-    text, rows = bot["sent"][-1]
+    assert len(bot["sent"]) == 1 and bot["sent"][-1][1] == [[("❓ S2: Module X", "elm:0")]]  # one short message
+    click("elm:0")
+    text, rows = bot["edits"][-1]
     assert "MODULE X" not in text and "Module X" in text and "/subjects/2/card.pdf" in text
     assert [r[0][0] for r in rows[:3]] == ["⬜ 1. Alpha", "⬜ 2. Beta", "⬜ 🌐 Not in the catalogue (another university)"]
     click("elt:0:1")
     assert any(r[0][0] == "☑️ 2. Beta" for r in bot["edits"][-1][1])
     click("els:0")
     assert state_mod.load()["electives"] == {"2|MODULE X": ["2"]}
+    assert bot["edits"][-1][1] == [[("✅ S2: Module X – 2. Beta", "elm:0")]]  # back to the list, updated
 
 
 def test_cleanup_in_the_bot(bot, monkeypatch):
@@ -511,3 +514,25 @@ def test_rename_a_whole_module(bot, monkeypatch):
     st["custom_cards"] = {"2|HUMANITIES|": {"url": "https://uni.example/card.pdf", "ext": ".pdf"}}
     cards = studyplan.planned_cards([], plan, {}, set(), None, st)
     assert cards["custom:2|HUMANITIES|"][0].as_posix() == "Semester 2/Automation and GenAI/Subject card.pdf"
+
+
+
+def test_long_module_has_pages(bot, monkeypatch):
+    from moodle_sync import studyplan
+
+    options = "".join(f'<div class="data-table__row secondary-row"><div class="cell"><div class="cell__inner">'
+                      f'Option {n}</div></div><a href="/pl/subjects/{n}/card.pdf">x</a></div>' for n in range(1, 36))
+    plan = studyplan.parse_plan('<div><h3><strong>Semestr: 2</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+                                '<div class="data-table__row"><div class="cell"><span class="cell__inner">'
+                                'Humanities</span></div></div>' + options)
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+    interactive.handle_command("obieralne", [], "1")
+    click("elm:0")
+    labels = [b[0] for row in bot["edits"][-1][1] for b in row]
+    assert "⬜ 20. Option 20" in labels and "⬜ 21. Option 21" not in labels and "▶" in labels
+    click("elp:0:1")
+    labels = [b[0] for row in bot["edits"][-1][1] for b in row]
+    assert "⬜ 35. Option 35" in labels and "◀" in labels
+    click("elt:0:34")
+    assert "☑️ 35. Option 35" in [b[0] for row in bot["edits"][-1][1] for b in row]  # stays on page 2

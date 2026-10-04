@@ -422,11 +422,13 @@ def save_state(chat: str, change) -> bool:
     return True
 
 
-def show_electives(chat: str) -> None:
+PAGE = 20  # options per page of a module
+
+
+def show_electives(chat: str, message_id: int | None = None, note: str = "") -> None:
     """
-    One message per elective module: numbered options with a link to each one's subject
-    card (options often share a name - the card tells which one is yours), a toggle per
-    option, "another university", and "save".
+    One message: the list of elective modules with what you picked (✅) or not yet (❓).
+    Tapping a module turns the same message into its options; ↩️ comes back here.
     """
     if not studyplan.plan_url():
         send(chat, t("plan_none"))
@@ -439,14 +441,31 @@ def show_electives(chat: str) -> None:
         return
     STATE["el_modules"] = modules
     STATE["el_sel"] = {i: set(m["chosen"] or m["matched"]) for i, m in enumerate(modules)}
-    for i, m in enumerate(modules[:12]):
-        send(chat, elective_text(m), elective_rows(i))
+    STATE["el_page"] = {}
+    rows = []
+    for i, m in enumerate(modules):
+        picked = picked_names(i)
+        mark = "✅" if picked else "❓"
+        label = f"{mark} S{m['semester']}: {studyplan.readable(m['module'])}"
+        if picked:
+            label += " – " + ", ".join(picked)
+        rows.append([(label, f"elm:{i}")])
+    text = (note + "\n\n" if note else "") + t("ui_el_overview")
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
 
 
-def elective_text(m: dict) -> str:
+def picked_names(i: int) -> list[str]:
+    m, selected = STATE["el_modules"][i], STATE["el_sel"][i]
+    names = [f"{n}. {studyplan.readable(o['name'])}" for n, o in enumerate(m["options"], 1) if o["id"] in selected]
+    if studyplan.EXTERNAL in selected:
+        names.append("🌐")
+    return names
+
+
+def elective_text(m: dict, page: int = 0) -> str:
     lines = [t("ui_el_module", semester=esc(studyplan.semester_folder(m["semester"])),
                module=esc(studyplan.readable(m["module"])))]
-    for n, option in enumerate(m["options"][:25], 1):
+    for n, option in enumerate(m["options"][page * PAGE:(page + 1) * PAGE], page * PAGE + 1):
         name = esc(studyplan.readable(option["name"]))
         lines.append(f'{n}. <a href="{esc(studyplan.card_url(option["card"]))}">{name}</a> 📄' if option["card"]
                      else f"{n}. {name}")
@@ -455,11 +474,27 @@ def elective_text(m: dict) -> str:
 
 def elective_rows(i: int) -> list:
     m, selected = STATE["el_modules"][i], STATE["el_sel"][i]
+    page = STATE.setdefault("el_page", {}).get(i, 0)
+    first = page * PAGE
     rows = [[(("☑️ " if o["id"] in selected else "⬜ ") + f"{n}. " + studyplan.readable(o["name"]), f"elt:{i}:{n - 1}")]
-            for n, o in enumerate(m["options"][:25], 1)]
+            for n, o in enumerate(m["options"][first:first + PAGE], first + 1)]
+    pages = (len(m["options"]) - 1) // PAGE + 1
+    if pages > 1:
+        nav = [("◀", f"elp:{i}:{page - 1}")] if page > 0 else []
+        nav.append((f"{page + 1}/{pages}", f"elp:{i}:{page}"))
+        if page < pages - 1:
+            nav.append(("▶", f"elp:{i}:{page + 1}"))
+        rows.append(nav)
     external = studyplan.EXTERNAL in selected
     rows.append([(("☑️ " if external else "⬜ ") + t("ui_el_external"), f"elx:{i}")])
-    return rows + [[(t("ui_el_save"), f"els:{i}"), (t("ui_map_rename"), f"elr:{i}")]]
+    rows.append([(t("ui_el_save"), f"els:{i}"), (t("ui_map_rename"), f"elr:{i}")])
+    return rows + [[(t("ui_back"), "elb")]]
+
+
+def show_module(chat: str, message_id: int, i: int, page: int | None = None) -> None:
+    if page is not None:
+        STATE.setdefault("el_page", {})[i] = max(0, page)
+    edit(chat, message_id, elective_text(STATE["el_modules"][i], STATE["el_page"].get(i, 0)), elective_rows(i))
 
 
 def rename_module(chat: str, message_id: int, i: int) -> None:
@@ -473,20 +508,16 @@ def rename_module(chat: str, message_id: int, i: int) -> None:
 
 def toggle_elective(chat: str, message_id: int, i: int, option: str) -> None:
     STATE["el_sel"][i] ^= {option}
-    edit(chat, message_id, elective_text(STATE["el_modules"][i]), elective_rows(i))
+    show_module(chat, message_id, i)
 
 
 def save_elective(chat: str, message_id: int, i: int) -> None:
     m, selected = STATE["el_modules"][i], sorted(STATE["el_sel"][i])
     if not save_state(chat, lambda state: state.setdefault("electives", {}).__setitem__(m["key"], selected)):
         return
-    names = {o["id"]: f"{n}. {studyplan.readable(o['name'])}" for n, o in enumerate(m["options"], 1)}
-    names[studyplan.EXTERNAL] = t("ui_el_external")
-    chosen = ", ".join(names.get(x, x) for x in selected) or "—"
-    edit(chat, message_id, elective_text(m) + "\n\n" + t("ui_el_saved", subjects=esc(chosen)))
+    chosen = ", ".join(picked_names(i)) or "—"
+    show_electives(chat, message_id, note=t("ui_el_saved", subjects=esc(chosen)))
 
-
-# --- assigning Moodle courses to subjects of the plan ---------------------------------------------------
 
 def course_facts(course: dict, state: dict) -> str:
     """What tells two courses with the same name apart: when it started and how many files it has."""
@@ -795,6 +826,13 @@ def on_callback(cq: dict, chat: str) -> None:
             toggle_elective(chat, message_id, int(rest), studyplan.EXTERNAL)
         elif kind == "elr" and STATE.get("el_modules"):
             rename_module(chat, message_id, int(rest))
+        elif kind == "elm" and STATE.get("el_modules"):
+            show_module(chat, message_id, int(rest))
+        elif kind == "elp" and STATE.get("el_modules"):
+            i, page = rest.split(":")
+            show_module(chat, message_id, int(i), int(page))
+        elif data == "elb":
+            show_electives(chat, message_id)
         elif data == "ml":
             show_assign(chat, message_id)
         elif kind == "mc":

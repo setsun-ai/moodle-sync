@@ -122,6 +122,8 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "ui_el_overview": {"pl": "🎓 <b>Przedmioty obieralne</b> – dotknij modułu, żeby wybrać (✅ wybrane, ❓ bez wyboru):",
+        "en": "🎓 <b>Elective subjects</b> – tap a module to choose (✅ chosen, ❓ no choice yet):"},
     "cal_join": {"pl": "Dołącz do zajęć online",
         "en": "Join the online class"},
     "ui_map_facts": {"pl": "od {start}, plików: {n}",

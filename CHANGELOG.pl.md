@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.5.2 (2026-10)
+
+- `/obieralne` to jedna wiadomość: krótka lista modułów (✅ wybrane, ❓ bez wyboru); moduł otwiera się w tej samej wiadomości, z ↩️ powrotem. Długie moduły mają strony ◀ ▶ – opcje powyżej 25. wcześniej się nie mieściły.
+
 ## 1.5.1 (2026-10)
 
 - `/obieralne`: ✏️ zmienia nazwę folderu całego modułu - np. na nazwę kursu, który bierzesz na innej uczelni, żeby jego karta (`/karta`) trafiła obok jego plików.

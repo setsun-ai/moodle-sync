@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.5.2 (2026-10)
+
+- `/electives` is one message: a short list of modules (✅ chosen, ❓ not yet); a module opens in the same message, with ↩️ back. Long modules have pages ◀ ▶ - options past the 25th used to be missing.
+
 ## 1.5.1 (2026-10)
 
 - `/electives`: ✏️ renames the folder of a whole module - e.g. to the name of the course you take at another university, so its card (`/card`) lands next to its files.
