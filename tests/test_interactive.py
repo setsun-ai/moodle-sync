@@ -490,3 +490,24 @@ def test_duplicate_folders_are_found():
     items = [{"Path": "Sem 1/English", "IsDir": True}, {"Path": "Sem 1/English", "IsDir": True},
              {"Path": "Sem 1/English/a.pdf", "Size": 1}, {"Path": "Sem 1/Bio", "IsDir": True}]
     assert storage.duplicate_paths(items) == ["Sem 1/English"]
+
+
+
+def test_rename_a_whole_module(bot, monkeypatch):
+    from moodle_sync import state as state_mod, studyplan
+
+    plan = studyplan.parse_plan(
+        '<div><h3><strong>Semestr: 2</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+        '<div class="data-table__row"><div class="cell"><span class="cell__inner">HUMANITIES</span></div></div>'
+        '<div class="data-table__row secondary-row"><div class="cell"><div class="cell__inner">ART</div></div>'
+        '<a href="/pl/subjects/1/card.pdf">x</a></div>')
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setattr(studyplan, "load_plan", lambda state=None, force=False: plan)
+    interactive.handle_command("obieralne", [], "1")
+    click("elr:0")
+    interactive.on_text({"text": "Automation and GenAI", "message_id": 3}, "1")
+    st = state_mod.load()
+    assert st["folder_names"] == {"2|HUMANITIES|": "Automation and GenAI"}
+    st["custom_cards"] = {"2|HUMANITIES|": {"url": "https://uni.example/card.pdf", "ext": ".pdf"}}
+    cards = studyplan.planned_cards([], plan, {}, set(), None, st)
+    assert cards["custom:2|HUMANITIES|"][0].as_posix() == "Semester 2/Automation and GenAI/Subject card.pdf"

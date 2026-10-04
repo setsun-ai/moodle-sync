@@ -459,7 +459,16 @@ def elective_rows(i: int) -> list:
             for n, o in enumerate(m["options"][:25], 1)]
     external = studyplan.EXTERNAL in selected
     rows.append([(("☑️ " if external else "⬜ ") + t("ui_el_external"), f"elx:{i}")])
-    return rows + [[(t("ui_el_save"), f"els:{i}")]]
+    return rows + [[(t("ui_el_save"), f"els:{i}"), (t("ui_map_rename"), f"elr:{i}")]]
+
+
+def rename_module(chat: str, message_id: int, i: int) -> None:
+    """Folder name of a whole module - e.g. the course you take at another university."""
+    m = STATE["el_modules"][i]
+    key = m["key"] + "|"  # the module as a subject (studyplan.module_entry)
+    STATE["await"], STATE["rename_key"] = "folder_name", key
+    current = studyplan.subject_folder(key, m["module"], state_mod.load())
+    edit(chat, message_id, t("ui_map_rename_prompt", current=esc(current)), [[(t("ui_cancel"), "x")]])
 
 
 def toggle_elective(chat: str, message_id: int, i: int, option: str) -> None:
@@ -784,6 +793,8 @@ def on_callback(cq: dict, chat: str) -> None:
             toggle_elective(chat, message_id, i, STATE["el_modules"][i]["options"][j]["id"])
         elif kind == "elx" and STATE.get("el_modules"):
             toggle_elective(chat, message_id, int(rest), studyplan.EXTERNAL)
+        elif kind == "elr" and STATE.get("el_modules"):
+            rename_module(chat, message_id, int(rest))
         elif data == "ml":
             show_assign(chat, message_id)
         elif kind == "mc":

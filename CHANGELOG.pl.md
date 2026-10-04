@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.5.1 (2026-10)
+
+- `/obieralne`: ✏️ zmienia nazwę folderu całego modułu - np. na nazwę kursu, który bierzesz na innej uczelni, żeby jego karta (`/karta`) trafiła obok jego plików.
+
 ## 1.5.0 (2026-10)
 
 - **Naprawione: zdublowane foldery na Dysku Google.** Przenosiny szły po trzy naraz, a Dysk Google pozwala na kilka folderów o tej samej nazwie - trzy przenosiny do nowego folderu tworzyły go trzy razy („Język angielski” x3). Teraz foldery docelowe powstają po kolei, przed przenosinami. `/porzadki` znajduje też zdublowane foldery i je scala (`rclone dedupe`).

@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.5.1 (2026-10)
+
+- `/electives`: ✏️ renames the folder of a whole module - e.g. to the name of the course you take at another university, so its card (`/card`) lands next to its files.
+
 ## 1.5.0 (2026-10)
 
 - **Fixed: duplicated folders in Google Drive.** Moves ran three at a time, and Google Drive allows several folders with the same name - three moves into a new folder created it three times ("English" x3). Target folders are now created one by one before moving. `/cleanup` also finds duplicated folders and merges them (`rclone dedupe`).
