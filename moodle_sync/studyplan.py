@@ -219,10 +219,24 @@ def _words(text: str) -> list[str]:
     return [w for w in words if not (w.isdigit() and len(w) >= 2)]  # years, group numbers
 
 
-def match_subject(course_name: str, plan: list[dict], term: tuple[int, str] | None = None) -> tuple[dict, dict] | None:
-    """Best (semester, subject) for a Moodle course name, or None."""
+_NUMERALS = {"i", "ii", "iii", "iv", "v", "vi", "1", "2", "3", "4", "5", "6"}
+
+
+def base_words(words: list[str]) -> list[str]:
+    """Without the trailing part number: "Language II" and "Language I" are one series."""
+    return words[:-1] if len(words) > 1 and words[-1] in _NUMERALS else words
+
+
+def match_subject(course_name: str, plan: list[dict], term: tuple[int, str] | None = None,
+                  taken: set | None = None) -> tuple[dict, dict] | None:
+    """
+    Best (semester, subject) for a Moodle course name, or None. Moodle often leaves out the
+    part number ("English" for "English I" and "English II"): then the semester the course
+    started in decides. Electives you picked (/electives) beat the alternatives you didn't.
+    """
     course = _words(course_name)
     course_set, course_text = set(course), " ".join(course)
+    course_numeral = {w for w in course if w in _NUMERALS}
     best, best_score = None, 0.0
     for sem in plan:
         same_term = term == (sem["year"], sem["season"])
@@ -230,11 +244,16 @@ def match_subject(course_name: str, plan: list[dict], term: tuple[int, str] | No
             words = _words(subject["name"])
             if not words:
                 continue
+            base = base_words(words)
             if set(words) <= course_set:
                 score = 1.0 + len(words) / 100
+            elif base != words and set(base) <= course_set and not course_numeral:
+                score = 0.92 + len(base) / 100  # the series without its number
             else:
                 score = SequenceMatcher(None, " ".join(words), course_text).ratio()
             score += 0.05 if same_term else 0
+            if taken is not None and subject["elective"]:
+                score += 0.03 if subject_key(sem, subject) in taken else -0.03
             if score > best_score:
                 best, best_score = (sem, subject), score
     return best if best_score >= MATCH_THRESHOLD else None
@@ -291,6 +310,7 @@ def assign_courses(courses: list[dict], plan: list[dict] | None, cfg: dict, stat
     """
     start = study_start()
     manual = (state or {}).get("course_map", {})
+    taken = chosen_keys(plan, state) if plan and state else None
     out = {}
     for course in courses:
         name = course.get("fullname", "")
@@ -301,7 +321,7 @@ def assign_courses(courses: list[dict], plan: list[dict] | None, cfg: dict, stat
             found = find_by_key(plan, chosen[0] if isinstance(chosen, list) else chosen)
         elif plan and not chosen:
             forced = _override(cfg, "plan", name)
-            found = _find_subject(plan, forced) if forced else match_subject(name, plan, term)
+            found = _find_subject(plan, forced) if forced else match_subject(name, plan, term, taken)
         semester = _override(cfg, "semester", name)
         if semester is None and found:
             semester = found[0]["number"]
@@ -449,26 +469,59 @@ def course_layout(courses: list[dict], cfg: dict, plan: list[dict] | None, state
     return layout
 
 
-def course_splits(courses: list[dict], plan: list[dict] | None, state: dict | None = None) -> dict:
+def series_keys(plan: list[dict], sem: dict, subject: dict, taken: set) -> list[str]:
     """
-    Moodle courses you assigned to several semesters (one course for "Project I" and
-    "Project II"): course id -> [(semester number, semester folder, subject folder)].
-    Each file then goes to the semester its date falls into.
+    The other parts of a numbered series from the course's semester on ("Project I" in
+    semester 1 -> "Project II" in semester 2): the part you picked in each semester, else
+    the first one of that name.
+    """
+    base = base_words(_words(subject["name"]))
+    if base == _words(subject["name"]):
+        return []
+    keys = []
+    for other in plan:
+        if other["number"] <= sem["number"]:
+            continue
+        parts = [s for s in other["subjects"] if base_words(_words(s["name"])) == base and s["name"] != subject["name"]]
+        if parts:
+            picked = [s for s in parts if subject_key(other, s) in taken]
+            keys.append(subject_key(other, (picked or parts)[0]))
+    return keys
+
+
+def course_splits(courses: list[dict], plan: list[dict] | None, state: dict | None = None,
+                  cfg: dict | None = None) -> dict:
+    """
+    Moodle courses used for several semesters: course id -> [(semester number, semester
+    folder, subject folder)]; each file goes to the semester its date falls into. Either
+    you assigned them so (/assign ➕), or the course matched part I of a numbered series
+    ("Team project" -> "Team project I") that continues later ("Team project II").
     """
     folders = semester_folders_enabled()
+    taken = chosen_keys(plan, state or {}) if plan else set()
+    assigned = assign_courses(courses, plan, cfg or {}, state) if plan else {}
     splits = {}
     for course in courses:
         chosen = ((state or {}).get("course_map") or {}).get(str(course["id"]))
-        if not plan or not isinstance(chosen, list) or len(chosen) < 2:
+        if not plan:
+            continue
+        if isinstance(chosen, list):
+            keys = chosen
+        elif chosen is None and assigned[course["id"]]["key"] and not _override(cfg or {}, "plan", course["fullname"]):
+            first = find_by_key(plan, assigned[course["id"]]["key"])
+            keys = [assigned[course["id"]]["key"]] + series_keys(plan, *first, taken) if first else []
+        else:
+            continue
+        if len(keys) < 2:
             continue
         options = []
-        for key in chosen:
+        for key in keys:
             found = find_by_key(plan, key)
             if found:
                 sem, subject = found
                 options.append((sem["number"], semester_folder(sem["number"]) if folders else None,
                                 subject_folder(key, subject["name"], state)))
-        if options:
+        if len(options) > 1:
             splits[course["id"]] = sorted(options)
     return splits
 

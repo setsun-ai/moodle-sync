@@ -305,3 +305,45 @@ class TestManualAssignment:
         st = {"electives": {"1|Team project": ["52"]}}
         assert studyplan.chosen_keys(plan, st) == {"1|Team project I|52"}
         assert set(studyplan.planned_cards([], plan, {}, studyplan.chosen_keys(plan, st))) == {52}
+
+
+
+SERIES_PAGE = ('<div><h3><strong>Semestr: 1</strong>&nbsp;(2025/2026 - letni)</h3></div>'
+               + row("Język obcy I", None) + row("Język angielski I", 61, secondary=True)
+               + row("Zespołowy projekt badawczy I", None) + row("Zespołowy projekt badawczy I", 71, secondary=True)
+               + row("Zespołowy projekt badawczy I", 72, secondary=True)
+               + '<div><h3><strong>Semestr: 2</strong>&nbsp;(2026/2027 - zimowy)</h3></div>'
+               + row("Język obcy II", None) + row("Język angielski II", 62, secondary=True)
+               + row("Zespołowy projekt badawczy II", None) + row("Zespołowy projekt badawczy II", 81, secondary=True)
+               + row("Zespołowy projekt badawczy II", 82, secondary=True))
+SERIES = studyplan.parse_plan(SERIES_PAGE)
+
+
+class TestNumberedSeries:
+    def test_course_without_part_number_follows_its_start(self):
+        courses = [{"id": 1, "fullname": "Język angielski", "startdate": ts(2026, 2, 25)},
+                   {"id": 2, "fullname": "Język angielski", "startdate": ts(2026, 10, 1)}]
+        got = studyplan.assign_courses(courses, SERIES, {}, {})
+        assert (got[1]["subject"], got[1]["semester"]) == ("Język angielski I", 1)
+        assert (got[2]["subject"], got[2]["semester"]) == ("Język angielski II", 2)
+
+    def test_picked_option_wins_and_course_splits_by_date(self, monkeypatch):
+        monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
+        st = {"electives": {"1|Zespołowy projekt badawczy I": ["72"], "2|Zespołowy projekt badawczy II": ["82"]}}
+        courses = [{"id": 5, "fullname": "Zespołowy projekt badawczy", "startdate": ts(2026, 2, 25)},
+                   {"id": 6, "fullname": "Język angielski", "startdate": ts(2026, 10, 1)}]
+        got = studyplan.assign_courses(courses, SERIES, {}, st)
+        assert got[5]["card"] == 72  # your option, not the first of ten with the same name
+        splits = studyplan.course_splits(courses, SERIES, st)
+        assert splits[5] == [(1, "Semester 1", "Zespołowy projekt badawczy I"),
+                             (2, "Semester 2", "Zespołowy projekt badawczy II")]
+        assert 6 not in splits  # a second-semester course doesn't reach back to part I
+        assert studyplan.pick_by_date(splits[5], ts(2026, 11, 3), SERIES)[2] == "Zespołowy projekt badawczy II"
+        assert studyplan.pick_by_date(splits[5], ts(2026, 3, 3), SERIES)[2] == "Zespołowy projekt badawczy I"
+
+    def test_course_with_its_own_number_is_not_split(self, monkeypatch):
+        monkeypatch.setenv("STUDY_PLAN_URL", PLAN_URL)
+        courses = [{"id": 7, "fullname": "Język angielski II", "startdate": ts(2026, 2, 25)}]
+        got = studyplan.assign_courses(courses, SERIES, {}, {})
+        assert got[7]["subject"] == "Język angielski II"
+        assert studyplan.course_splits(courses, SERIES, {}) == {}

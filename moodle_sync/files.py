@@ -175,7 +175,7 @@ def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
         return
     plan = studyplan.load_plan(state)
     layout = studyplan.course_layout(courses, cfg, plan, state)
-    splits = studyplan.course_splits(courses, plan, state)
+    splits = studyplan.course_splits(courses, plan, state, cfg)
     for f in files:
         if f["course_id"] in splits:  # one course for several semesters: by the file's date
             _, f["semester_folder"], f["plan_subject"] = studyplan.pick_by_date(
@@ -185,7 +185,7 @@ def apply_layout(files: list, courses: list, cfg: dict, state: dict) -> None:
 
 
 # Bump when the code changes where files go, so the next run moves them without the fuse.
-LAYOUT_VERSION = 5
+LAYOUT_VERSION = 6
 
 
 def layout_signature(cfg: dict, state: dict) -> str:

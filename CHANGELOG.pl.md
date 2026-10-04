@@ -2,6 +2,12 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.5.3 (2026-10)
+
+- Kurs z Moodle bez numeru części („Język angielski”) dopasowuje się teraz do swojej części planu („Język angielski I” albo „II”) według semestru, w którym się zaczął - wcześniej jego pliki zostawały w osobnym folderze obok folderu z kartą.
+- Kurs dopasowany do części I serii, która ma ciąg dalszy (jeden kurs „Zespołowy projekt badawczy” dla części I i II), dzieli się automatycznie według dat plików, do opcji wybranych w `/obieralne`.
+- Przy dopasowaniu wybrane obieralne wygrywają z alternatywami o tej samej nazwie. Pliki przeniosą się do poprawionych folderów przy najbliższej synchronizacji, bez bezpiecznika.
+
 ## 1.5.2 (2026-10)
 
 - `/obieralne` to jedna wiadomość: krótka lista modułów (✅ wybrane, ❓ bez wyboru); moduł otwiera się w tej samej wiadomości, z ↩️ powrotem. Długie moduły mają strony ◀ ▶ – opcje powyżej 25. wcześniej się nie mieściły.

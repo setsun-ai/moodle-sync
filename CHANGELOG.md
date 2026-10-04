@@ -2,6 +2,12 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.5.3 (2026-10)
+
+- A Moodle course without the part number ("English") now matches its part of the plan ("English I" or "English II") by the semester it started in - before, its files stayed in a folder of their own next to the card's.
+- A course that matches part I of a series continuing later (one "Team research project" course for parts I and II) is split by file date automatically, into the options you picked in `/electives`.
+- Picked electives beat their same-named alternatives when matching. Files move to the corrected folders on the next sync, without the fuse.
+
 ## 1.5.2 (2026-10)
 
 - `/electives` is one message: a short list of modules (✅ chosen, ❓ not yet); a module opens in the same message, with ↩️ back. Long modules have pages ◀ ▶ - options past the 25th used to be missing.
