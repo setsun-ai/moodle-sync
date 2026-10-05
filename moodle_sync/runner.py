@@ -37,7 +37,7 @@ import requests
 
 from . import calendar_sync, config, files, moodle, state as state_mod, storage, studyplan, watch
 from .i18n import t, weekday
-from .notify import bullet_list, notify
+from .notify import _redact as notify_redact, bullet_list, notify
 
 ALERT_REPEAT_HOURS = 6
 WEEKLY_DAY, WEEKLY_HOUR = 6, 18  # Sunday, from 18:00
@@ -113,6 +113,15 @@ class Tee(io.TextIOBase):
         return "\n".join([*self.tail, self._partial]).strip()
 
 
+def redact(text: str) -> str:
+    """Mask every configured secret: Moodle tokens and notification/healthcheck credentials.
+
+    Step output ends up in logs/ and, through alert(), in error notifications, so tracebacks
+    must not carry tokens (HTTP libraries put full URLs into exception messages).
+    """
+    return notify_redact(moodle.redact(text))
+
+
 def run_step(func) -> tuple[int, str]:
     tee = Tee(sys.stdout)
     with redirect_stdout(tee):
@@ -122,7 +131,7 @@ def run_step(func) -> tuple[int, str]:
             print(e)
             code = 1
         except Exception:
-            print(moodle.redact(traceback.format_exc()))
+            print(redact(traceback.format_exc()))
             code = 1
     return code, tee.text()
 
@@ -151,7 +160,7 @@ def ping_healthcheck(suffix: str = "", body: str = "") -> None:
     try:
         requests.post(url + suffix, data=body.encode("utf-8")[:10000], timeout=10)
     except requests.RequestException as e:
-        print(f"[healthchecks] {e}")
+        print(f"[healthchecks] {redact(str(e))}")
 
 
 def weekly_summary(state: dict, force: bool = False) -> None:

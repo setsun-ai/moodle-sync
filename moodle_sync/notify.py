@@ -40,7 +40,7 @@ def telegram_api() -> str:
 
 
 def _redact(text: str) -> str:
-    for key in ("TELEGRAM_BOT_TOKEN", "DISCORD_WEBHOOK_URL", "SMTP_PASSWORD"):
+    for key in ("TELEGRAM_BOT_TOKEN", "DISCORD_WEBHOOK_URL", "SMTP_PASSWORD", "HEALTHCHECK_URL"):
         secret = config.env(key)
         if secret:
             text = text.replace(secret, "***")
