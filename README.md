@@ -7,6 +7,8 @@
 
 🇵🇱 **[Polska wersja →](README.pl.md)**
 
+*Personal automation project.*
+
 **Never miss course materials, deadlines or announcements from Moodle again.**
 moodle-sync downloads your course files into tidy folders in the cloud, puts deadlines into your calendar and notifies you on your phone about what's new. It works with any Moodle, on Windows, macOS, Linux or a Raspberry Pi.
 
@@ -84,6 +86,10 @@ Full walk-through: **[Getting started](docs/en/getting-started.md)**.
 ## Contributing
 
 Ideas, bugs and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). New to open source? It lists good first issues.
+
+## AI usage
+
+AI-assisted development was used for implementation and documentation. The design decisions (what data is stored or sent where, security and access control), result verification and testing were reviewed and owned by me.
 
 ## License
 
