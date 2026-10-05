@@ -19,7 +19,8 @@ What the code does to protect them:
 - Only the Moodle server you configured ever receives your Moodle token. The optional password login sends your password only to your Moodle's own `login/token.php` over HTTPS, once, and never stores it.
 - moodle-sync is **read-only** towards Moodle unless you set `MOODLE_ACTIONS=1`; then the Telegram bot submits, posts or marks attendance only after a ✅ tap on a summary, and only for `TELEGRAM_CHAT_ID`.
 - Passwords you type into the bot (attendance) are deleted from the chat right away.
-- The cloud backup (`state.json`) contains no secrets.
+- The cloud backup (`state.json`) contains no authentication credentials, but may contain private Moodle data such as grades. Treat it as private.
+- Step output is masked for **all** configured secrets (Moodle tokens, Telegram/Discord/SMTP credentials, the healthchecks ping URL) before it reaches `logs/` or an error notification. This is covered by `tests/test_secret_redaction.py`.
 - Google access is limited to calendars the app created (`calendar.app.created`); with `scope=drive.file`, Drive access is limited to files rclone created.
 - The Telegram bot answers only your chat id.
 - Tests run with all secrets removed from the environment.
@@ -46,7 +47,7 @@ Please **don't open a public issue** for security problems. Use GitHub's *Securi
 - `google_token.json` daje dostęp do kalendarzy utworzonych przez moodle-sync.
 - `rclone.conf` daje dostęp do Twojej chmury.
 
-Wszystkie są w `.gitignore`, a kod nigdy ich nie wypisuje ani nie wysyła nigdzie poza właściwą usługę. **Nigdy ich nie commituj, nie wklejaj i nie udostępniaj** (zrzut ekranu `.env` też się liczy).
+Wszystkie są w `.gitignore`, a kod nigdy ich nie wypisuje ani nie wysyła nigdzie poza właściwą usługę. Wyjście kroków jest maskowane pod kątem wszystkich skonfigurowanych sekretów, zanim trafi do `logs/` lub powiadomienia o błędzie. Kopia `state.json` w chmurze nie zawiera danych logowania, ale może zawierać prywatne dane z Moodle, np. oceny. **Nigdy ich nie commituj, nie wklejaj i nie udostępniaj** (zrzut ekranu `.env` też się liczy).
 
 **Gdy token wycieknie:**
 - **Moodle:** Preferencje → Klucze bezpieczeństwa → *Resetuj*.

@@ -22,8 +22,8 @@ Announcements can contain **other people's personal data**, e.g. a table of grad
 | **Your disk**: `.env` | Settings and secrets (tokens, passwords) | always |
 | **Your disk**: `state.json` | List of downloaded files, calendar ids, ids of seen announcements, **your grades with assignment names**, results of recent runs | always |
 | **Your disk**: `DOWNLOAD_DIR` | Course files | always |
-| **Your disk**: `logs/` | Course and file names, errors, **no secrets** | scheduled runs on Windows/macOS |
-| **Your cloud** (rclone: Google Drive, OneDrive...) | Course files + a backup of `state.json` (incl. your grades). No secrets. | if `RCLONE_REMOTE` is set |
+| **Your disk**: `logs/` | Course and file names, errors; **secrets are masked** | scheduled runs on Windows/macOS |
+| **Your cloud** (rclone: Google Drive, OneDrive...) | Course files + a backup of `state.json`. No authentication credentials, but private Moodle data such as your grades. | if `RCLONE_REMOTE` is set |
 | **Google Calendar** (your account) | Deadline titles, course names, assignment descriptions | if you logged in to Google |
 | **Telegram / Discord** | Notification text: file names, deadlines, **full announcement text**, your grades and teacher feedback | if configured |
 | **ntfy** | Same as above. On the public `ntfy.sh` server anyone who knows your topic name can read it, and messages are kept there for a few hours. Use a long random topic or your own server. | if configured |
@@ -32,6 +32,17 @@ Announcements can contain **other people's personal data**, e.g. a table of grad
 | **Telegram** (files you send) | A file you send the bot to submit stays in your Telegram chat | when you send one |
 | **Your university's ECTS catalogue** | Ordinary public requests for the study plan and subject card PDFs. No personal data, no token. | if `STUDY_PLAN_URL` is set |
 | **healthchecks.io** | Only "run started/finished/failed" + the short result summary (step names and OK/ERROR). No course data. | if `HEALTHCHECK_URL` is set |
+
+### Data, storage and retention
+
+| Data | Stored locally | Sent externally | Retention |
+|---|---|---|---|
+| Moodle token and channel credentials (Telegram, Discord, SMTP, healthchecks URL) | `.env` (plain text, git-ignored) | each credential only to its own service; the Moodle token only to your Moodle server | until you delete `.env` or revoke the token |
+| Course files | `DOWNLOAD_DIR` | your cloud via rclone, if `RCLONE_REMOTE` is set | until you delete them; with `KEEP_LOCAL=0` local copies are deleted after upload |
+| Your grades and teacher feedback | `state.json` | cloud backup of `state.json` (if rclone); notifications (if grade notifications are on) | `state.json` and its cloud copy: until you delete them (the backup is overwritten on every run); notifications: per provider |
+| Announcement text (may contain other people's data) | only ids of seen announcements, in `state.json` | full text in notifications | per provider; public `ntfy.sh` keeps messages for a few hours |
+| Deadlines, course names, assignment descriptions | `state.json` | Google Calendar (if you logged in); notifications | until you delete the calendars or messages |
+| Run logs (course and file names, errors; secrets masked) | `logs/sync.log` + one rotated copy (rotation at 1 MB) | error lines in error notifications; run status and step summary to healthchecks.io | rolling, about 2 MB at most |
 
 Each of those services processes data under **its own** privacy policy (Google, Microsoft, Telegram, Discord...). moodle-sync sends **nothing** anywhere else: no crash reports, no usage statistics, no update checks.
 
@@ -75,8 +86,8 @@ Ogłoszenia mogą zawierać **dane osobowe innych osób**, np. tabelę ocen z nu
 | **Twój dysk**: `.env` | Ustawienia i sekrety (tokeny, hasła) | zawsze |
 | **Twój dysk**: `state.json` | Lista pobranych plików, identyfikatory kalendarzy, identyfikatory widzianych ogłoszeń, **Twoje oceny z nazwami zadań**, wyniki ostatnich przebiegów | zawsze |
 | **Twój dysk**: `DOWNLOAD_DIR` | Pliki z kursów | zawsze |
-| **Twój dysk**: `logs/` | Nazwy kursów i plików, błędy, **bez sekretów** | przebiegi z harmonogramu na Windows/macOS |
-| **Twoja chmura** (rclone: Dysk Google, OneDrive...) | Pliki z kursów + kopia `state.json` (z Twoimi ocenami). Bez sekretów. | gdy ustawisz `RCLONE_REMOTE` |
+| **Twój dysk**: `logs/` | Nazwy kursów i plików, błędy; **sekrety są maskowane** | przebiegi z harmonogramu na Windows/macOS |
+| **Twoja chmura** (rclone: Dysk Google, OneDrive...) | Pliki z kursów + kopia `state.json`. Bez danych logowania, ale z prywatnymi danymi z Moodle, np. Twoimi ocenami. | gdy ustawisz `RCLONE_REMOTE` |
 | **Kalendarz Google** (Twoje konto) | Tytuły terminów, nazwy kursów, opisy zadań | gdy zalogujesz się do Google |
 | **Telegram / Discord** | Treść powiadomień: nazwy plików, terminy, **pełna treść ogłoszeń**, Twoje oceny i komentarze prowadzących | gdy skonfigurujesz |
 | **ntfy** | To samo co wyżej. Na publicznym serwerze `ntfy.sh` może to przeczytać każdy, kto zna nazwę Twojego tematu, a wiadomości są tam przechowywane przez kilka godzin. Używaj długiego, losowego tematu albo własnego serwera. | gdy skonfigurujesz |
@@ -85,6 +96,17 @@ Ogłoszenia mogą zawierać **dane osobowe innych osób**, np. tabelę ocen z nu
 | **Telegram** (wysyłane pliki) | Plik wysłany botowi do oddania zostaje w Twoim czacie Telegram | gdy go wyślesz |
 | **Katalog ECTS Twojej uczelni** | Zwykłe publiczne zapytania o plan studiów i karty przedmiotów w PDF. Bez danych osobowych i bez tokenu. | gdy ustawisz `STUDY_PLAN_URL` |
 | **healthchecks.io** | Tylko „start / koniec / błąd przebiegu” + krótkie podsumowanie (nazwy kroków i OK/BŁĄD). Bez danych z kursów. | gdy ustawisz `HEALTHCHECK_URL` |
+
+### Dane, przechowywanie i retencja
+
+| Dane | Przechowywane lokalnie | Wysyłane na zewnątrz | Retencja |
+|---|---|---|---|
+| Token Moodle i dane dostępowe kanałów (Telegram, Discord, SMTP, URL healthchecks) | `.env` (zwykły tekst, w `.gitignore`) | każde tylko do swojej usługi; token Moodle tylko do Twojego serwera Moodle | do usunięcia `.env` lub unieważnienia tokenu |
+| Pliki z kursów | `DOWNLOAD_DIR` | Twoja chmura przez rclone, jeśli ustawisz `RCLONE_REMOTE` | do usunięcia; przy `KEEP_LOCAL=0` lokalne kopie są usuwane po wysłaniu |
+| Twoje oceny i komentarze prowadzących | `state.json` | kopia `state.json` w chmurze (przy rclone); powiadomienia (jeśli włączone) | `state.json` i kopia w chmurze: do usunięcia (kopia nadpisywana przy każdym przebiegu); powiadomienia: według dostawcy |
+| Treść ogłoszeń (może zawierać dane innych osób) | tylko identyfikatory widzianych ogłoszeń w `state.json` | pełna treść w powiadomieniach | według dostawcy; publiczny `ntfy.sh` trzyma wiadomości kilka godzin |
+| Terminy, nazwy kursów, opisy zadań | `state.json` | Kalendarz Google (po zalogowaniu); powiadomienia | do usunięcia kalendarzy lub wiadomości |
+| Logi przebiegów (nazwy kursów i plików, błędy; sekrety zamaskowane) | `logs/sync.log` + jedna starsza kopia (rotacja przy 1 MB) | linie błędów w powiadomieniach o błędach; status i podsumowanie kroków do healthchecks.io | rotacyjnie, łącznie ok. 2 MB |
 
 Każda z tych usług przetwarza dane według **własnej** polityki prywatności (Google, Microsoft, Telegram, Discord...). moodle-sync **nie wysyła niczego nigdzie indziej**: żadnych raportów błędów, statystyk użycia ani sprawdzania aktualizacji.
 

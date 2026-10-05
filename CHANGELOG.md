@@ -2,6 +2,11 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## Unreleased
+
+- Security: error output of a failed step (written to `logs/` and sent in error notifications) and healthchecks errors now mask the Telegram, Discord and SMTP credentials and the healthchecks URL too, not only Moodle tokens.
+- Docs: the `state.json` cloud backup is described accurately (no credentials, but private data such as grades); `PRIVACY.md` has a data / storage / retention table.
+
 ## 1.8.0 (2026-10)
 
 - `/sync` asks: 🔄 everything (as the timer does) or 📚 one course from a list - then only that course's files are fetched and the new ones uploaded. CLI: `download --course ID`.

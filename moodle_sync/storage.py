@@ -344,7 +344,10 @@ def cleanup(apply: bool = False) -> int:
 
 
 def backup_state() -> None:
-    """Copy state.json (+ courses config) to the cloud - no secrets (.env, tokens)."""
+    """Copy state.json (+ courses config) to the cloud.
+
+    No authentication credentials (.env, tokens), but state.json holds private Moodle data such as grades.
+    """
     for name in BACKUP_FILES:
         path = config.DATA_DIR / name
         if path.exists():

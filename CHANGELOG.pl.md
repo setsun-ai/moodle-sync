@@ -2,6 +2,11 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## Niewydane
+
+- Bezpieczeństwo: wyjście kroku zakończonego błędem (zapisywane w `logs/` i wysyłane w powiadomieniach o błędach) oraz błędy healthchecks maskują teraz także dane dostępowe Telegrama, Discorda i SMTP oraz URL healthchecks, a nie tylko tokeny Moodle.
+- Dokumentacja: dokładny opis kopii `state.json` w chmurze (bez danych logowania, ale z prywatnymi danymi, np. ocenami); w `PRIVACY.md` tabela dane / przechowywanie / retencja.
+
 ## 1.8.0 (2026-10)
 
 - `/sync` pyta: 🔄 wszystko (jak timer) albo 📚 jeden kurs z listy - wtedy pobierane są tylko pliki tego kursu, a nowe trafiają do chmury. CLI: `download --course ID`.
