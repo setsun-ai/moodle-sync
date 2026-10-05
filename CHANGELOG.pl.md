@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.8.0 (2026-10)
+
+- `/sync` pyta: 🔄 wszystko (jak timer) albo 📚 jeden kurs z listy - wtedy pobierane są tylko pliki tego kursu, a nowe trafiają do chmury. CLI: `download --course ID`.
+
 ## 1.7.0 (2026-10)
 
 - `archive`: jednorazowa kopia starej strony Moodle, do której wchodzisz tylko przez przeglądarkę (logowanie uczelniane wydaje tokeny tylko dla nowej) - przez ciasteczko sesji przeglądarki, podawane niewidocznie i nigdzie niezapisywane. Kursy, sekcje, pliki zasobów, folderów, zadań (także twoje wysłane), stron i etykiet, w zwykłym układzie, potem kopiowane do folderu w chmurze; wznawia od miejsca, w którym skończył.

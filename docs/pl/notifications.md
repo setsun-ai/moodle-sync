@@ -54,7 +54,7 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/karta` `/card` | Twój link do karty przedmiotu spoza katalogu |
 | `/bledy` `/errors` | ostatnia synchronizacja krok po kroku, z pełnym wynikiem kroków z błędem |
 | `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
-| `/sync` | synchronizuj teraz |
+| `/sync` | synchronizuj teraz: wszystko albo wybrany kurs |
 | `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |
 | `/rollback` | wróć do wersji sprzed ostatniego `/update` |
 | `/plan` | semestry i przedmioty z planu studiów (zobacz [Konfiguracja](configuration.md)) |

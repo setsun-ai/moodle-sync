@@ -94,7 +94,7 @@ COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": 
             "submit": "submit", "oddaj": "submit", "electives": "electives", "obieralne": "electives",
             "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup", "assign": "assign",
             "przypisz": "assign", "card": "card", "karta": "card", "errors": "errors", "bledy": "errors",
-            "błędy": "errors"}
+            "błędy": "errors", "sync": "sync"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -107,7 +107,7 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
         {"courses": show_courses, "today": lambda c: show_day(c, parse_day(args)),
          "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
          "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign, "card": show_cards,
-         "errors": show_errors}[kind](chat)
+         "errors": show_errors, "sync": show_sync}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -722,6 +722,51 @@ def show_cleanup(chat: str) -> None:
     send(chat, "\n".join(lines), [[(t("ui_cu_fix", n=total), "cu!"), (t("ui_cancel"), "x")]])
 
 
+def show_sync(chat: str) -> None:
+    send(chat, t("ui_sync_title"), [[(t("ui_sync_all"), "sy*"), (t("ui_sync_pick"), "syl")], [(t("ui_cancel"), "x")]])
+
+
+def pick_sync_course(chat: str, message_id: int) -> None:
+    from .files import course_display_name
+
+    cfg = config.load_courses_config()
+    courses = sorted(moodle.my_courses(), key=lambda c: course_display_name(c["fullname"], cfg).casefold())
+    STATE["sync_names"] = {c["id"]: course_display_name(c["fullname"], cfg) for c in courses}
+    rows = [[(STATE["sync_names"][c["id"]], f"syc:{c['id']}")] for c in courses]
+    edit(chat, message_id, t("ui_sync_pick_title"), rows + [[(t("ui_cancel"), "x")]])
+
+
+def run_sync(chat: str, message_id: int, course_id: int | None) -> None:
+    """Everything (like the timer) or one course: its files, then the upload of what's new."""
+    from .runner import SingleInstance
+
+    if course_id is None:
+        from .telegram_bot import cmd_sync
+
+        edit(chat, message_id, "⏳ " + esc(t("bot_sync_started")))
+        edit(chat, message_id, cmd_sync(chat, announce=False))
+        return
+    name = (STATE.get("sync_names") or {}).get(course_id, str(course_id))
+    with SingleInstance() as lock:  # not next to a scheduled sync
+        if not lock.acquired:
+            edit(chat, message_id, "⏳ " + esc(t("bot_sync_busy")))
+            return
+        edit(chat, message_id, t("ui_sync_course_started", course=esc(name)))
+        steps = [cli("download", "--course", str(course_id)), cli("upload")]
+    ok = all(p.returncode == 0 for p in steps)
+    tail = "\n".join(line for line in steps[0].stdout.strip().splitlines()[-6:])
+    edit(chat, message_id, ("✅ " if ok else "❌ ") + t("ui_sync_course_done", course=esc(name))
+         + (f"\n<pre>{esc(tail)}</pre>" if tail else ""))
+
+
+def cli(*args: str):
+    import subprocess
+    import sys
+
+    return subprocess.run([sys.executable, "-m", "moodle_sync", *args], cwd=config.PROJECT_DIR,
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
 def do_cleanup(chat: str, message_id: int) -> None:
     from .runner import SingleInstance
 
@@ -797,6 +842,12 @@ def on_callback(cq: dict, chat: str) -> None:
             edit(chat, message_id, t("ui_cancelled"))
         elif data == "cl":
             show_courses(chat, message_id)
+        elif data == "sy*":
+            run_sync(chat, message_id, None)
+        elif data == "syl":
+            pick_sync_course(chat, message_id)
+        elif kind == "syc":
+            run_sync(chat, message_id, int(rest))
         elif kind == "c":
             show_sections(chat, message_id, int(rest))
         elif kind == "s":

@@ -250,3 +250,15 @@ def test_submitted_files_land_in_their_own_folder(monkeypatch):
 def test_submitted_files_can_be_turned_off(monkeypatch):
     monkeypatch.setenv("SUBMITTED_FILES", "0")
     assert files.submitted_files([{"id": 1, "fullname": "A"}], {}) == []
+
+
+def test_one_course_only(monkeypatch):
+    from moodle_sync import moodle
+
+    seen = []
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 1, "fullname": "A"}, {"id": 2, "fullname": "B"}])
+    monkeypatch.setattr(files, "collect_files", lambda courses: seen.append([c["id"] for c in courses]) or [])
+    assert files.run(course_ids=[2]) == 0
+    assert seen == [[2]]
+    assert state.load()["known_courses"] == [1, 2]  # new-course notices still see every course

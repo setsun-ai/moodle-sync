@@ -583,3 +583,19 @@ def test_course_on_a_one_option_module_goes_to_that_option():
     st = {"course_map": {"1": "1|Language I|"}}
     got = studyplan.assign_courses([{"id": 1, "fullname": "English", "startdate": 0}], plan, {}, st)
     assert got[1]["subject"] == "English I" and got[1]["card"] == 5  # the card's folder, not "Language I"
+
+
+def test_sync_everything_or_one_course(bot, monkeypatch):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 2, "fullname": "Zebra"}, {"id": 1, "fullname": "Alpha"}])
+    calls = []
+    monkeypatch.setattr(interactive, "cli", lambda *args: calls.append(args) or SimpleNamespace(
+        returncode=0, stdout="Downloaded 2 files"))
+    interactive.handle_command("sync", [], "1")
+    assert [b[1] for b in bot["sent"][-1][1][0]] == ["sy*", "syl"]
+    click("syl")
+    assert [r[0] for r in bot["edits"][-1][1][:2]] == [("Alpha", "syc:1"), ("Zebra", "syc:2")]
+    click("syc:2")
+    assert calls == [("download", "--course", "2"), ("upload",)]
+    assert bot["edits"][-1][0].startswith("✅ Zebra") and "Downloaded 2 files" in bot["edits"][-1][0]

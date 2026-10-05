@@ -113,8 +113,9 @@ def cmd_status(chat_id: str) -> str:
     return "\n".join(lines)
 
 
-def cmd_sync(chat_id: str) -> str:
-    notify.send_telegram_html("⏳ " + esc(t("bot_sync_started")), chat_id)
+def cmd_sync(chat_id: str, announce: bool = True) -> str:
+    if announce:
+        notify.send_telegram_html("⏳ " + esc(t("bot_sync_started")), chat_id)
     proc = subprocess.run(
         [sys.executable, "-m", "moodle_sync", "run"], cwd=config.PROJECT_DIR,
         capture_output=True, text=True, encoding="utf-8", errors="replace",

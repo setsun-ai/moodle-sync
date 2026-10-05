@@ -54,7 +54,7 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/card` `/karta` | your own link to the card of a subject outside the catalogue |
 | `/errors` `/bledy` | the last sync step by step, with the full output of failed steps |
 | `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
-| `/sync` | run a sync now |
+| `/sync` | sync now: everything, or pick one course |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
 | `/rollback` | go back to the version before the last `/update` |
 | `/plan` | semesters and subjects of your study plan (see [Configuration](configuration.md)) |

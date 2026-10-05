@@ -465,14 +465,17 @@ def is_pending(f: dict, downloaded: dict) -> bool:
     return entry.get("skipped") == "too_large" and not too_large(f)
 
 
-def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganize: bool = False) -> int:
+def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganize: bool = False,
+        course_ids: list[int] | None = None) -> int:
+    """course_ids: only these courses (bot: /sync -> one course); the layout still sees all of them."""
     courses = moodle.my_courses()
-    files = collect_files(courses)
+    picked = [c for c in courses if c["id"] in course_ids] if course_ids else courses
+    files = collect_files(picked)
     cfg = config.load_courses_config()
 
     state = state_mod.load()
     downloaded = state.setdefault("downloaded", {})
-    files += submitted_files(courses, state)
+    files += [f for f in submitted_files(courses, state) if not course_ids or f["course_id"] in course_ids]
     try:
         apply_layout(files, courses, cfg, state)
     except RuntimeError as e:  # plan configured but unavailable: don't scatter files into the old layout

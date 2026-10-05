@@ -68,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--baseline", action="store_true", help="mark current files as done without downloading")
     p.add_argument("--reorganize", action="store_true",
                    help="confirm moving many already downloaded files after a settings change")
+    p.add_argument("--course", type=int, action="append", metavar="ID", help="only this course (repeatable)")
     p = sub.add_parser("upload", help="only upload to the cloud")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--check", action="store_true", help="only test the rclone remote")
@@ -119,7 +120,8 @@ def main(argv: list[str] | None = None) -> int:
         return run(log_file=args.log_file)
     if cmd == "download":
         from .files import run
-        return run(dry_run=args.dry_run, limit=args.limit, baseline=args.baseline, reorganize=args.reorganize)
+        return run(dry_run=args.dry_run, limit=args.limit, baseline=args.baseline, reorganize=args.reorganize,
+                   course_ids=args.course)
     if cmd == "set":
         return set_setting(args.key, args.value)
     if cmd == "upload":

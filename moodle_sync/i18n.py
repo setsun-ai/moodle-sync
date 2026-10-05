@@ -122,6 +122,18 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
+    "ui_sync_title": {"pl": "🔄 Synchronizacja: wszystko (jak co 15 minut) czy jeden kurs?",
+        "en": "🔄 Sync: everything (like every 15 minutes) or one course?"},
+    "ui_sync_all": {"pl": "🔄 Wszystko",
+        "en": "🔄 Everything"},
+    "ui_sync_pick": {"pl": "📚 Wybierz kurs",
+        "en": "📚 Pick a course"},
+    "ui_sync_pick_title": {"pl": "📚 Który kurs pobrać teraz? (potem wyślę nowe pliki do chmury)",
+        "en": "📚 Which course to fetch now? (then the new files go to the cloud)"},
+    "ui_sync_course_started": {"pl": "⏳ Pobieram: {course}…",
+        "en": "⏳ Fetching: {course}…"},
+    "ui_sync_course_done": {"pl": "{course}: gotowe",
+        "en": "{course}: done"},
     "ui_cu_misplaced": {"pl": "📦 Pliki w złym miejscu: przeniosę {moved}, pobiorę ponownie z Moodle {missing} (po cichu)",
         "en": "📦 Files in the wrong place: {moved} to move, {missing} to fetch again from Moodle (quietly)"},
     "ui_cu_fix": {"pl": "🧹 Napraw ({n})",
@@ -449,7 +461,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
                        "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
                        "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
-                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/karta — link do karty przedmiotu spoza katalogu\n/bledy — szczegóły ostatnich błędów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz\n"
+                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/karta — link do karty przedmiotu spoza katalogu\n/bledy — szczegóły ostatnich błędów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz (wszystko albo jeden kurs)\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
@@ -462,7 +474,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "bot_cmd_new": {"pl": "Ostatnio pobrane materiały", "en": "Recently downloaded materials"},
     "bot_cmd_grades": {"pl": "Ostatnie oceny", "en": "Latest grades"},
     "bot_cmd_status": {"pl": "Stan automatu", "en": "Status of the sync"},
-    "bot_cmd_sync": {"pl": "Synchronizuj teraz", "en": "Sync now"},
+    "bot_cmd_sync": {"pl": "Synchronizuj teraz (wszystko albo jeden kurs)", "en": "Sync now (everything or one course)"},
     "bot_cmd_plan": {"pl": "Semestry i przedmioty", "en": "Semesters and subjects"},
     "bot_cmd_reorganize": {"pl": "Zatwierdź przeniesienie plików do nowych folderów",
                            "en": "Confirm moving files into the new folders"},

@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.8.0 (2026-10)
+
+- `/sync` asks: 🔄 everything (as the timer does) or 📚 one course from a list - then only that course's files are fetched and the new ones uploaded. CLI: `download --course ID`.
+
 ## 1.7.0 (2026-10)
 
 - `archive`: a one-off copy of an old Moodle site you can only open in the browser (single sign-on giving tokens for the new site only) - through your browser session cookie, asked for hidden and never saved. Courses, sections, files of resources, folders, assignments (incl. your submissions), pages and labels, in the usual layout, then copied to a cloud folder; it continues where it stopped.
