@@ -262,3 +262,69 @@ def test_one_course_only(monkeypatch):
     assert files.run(course_ids=[2]) == 0
     assert seen == [[2]]
     assert state.load()["known_courses"] == [1, 2]  # new-course notices still see every course
+
+
+def test_course_of_path_skips_the_semester_folder():
+    assert files.course_of_path("Semester 2/Biochemistry/Lectures/a.pdf") == "Biochemistry"
+    assert files.course_of_path("Semestr 1/Język angielski I/Inne materialy/a.pdf") == "Język angielski I"
+    assert files.course_of_path("Algorithms/Lectures/a.pdf") == "Algorithms"
+    assert files.course_of_path("Semester 2/Lectures/a.pdf") == "Semester 2"  # a course really named like that
+
+
+def test_new_files_are_grouped_by_course():
+    message = files.new_files_message(["Semester 1/Algorithms/Lectures/a.pdf", "Semester 1/Algorithms/Labs/b.pdf",
+                                       "Semester 1/Databases/Lectures/c.pdf"])
+    assert message == "📘 Algorithms\n• a.pdf\n• b.pdf\n\n📘 Databases\n• c.pdf"
+
+
+class TestDownloadButtons:
+    def test_one_file_one_button(self):
+        st = {}
+        assert files.download_buttons(["id-a"], ["A/Lectures/a.pdf"], st) == [
+            [("⬇️ Download", f"dl:{files.file_token('id-a')}")]]
+        assert "file_batches" not in st
+
+    def test_many_files_first_few_and_all(self):
+        st = {}
+        ids = [f"url:https://m.example/pluginfile.php/{i}/long/name.pdf" for i in range(9)]
+        rows = files.download_buttons(ids, [f"A/Lectures/{i}.pdf" for i in range(9)], st)
+        assert [r[0][0] for r in rows] == [f"⬇️ {i}.pdf" for i in range(files.FILE_BUTTONS)] + ["⬇️ Download all (9)"]
+        assert all(len(r[0][1].encode()) <= 64 for r in rows)
+        batch = rows[-1][0][1].removeprefix("dla:")
+        assert st["file_batches"] == {batch: ids}
+        assert files.find_by_token(rows[2][0][1].removeprefix("dl:"), {i: {} for i in ids}) == ids[2]
+
+    def test_old_batches_are_forgotten(self):
+        st = {}
+        for i in range(files.BATCHES_KEPT + 5):
+            files.download_buttons([f"{i}-a", f"{i}-b"], ["A/a", "A/b"], st)
+        assert len(st["file_batches"]) == files.BATCHES_KEPT
+        assert list(st["file_batches"].values())[-1] == [f"{files.BATCHES_KEPT + 4}-a", f"{files.BATCHES_KEPT + 4}-b"]
+
+    def test_can_be_turned_off(self, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_FILE_BUTTONS", "0")
+        assert files.download_buttons(["id-a"], ["A/a.pdf"], {}) is None
+
+
+def test_new_files_notification_names_the_course_and_offers_downloads(monkeypatch):
+    from moodle_sync import moodle
+
+    a = make_file()
+    b = make_file(id="url:b", fileurl="https://m.example/b.pdf", filename="b.pdf", course_id=11,
+                  course_name="Databases", module_id=101)
+    sent = []
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 10, "fullname": "Algorithms", "startdate": 0},
+                                                       {"id": 11, "fullname": "Databases", "startdate": 0}])
+    monkeypatch.setattr(files, "collect_files", lambda courses: [a, b])
+    monkeypatch.setattr(files, "download_file", lambda f, dest: (dest.parent.mkdir(parents=True, exist_ok=True),
+                                                                 dest.write_bytes(b"x")))
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False, buttons=None:
+                        sent.append((title, message, buttons)))
+    assert files.run() == 0
+    title, message, buttons = sent[-1]
+    assert title == "New course materials (2)"
+    assert message == "📘 Algorithms\n• a.pdf\n\n📘 Databases\n• b.pdf"
+    assert [row[0] for row in buttons[:2]] == [("⬇️ a.pdf", f"dl:{files.file_token(a['id'])}"),
+                                               ("⬇️ b.pdf", f"dl:{files.file_token('url:b')}")]
+    assert state.load()["file_batches"][buttons[-1][0][1].removeprefix("dla:")] == [a["id"], "url:b"]

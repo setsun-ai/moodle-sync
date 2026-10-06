@@ -2,8 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
-## Unreleased
+## 1.9.0 (2026-10)
 
+- *New course materials* names the course: files are grouped under each course. With semester folders the notification (and `/new`) showed the semester instead.
+- **⬇️ Download** buttons under *New course materials* in Telegram: the bot sends you the file itself - one button per file (the first 6) and *Download all*. From `DOWNLOAD_DIR`, or fetched from the cloud with `KEEP_LOCAL=0`; above Telegram's 50 MB limit you get a link to the Drive copy. `TELEGRAM_FILE_BUTTONS=0` hides them (e.g. without the bot process).
 - Security: error output of a failed step (written to `logs/` and sent in error notifications) and healthchecks errors now mask the Telegram, Discord and SMTP credentials and the healthchecks URL too, not only Moodle tokens.
 - Docs: the `state.json` cloud backup is described accurately (no credentials, but private data such as grades); `PRIVACY.md` has a data / storage / retention table.
 

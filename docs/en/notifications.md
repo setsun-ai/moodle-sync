@@ -8,7 +8,7 @@ All channels are optional and can be combined. The wizard (`python -m moodle_syn
 
 | | When | Mute with |
 |---|---|---|
-| 📚 New course materials | new or replaced files were downloaded | `NOTIFY_FILES=0` |
+| 📚 New course materials | new or replaced files were downloaded, grouped by course. In Telegram with **⬇️ Download** buttons | `NOTIFY_FILES=0` |
 | 📅 New / changed deadlines | a teacher added or **moved** a deadline (needs [Google Calendar](google-calendar.md)) | `NOTIFY_DEADLINES=0` |
 | 📢 Announcement | a new post in a course's *Announcements* forum: full text + link | `NOTIFY_ANNOUNCEMENTS=0` |
 | 🎓 Grade | a new or changed grade for an assignment or quiz, with the teacher's feedback | `NOTIFY_GRADES=0` |
@@ -63,6 +63,7 @@ The first run only *remembers* existing announcements and grades, so you won't g
 
 - Commands need the bot process running: `python -m moodle_sync bot`. On a Raspberry Pi it runs as a service automatically ([guide](raspberry-pi.md)).
 - Notifications work **without** the bot process.
+- **⬇️ Download** under *New course materials*: the bot sends you the file itself, from `DOWNLOAD_DIR` or, with `KEEP_LOCAL=0`, fetched from the cloud. One button per file (the first 6) and *Download all*. Telegram lets a bot send at most 50 MB; for a bigger file you get a link to your Drive copy. Without the bot process, set `TELEGRAM_FILE_BUTTONS=0`.
 - The bot answers **only your chat** and ignores everyone else.
 
 ## Discord

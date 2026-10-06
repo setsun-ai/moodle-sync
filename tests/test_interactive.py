@@ -599,3 +599,118 @@ def test_sync_everything_or_one_course(bot, monkeypatch):
     click("syc:2")
     assert calls == [("download", "--course", "2"), ("upload",)]
     assert bot["edits"][-1][0].startswith("✅ Zebra") and "Downloaded 2 files" in bot["edits"][-1][0]
+
+
+# --- "download" buttons under the new-files notification ----------------------------------------------
+
+@pytest.fixture
+def downloads(bot, monkeypatch):
+    from moodle_sync import config, state as state_mod
+
+    folder = config.download_dir() / "Semester 1" / "Algorithms" / "Lectures"
+    folder.mkdir(parents=True)
+    (folder / "a.pdf").write_bytes(b"%PDF")
+    state_mod.save({"downloaded": {"id-a": {"path": "Semester 1/Algorithms/Lectures/a.pdf"},
+                                   "id-b": {"path": "Semester 1/Algorithms/Lectures/b.pdf"},
+                                   "id-x": {"path": "../outside.txt"}},
+                    "file_batches": {"b1": ["id-a", "id-b"]}})
+    docs = []
+    monkeypatch.setattr(interactive, "send_document",
+                        lambda chat, path, caption: docs.append((path.name, path.read_bytes(), caption)) or True)
+    return docs
+
+
+def test_download_button_sends_the_file_with_its_course(bot, downloads):
+    from moodle_sync import files
+
+    click(f"dl:{files.file_token('id-a')}")
+    assert downloads == [("a.pdf", b"%PDF", "📘 Algorithms")]
+    assert ("sendChatAction", {"chat_id": "1", "action": "upload_document"}) in bot["calls"]
+    assert bot["edits"] == []  # the notification itself stays as it was
+
+
+def test_download_all_reports_what_is_missing(bot, downloads):
+    click("dla:b1")
+    assert [d[0] for d in downloads] == ["a.pdf"]
+    assert "b.pdf" in bot["sent"][-1][0] and "neither" in bot["sent"][-1][0]
+
+
+def test_unknown_or_forgotten_file(bot, downloads):
+    click("dl:000000000000")
+    click("dla:gone")
+    assert [s[0] for s in bot["sent"]] == [interactive.t("ui_dl_gone")] * 2 and downloads == []
+
+
+def test_download_never_leaves_the_download_folder(bot, downloads, monkeypatch):
+    from moodle_sync import config, files
+
+    (config.download_dir().parent / "outside.txt").write_text("secret")
+    monkeypatch.setenv("RCLONE_REMOTE", "gdrive")
+    monkeypatch.setattr(interactive.storage, "rclone", lambda *a, **k: pytest.fail("must not fetch"))
+    click(f"dl:{files.file_token('id-x')}")
+    assert downloads == [] and "neither" in bot["sent"][-1][0]
+
+
+def test_download_from_the_cloud_when_not_kept_locally(bot, downloads, monkeypatch):
+    from pathlib import Path
+
+    from moodle_sync import files
+
+    monkeypatch.setenv("RCLONE_REMOTE", "gdrive")
+    monkeypatch.setenv("DRIVE_DEST", "Studies")
+    fetched = []
+
+    def fake_rclone(*args, quiet=False):
+        fetched.append(args)
+        Path(args[2]).write_bytes(b"from cloud")
+        return 0
+
+    monkeypatch.setattr(interactive.storage, "rclone", fake_rclone)
+    click(f"dl:{files.file_token('id-b')}")
+    assert fetched[0][:2] == ("copyto", "gdrive:Studies/Semester 1/Algorithms/Lectures/b.pdf")
+    assert downloads == [("b.pdf", b"from cloud", "📘 Algorithms")]
+    assert not Path(fetched[0][2]).parent.exists()  # the temporary copy is gone
+
+
+def test_too_big_for_telegram_links_to_drive(bot, downloads, monkeypatch):
+    from moodle_sync import files
+
+    monkeypatch.setattr(interactive, "TELEGRAM_UPLOAD_MB", 0)
+    monkeypatch.setattr(coursebrowse, "drive_links", lambda: {
+        "semester 1/algorithms/lectures/a.pdf": "https://drive.google.com/file/d/X/view"})
+    click(f"dl:{files.file_token('id-a')}")
+    text, rows = bot["sent"][-1]
+    assert downloads == [] and "50 MB" in text and rows == [[("Open in Drive", "https://drive.google.com/file/d/X/view")]]
+
+
+def test_send_document_uploads_the_file(monkeypatch, tmp_path):
+    from moodle_sync import notify
+
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
+    path = tmp_path / "Wykład 1.pdf"
+    path.write_bytes(b"%PDF")
+    seen = {}
+
+    class Ok:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"ok": True}
+
+    def fake_post(url, data=None, files=None, timeout=None):
+        seen.update(url=url, data=data, name=files["document"][0], body=files["document"][1].read())
+        return Ok()
+
+    monkeypatch.setattr(interactive.requests, "post", fake_post)
+    assert interactive.send_document("1", path, "📘 Algorithms")
+    assert seen["url"] == f"{notify.telegram_api()}/sendDocument"
+    assert seen["name"] == "Wykład 1.pdf" and seen["body"] == b"%PDF"
+    assert seen["data"] == {"chat_id": "1", "caption": "📘 Algorithms", "parse_mode": "HTML"}
+
+
+def test_new_command_shows_the_course_not_the_semester():
+    from moodle_sync import state as state_mod, telegram_bot
+
+    state_mod.save({"downloaded": {"a": {"path": "Semester 2/Biochemistry/Lectures/a.pdf", "ts": time.time()}}})
+    assert "<b>Biochemistry</b>: a.pdf" in telegram_bot.cmd_new("1")

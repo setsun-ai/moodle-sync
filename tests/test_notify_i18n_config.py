@@ -50,6 +50,24 @@ class TestNotify:
         assert sent[0]["text"] == "📢 <b>Test &lt;moved&gt; &amp; room</b>\n&lt;b&gt;not bold&lt;/b&gt;"
         assert sent[0]["parse_mode"] == "HTML"
 
+    def test_buttons_go_only_to_telegram(self, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
+        monkeypatch.setenv("TELEGRAM_CHAT_ID", "42")
+        monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.test/hook")
+        sent = []
+
+        class Ok:
+            status_code = 200
+            text = ""
+
+        monkeypatch.setattr(notify.requests, "post", lambda url, json=None, **k: sent.append(json) or Ok())
+        notify.notify("files", "New", "a.pdf", buttons=[[("⬇️ Download", "dl:abc")],
+                                                         [("Drive", "https://drive.example/x")]])
+        telegram, discord = sent
+        assert telegram["reply_markup"] == {"inline_keyboard": [[{"text": "⬇️ Download", "callback_data": "dl:abc"}],
+                                                                [{"text": "Drive", "url": "https://drive.example/x"}]]}
+        assert "reply_markup" not in discord and "components" not in discord
+
     def test_discord_never_pings_anyone(self, monkeypatch):
         monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.test/hook")
         sent = []

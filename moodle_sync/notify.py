@@ -63,22 +63,30 @@ def channels() -> list[str]:
 
 # --- channels ------------------------------------------------------------------------------
 
-def send_telegram_html(text: str, chat_id: str | None = None) -> bool:
-    """Send ready HTML (parse_mode=HTML). Returns True on success."""
+def keyboard(rows: list) -> dict:
+    """Rows of (text, callback data) - or (text, https://...) for a button that opens a page."""
+    return {"inline_keyboard": [[{"text": text[:60], "url": data} if data.startswith("http")
+                                 else {"text": text[:60], "callback_data": data[:64]} for text, data in row]
+                                for row in rows if row]}
+
+
+def send_telegram_html(text: str, chat_id: str | None = None, buttons: list | None = None) -> bool:
+    """Send ready HTML (parse_mode=HTML), optionally with buttons (see keyboard). Returns True on success."""
     chat_id = chat_id or config.env("TELEGRAM_CHAT_ID")
     if not (config.env("TELEGRAM_BOT_TOKEN") and chat_id):
         return False
     if len(text) > TELEGRAM_LIMIT:
         text = text[: TELEGRAM_LIMIT - 20] + "\n…"
+    extra = {"reply_markup": keyboard(buttons)} if buttons else {}
     try:
         resp = requests.post(f"{telegram_api()}/sendMessage", timeout=15, json={
-            "chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True,
+            "chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True, **extra,
         })
         if resp.status_code == 400 and "parse" in resp.text:
             # HTML broken (e.g. cut inside a tag or &entity;): deliver it as plain text rather than not at all
             plain = html.unescape(re.sub(r"<[^>]*>?", "", text))
             resp = requests.post(f"{telegram_api()}/sendMessage", timeout=15, json={
-                "chat_id": chat_id, "text": plain, "disable_web_page_preview": True,
+                "chat_id": chat_id, "text": plain, "disable_web_page_preview": True, **extra,
             })
         if resp.status_code != 200:
             print(f"[telegram] HTTP {resp.status_code} {resp.text[:200]}")
@@ -146,8 +154,11 @@ def _send_email(title: str, message: str) -> bool:
 
 # --- public API ------------------------------------------------------------------------------
 
-def notify(kind: str, title: str, message: str = "", urgent: bool = False) -> None:
-    """Send a notification of the given kind to all configured channels."""
+def notify(kind: str, title: str, message: str = "", urgent: bool = False, buttons: list | None = None) -> None:
+    """Send a notification of the given kind to all configured channels.
+
+    buttons (rows of (text, callback data)) are added only in Telegram: the bot process answers them.
+    """
     if kind != "test" and not config.env_bool(f"NOTIFY_{kind.upper()}", True):
         return
     emoji = KIND_EMOJI.get(kind, "🔔")
@@ -156,7 +167,7 @@ def notify(kind: str, title: str, message: str = "", urgent: bool = False) -> No
             text = f"{emoji} <b>{html.escape(title)}</b>"
             if message:
                 text += "\n" + html.escape(message)
-            send_telegram_html(text)
+            send_telegram_html(text, buttons=buttons)
         elif channel == "discord":
             _send_discord(title, message, emoji)
         elif channel == "ntfy":

@@ -30,6 +30,7 @@ Announcements can contain **other people's personal data**, e.g. a table of grad
 | **Your e-mail provider** (SMTP) | Same as above | if configured |
 | **Your Moodle server** (bot actions) | Files you submit, forum posts you write, the attendance status you pick - only after your ✅ | with `MOODLE_ACTIONS=1` |
 | **Telegram** (files you send) | A file you send the bot to submit stays in your Telegram chat | when you send one |
+| **Telegram** (files you ask for) | A course file you request with **⬇️ Download** under a notification stays in your Telegram chat | when you tap it |
 | **Your university's ECTS catalogue** | Ordinary public requests for the study plan and subject card PDFs. No personal data, no token. | if `STUDY_PLAN_URL` is set |
 | **healthchecks.io** | Only "run started/finished/failed" + the short result summary (step names and OK/ERROR). No course data. | if `HEALTHCHECK_URL` is set |
 
@@ -94,6 +95,7 @@ Ogłoszenia mogą zawierać **dane osobowe innych osób**, np. tabelę ocen z nu
 | **Dostawca poczty** (SMTP) | To samo co wyżej | gdy skonfigurujesz |
 | **Serwer Twojego Moodle** (akcje bota) | Oddawane pliki, Twoje posty na forach, wybrany status obecności – tylko po Twoim ✅ | z `MOODLE_ACTIONS=1` |
 | **Telegram** (wysyłane pliki) | Plik wysłany botowi do oddania zostaje w Twoim czacie Telegram | gdy go wyślesz |
+| **Telegram** (pobierane pliki) | Plik z kursu, o który poprosisz przyciskiem **⬇️ Pobierz** pod powiadomieniem, zostaje w Twoim czacie Telegram | gdy go klikniesz |
 | **Katalog ECTS Twojej uczelni** | Zwykłe publiczne zapytania o plan studiów i karty przedmiotów w PDF. Bez danych osobowych i bez tokenu. | gdy ustawisz `STUDY_PLAN_URL` |
 | **healthchecks.io** | Tylko „start / koniec / błąd przebiegu” + krótkie podsumowanie (nazwy kroków i OK/BŁĄD). Bez danych z kursów. | gdy ustawisz `HEALTHCHECK_URL` |
 

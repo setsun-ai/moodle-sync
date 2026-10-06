@@ -61,6 +61,8 @@ def cmd_deadlines(chat_id: str) -> str:
 
 
 def cmd_new(chat_id: str) -> str:
+    from .files import course_of_path
+
     downloaded = state_mod.load().get("downloaded", {})
     recent = sorted((e for e in downloaded.values() if e.get("ts") and e.get("path")),
                     key=lambda e: e["ts"], reverse=True)[:12]
@@ -68,8 +70,8 @@ def cmd_new(chat_id: str) -> str:
         return "📚 " + esc(t("bot_no_new"))
     lines = ["📚 <b>" + esc(t("bot_new_header")) + "</b>"]
     for e in recent:
-        parts = e["path"].split("/")
-        lines.append(f"• {esc(fmt_when(e['ts']))} — <b>{esc(parts[0])}</b>: {esc(parts[-1])}")
+        name = e["path"].rsplit("/", 1)[-1]
+        lines.append(f"• {esc(fmt_when(e['ts']))} — <b>{esc(course_of_path(e['path']))}</b>: {esc(name)}")
     return "\n".join(lines)
 
 

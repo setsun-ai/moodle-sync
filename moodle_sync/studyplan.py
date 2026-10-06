@@ -88,6 +88,14 @@ def semester_folder(number: int) -> str:
     return t("plan_semester_folder", n=number)
 
 
+def is_semester_folder(name: str) -> bool:
+    """"Semester 2" in any language: folders made before a LANGUAGE change keep their old name."""
+    from .i18n import MESSAGES
+
+    return any(re.fullmatch(re.escape(text).replace(re.escape("{n}"), r"\d+"), name)
+               for text in MESSAGES["plan_semester_folder"].values())
+
+
 def card_filename() -> str:
     return t("plan_card_file")
 

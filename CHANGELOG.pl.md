@@ -2,8 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
-## Niewydane
+## 1.9.0 (2026-10)
 
+- *Nowe materiały* podają kurs: pliki są pogrupowane według kursów. Przy folderach semestrów powiadomienie (i `/nowe`) pokazywało zamiast kursu semestr.
+- Przyciski **⬇️ Pobierz** pod *Nowymi materiałami* w Telegramie: bot wysyła Ci sam plik - przycisk dla każdego pliku (pierwszych 6) i *Pobierz wszystkie*. Z `DOWNLOAD_DIR` albo, przy `KEEP_LOCAL=0`, pobrany z chmury; powyżej limitu Telegrama (50 MB) dostajesz link do kopii na Dysku. `TELEGRAM_FILE_BUTTONS=0` je ukrywa (np. bez procesu bota).
 - Bezpieczeństwo: wyjście kroku zakończonego błędem (zapisywane w `logs/` i wysyłane w powiadomieniach o błędach) oraz błędy healthchecks maskują teraz także dane dostępowe Telegrama, Discorda i SMTP oraz URL healthchecks, a nie tylko tokeny Moodle.
 - Dokumentacja: dokładny opis kopii `state.json` w chmurze (bez danych logowania, ale z prywatnymi danymi, np. ocenami); w `PRIVACY.md` tabela dane / przechowywanie / retencja.
 

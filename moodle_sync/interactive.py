@@ -6,6 +6,7 @@ The interactive part of the Telegram bot: buttons, files and short conversations
     a file                 submit it to an assignment (MOODLE_ACTIONS=1)
     /forum                 start a discussion in a forum (MOODLE_ACTIONS=1)
     /attendance /obecnosc  mark attendance; or send the link / a photo of the QR code (MOODLE_ACTIONS=1)
+    ⬇️ under "new materials" the bot sends the file itself (TELEGRAM_FILE_BUTTONS=0 hides the buttons)
 
 Nothing that changes Moodle happens without a "✅" tap on a summary of exactly
 what will be sent. Only TELEGRAM_CHAT_ID is served (telegram_bot.py checks it).
@@ -13,6 +14,7 @@ what will be sent. Only TELEGRAM_CHAT_ID is served (telegram_bot.py checks it).
 
 import html
 import re
+import shutil
 import subprocess
 import tempfile
 from datetime import datetime
@@ -47,11 +49,7 @@ def api(method: str, **params) -> dict:
     return data.get("result") or {}
 
 
-def kb(rows: list) -> dict:
-    """Rows of (text, callback data) - or (text, https://...) for a button that opens a page."""
-    return {"inline_keyboard": [[{"text": text[:60], "url": data} if data.startswith("http")
-                                 else {"text": text[:60], "callback_data": data[:64]} for text, data in row]
-                                for row in rows if row]}
+kb = notify.keyboard
 
 
 def send(chat: str, text: str, rows: list | None = None) -> int | None:
@@ -783,6 +781,74 @@ def do_cleanup(chat: str, message_id: int) -> None:
     edit(chat, message_id, t("ui_cu_done", n=n))
 
 
+# --- "download" buttons under the new-files notification ------------------------------------------
+
+TELEGRAM_UPLOAD_MB = 50  # the most a bot may send
+
+
+def local_file(path: str) -> tuple[Path | None, str | None]:
+    """(file to send, temporary folder to remove afterwards): the local copy, or one fetched from the cloud."""
+    root = config.download_dir()
+    src = (root / path).resolve()
+    if not src.is_relative_to(root):  # the path comes from state.json, but never leave DOWNLOAD_DIR
+        return None, None
+    if src.is_file():
+        return src, None
+    if not config.rclone_remote():
+        return None, None
+    tmp = tempfile.mkdtemp(prefix="moodle-sync-")
+    dest = Path(tmp) / src.name
+    if storage.rclone("copyto", storage.target(path), str(dest), quiet=True) == 0 and dest.is_file():
+        return dest, tmp
+    shutil.rmtree(tmp, ignore_errors=True)
+    return None, None
+
+
+def send_document(chat: str, path: Path, caption: str) -> bool:
+    with open(path, "rb") as fh:
+        resp = requests.post(f"{notify.telegram_api()}/sendDocument", timeout=300,
+                             data={"chat_id": chat, "caption": caption[:1000], "parse_mode": "HTML"},
+                             files={"document": (path.name, fh)})
+    ok = resp.status_code == 200 and resp.json().get("ok")
+    if not ok:
+        print(f"[telegram] sendDocument: HTTP {resp.status_code} {resp.text[:200]}")
+    return bool(ok)
+
+
+def send_downloaded(chat: str, path: str) -> None:
+    from .files import course_of_path
+
+    name = path.rsplit("/", 1)[-1]
+    api("sendChatAction", chat_id=chat, action="upload_document")
+    src, tmp = local_file(path)
+    try:
+        if src is None:
+            send(chat, t("ui_dl_missing", name=esc(name)))
+        elif src.stat().st_size > TELEGRAM_UPLOAD_MB * 1024 * 1024:
+            link = coursebrowse.drive_links().get(path.casefold())
+            send(chat, t("ui_dl_too_big", name=esc(name), mb=src.stat().st_size / 1024 / 1024),
+                 [[(t("ui_dl_open_drive"), link)]] if link else None)
+        elif not send_document(chat, src, f"📘 {esc(course_of_path(path))}"):
+            send(chat, t("ui_dl_failed", name=esc(name)))
+    finally:
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+def send_new_files(chat: str, token: str, batch: bool) -> None:
+    """dl:<file> - one file, dla:<batch> - every file of one notification (files.download_buttons)."""
+    from .files import find_by_token
+
+    state = state_mod.load()
+    downloaded = state.get("downloaded", {})
+    ids = state.get("file_batches", {}).get(token, []) if batch else [find_by_token(token, downloaded)]
+    paths = [path for path in ((downloaded.get(fid) or {}).get("path") for fid in ids if fid) if path]
+    if not paths:
+        send(chat, t("ui_dl_gone"))
+    for path in paths:
+        send_downloaded(chat, path)
+
+
 # --- text replies and buttons ------------------------------------------------------------------
 
 def on_text(msg: dict, chat: str) -> bool:
@@ -912,6 +978,8 @@ def on_callback(cq: dict, chat: str) -> None:
             save_elective(chat, message_id, int(rest))
         elif data == "cu!":
             do_cleanup(chat, message_id)
+        elif kind in ("dl", "dla"):
+            send_new_files(chat, rest, batch=kind == "dla")
         else:
             edit(chat, message_id, t("ui_expired"))
     except attendance.NotAvailable as e:

@@ -158,6 +158,7 @@ the same command - it continues where it stopped.
 | Variable | Meaning |
 |---|---|
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram (the chat id is set by `bot --setup`). |
+| `TELEGRAM_FILE_BUTTONS` | `0` = no "⬇️ Download" buttons under *New course materials*. Default `1`; the buttons need the bot process. |
 | `DISCORD_WEBHOOK_URL` | Discord channel webhook. |
 | `NTFY_TOPIC`, `NTFY_SERVER` | ntfy push. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`, `EMAIL_FROM` | E-mail. |

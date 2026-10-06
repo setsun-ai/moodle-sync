@@ -21,6 +21,7 @@ moves already downloaded files - locally right away, and on the cloud drive
 through the "remote_moves" queue processed by the upload step.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -39,6 +40,8 @@ from .textutil import clean_text, normalize_for_matching, pick_language, sanitiz
 EXCLUDED_EXTENSIONS = {".html", ""}
 
 CHUNK_SIZE = 64 * 1024
+FILE_BUTTONS = 6     # new files with their own "download" button in a Telegram notification
+BATCHES_KEPT = 30    # notifications whose "download all" button still works
 
 # Built-in category rules, checked in order - first match wins - on text
 # without diacritics, lower case. Keywords in Polish and English.
@@ -272,8 +275,6 @@ def layout_signature(cfg: dict, state: dict) -> str:
     THESE explains a mass move; a change of .env (e.g. LANGUAGE lost in a glued line)
     does not - that's what the fuse is for.
     """
-    import hashlib
-
     picked = {k: state.get(k) for k in ("course_map", "electives", "folder_names")}
     return hashlib.sha1(json.dumps([LAYOUT_VERSION, cfg, picked], sort_keys=True, default=str).encode()).hexdigest()
 
@@ -450,6 +451,47 @@ def download_file(f: dict, dest: Path) -> int:
     return written
 
 
+def course_of_path(path: str) -> str:
+    """Course folder of a path under DOWNLOAD_DIR: "Semester 2/Biochemistry/Lectures/a.pdf" -> "Biochemistry"."""
+    parts = path.split("/")
+    return parts[1] if len(parts) > 3 and studyplan.is_semester_folder(parts[0]) else parts[0]
+
+
+def file_token(file_id: str) -> str:
+    """Short, stable name of a downloaded file for a button (Telegram allows 64 bytes of callback data)."""
+    return hashlib.sha1(file_id.encode()).hexdigest()[:12]
+
+
+def find_by_token(token: str, downloaded: dict) -> str | None:
+    return next((fid for fid in downloaded if file_token(fid) == token), None)
+
+
+def new_files_message(paths: list[str]) -> str:
+    """New files grouped by course - the course is what you want to know first."""
+    by_course: dict[str, list[str]] = {}
+    for path in paths:
+        by_course.setdefault(course_of_path(path), []).append(path.rsplit("/", 1)[-1])
+    return "\n\n".join(f"📘 {course}\n{bullet_list(names, 8)}" for course, names in by_course.items())
+
+
+def download_buttons(ids: list[str], paths: list[str], state: dict) -> list | None:
+    """Telegram buttons that make the bot send the new files: one per file (the first few) and "all"."""
+    if not ids or not config.env_bool("TELEGRAM_FILE_BUTTONS", True):
+        return None
+    if len(ids) == 1:
+        return [[(t("notify_files_download"), f"dl:{file_token(ids[0])}")]]
+    rows = [[("⬇️ " + path.rsplit("/", 1)[-1], f"dl:{file_token(fid)}")]
+            for fid, path in list(zip(ids, paths, strict=True))[:FILE_BUTTONS]]
+    batch = file_token("\n".join(ids))
+    batches = state.setdefault("file_batches", {})
+    batches.pop(batch, None)
+    batches[batch] = ids
+    for old in list(batches)[:-BATCHES_KEPT]:
+        del batches[old]
+    rows.append([(t("notify_files_download_all", n=len(ids)), f"dla:{batch}")])
+    return rows
+
+
 def too_large(f: dict) -> bool:
     limit = config.max_file_mb()
     return bool(limit) and (f.get("filesize") or 0) > limit * 1024 * 1024
@@ -550,7 +592,7 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
         again = (downloaded.get(f["id"]) or {}).get("skipped") == "redownload"
         downloaded[f["id"]] = {"path": rel.as_posix(), "key": logical_key(f), "ts": int(time.time())}
         if not again and f.get("category") != "submitted":  # refetched after /cleanup, or your own: not news
-            done.append(rel)
+            done.append((f["id"], rel.as_posix()))
         state_mod.save(state)  # after every file: an interrupted run won't start over
 
     if dry_run:
@@ -559,8 +601,10 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
 
     print("\n" + t("files_summary", ok=len(done), failed=failed))
     if done:
-        notify("files", t("notify_files_title", n=len(done)),
-               bullet_list([f"{rel.parts[0]}: {rel.name}" for rel in done]))
+        paths = [path for _, path in done]
+        buttons = download_buttons([fid for fid, _ in done], paths, state)
+        state_mod.save(state)
+        notify("files", t("notify_files_title", n=len(done)), new_files_message(paths), buttons=buttons)
     return 1 if failed else 0
 
 

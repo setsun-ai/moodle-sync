@@ -158,6 +158,7 @@ jeszcze raz i uruchom to samo polecenie - zacznie od miejsca, w którym skończy
 | Zmienna | Znaczenie |
 |---|---|
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram (id czatu ustawia `bot --setup`). |
+| `TELEGRAM_FILE_BUTTONS` | `0` = bez przycisków „⬇️ Pobierz” pod *Nowymi materiałami*. Domyślnie `1`; przyciski wymagają procesu bota. |
 | `DISCORD_WEBHOOK_URL` | Webhook kanału Discord. |
 | `NTFY_TOPIC`, `NTFY_SERVER` | Powiadomienia push ntfy. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`, `EMAIL_FROM` | E-mail. |

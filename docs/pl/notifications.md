@@ -8,7 +8,7 @@ Wszystkie kanały są opcjonalne i można je łączyć. Kreator (`python -m mood
 
 | | Kiedy | Wyciszenie |
 |---|---|---|
-| 📚 Nowe materiały | pobrano nowe albo podmienione pliki | `NOTIFY_FILES=0` |
+| 📚 Nowe materiały | pobrano nowe albo podmienione pliki, pogrupowane według kursów. W Telegramie z przyciskami **⬇️ Pobierz** | `NOTIFY_FILES=0` |
 | 📅 Nowe / zmienione terminy | prowadzący dodał albo **przesunął** termin (wymaga [kalendarza Google](google-calendar.md)) | `NOTIFY_DEADLINES=0` |
 | 📢 Ogłoszenie | nowy wpis na forum *Ogłoszenia* kursu: pełna treść + link | `NOTIFY_ANNOUNCEMENTS=0` |
 | 🎓 Ocena | nowa albo zmieniona ocena zadania lub quizu, z komentarzem prowadzącego | `NOTIFY_GRADES=0` |
@@ -63,6 +63,7 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 
 - Komendy wymagają działającego procesu bota: `python -m moodle_sync bot`. Na Raspberry Pi działa on jako usługa automatycznie ([instrukcja](raspberry-pi.md)).
 - Powiadomienia działają **bez** procesu bota.
+- **⬇️ Pobierz** pod *Nowymi materiałami*: bot wysyła Ci sam plik, z `DOWNLOAD_DIR` albo, przy `KEEP_LOCAL=0`, pobrany z chmury. Przycisk dla każdego pliku (pierwszych 6) i *Pobierz wszystkie*. Telegram pozwala botowi wysłać najwyżej 50 MB; przy większym pliku dostajesz link do kopii na Dysku. Jeśli nie uruchamiasz procesu bota, ustaw `TELEGRAM_FILE_BUTTONS=0`.
 - Bot odpowiada **tylko Twojemu czatowi**, a wszystkich innych ignoruje.
 
 ## Discord
