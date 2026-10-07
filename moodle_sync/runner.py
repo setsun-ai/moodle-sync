@@ -19,12 +19,15 @@ the tool works from day one with whatever you've set up.
     the pings stop, e.g. when the Raspberry Pi dies.
 
 Errors are notified, but the same error at most every ALERT_REPEAT_HOURS -
-running every 15 minutes, an expired token must not flood your phone.
+running every 15 minutes, an expired token must not flood your phone. A server
+that doesn't answer (or no network) is notified only when it lasts
+TRANSIENT_RUNS runs in a row: university servers often vanish for a moment.
 """
 
 import hashlib
 import io
 import os
+import re
 import sys
 import time
 import traceback
@@ -40,6 +43,7 @@ from .i18n import t, weekday
 from .notify import _redact as notify_redact, bullet_list, notify
 
 ALERT_REPEAT_HOURS = 6
+TRANSIENT_RUNS = 2  # runs in a row a network problem must last before it's notified
 WEEKLY_DAY, WEEKLY_HOUR = 6, 18  # Sunday, from 18:00
 LOCK_BUSY = 3
 LOG_MAX_BYTES = 1_000_000
@@ -63,7 +67,17 @@ KNOWN_PROBLEMS = [
     ("Name or service not known", "hint_network"),
     ("Failed to resolve", "hint_network"),
     ("getaddrinfo failed", "hint_network"),
+    ("Network is unreachable", "hint_network"),
+    ("ConnectTimeout", "hint_server_down"),
+    ("ReadTimeout", "hint_server_down"),
+    ("Connection refused", "hint_server_down"),
+    ("Connection reset by peer", "hint_server_down"),
+    ("502 Server Error", "hint_server_down"),
+    ("503 Server Error", "hint_server_down"),
+    ("504 Server Error", "hint_server_down"),
 ]
+# Problems that usually pass by themselves - see TRANSIENT_RUNS
+TRANSIENT_HINTS = {"hint_network", "hint_server_down"}
 
 
 class SingleInstance:
@@ -136,8 +150,22 @@ def run_step(func) -> tuple[int, str]:
     return code, tee.text()
 
 
+def server_of(output: str) -> str:
+    """Host named in a requests/urllib3 error ("host='x'" or "for url: https://x/..."), else "Moodle"."""
+    match = re.search(r"host='([\w.-]+)'|https?://([\w.-]+)", output)
+    return (match.group(1) or match.group(2)) if match else "Moodle"
+
+
 def alert(state: dict, step: str, output: str) -> None:
     hint_key = next((key for needle, key in KNOWN_PROBLEMS if needle in output), None)
+    streaks = state.setdefault("transient_failures", {})
+    if hint_key in TRANSIENT_HINTS:
+        streaks[step] = streaks.get(step, 0) + 1
+        if streaks[step] < TRANSIENT_RUNS:
+            print(t("run_transient_wait", n=streaks[step], runs=TRANSIENT_RUNS))
+            return
+    else:
+        streaks.pop(step, None)
     # Error signature without digits (counters, times), so "the same" error stays the same.
     signature = hashlib.sha1((hint_key or "".join(c for c in output if not c.isdigit())).encode()).hexdigest()
     alerts = state.setdefault("alerts", {})
@@ -149,7 +177,10 @@ def alert(state: dict, step: str, output: str) -> None:
     lines = output.splitlines()
     errors = [line for line in lines if "ERROR" in line or "BŁĄD" in line or "Traceback" in line][-4:]
     last_lines = "\n".join(errors + [line for line in lines[-4:] if line not in errors])
-    message = f"{t(hint_key)}\n\n{last_lines}" if hint_key else last_lines
+    if hint_key in TRANSIENT_HINTS:  # a traceback says nothing more here; /errors keeps it
+        message = t(hint_key, host=server_of(output), n=streaks[step])
+    else:
+        message = f"{t(hint_key)}\n\n{last_lines}" if hint_key else last_lines
     notify("errors", t("notify_error_title", step=step), message, urgent=True)
 
 
@@ -230,6 +261,7 @@ def _run() -> int:
         for name, code, output in results:
             if code == 0:
                 state.get("alerts", {}).pop(name, None)  # fixed -> the next error notifies again
+                state.get("transient_failures", {}).pop(name, None)
                 steps.append([name, "OK", 0])
             elif code == 2:
                 steps.append([name, t("result_skipped"), 2])

@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.9.1 (2026-10)
+
+- Serwer Moodle, który nie odpowiada (przekroczony czas, odmowa połączenia, HTTP 502/503/504), albo brak sieci są zgłaszane dopiero, gdy trwają 2 synchronizacje z rzędu - serwery uczelni często znikają na chwilę. Powiadomienie podaje serwer w jednym zdaniu zamiast tracebacku; pełny komunikat zostaje w `/bledy`.
+
 ## 1.9.0 (2026-10)
 
 - *Nowe materiały* podają kurs: pliki są pogrupowane według kursów. Przy folderach semestrów powiadomienie (i `/nowe`) pokazywało zamiast kursu semestr.

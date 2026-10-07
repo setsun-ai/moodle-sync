@@ -12,7 +12,7 @@ Wszystkie kanały są opcjonalne i można je łączyć. Kreator (`python -m mood
 | 📅 Nowe / zmienione terminy | prowadzący dodał albo **przesunął** termin (wymaga [kalendarza Google](google-calendar.md)) | `NOTIFY_DEADLINES=0` |
 | 📢 Ogłoszenie | nowy wpis na forum *Ogłoszenia* kursu: pełna treść + link | `NOTIFY_ANNOUNCEMENTS=0` |
 | 🎓 Ocena | nowa albo zmieniona ocena zadania lub quizu, z komentarzem prowadzącego | `NOTIFY_GRADES=0` |
-| 🚨 Błąd | coś nie działa. Powiadomienie mówi, co zrobić (np. „odnów token”). Ten sam błąd najwyżej raz na 6 h | `NOTIFY_ERRORS=0` |
+| 🚨 Błąd | coś nie działa. Powiadomienie mówi, co zrobić (np. „odnów token”). Ten sam błąd najwyżej raz na 6 h. Serwer, który nie odpowiada, albo brak sieci: dopiero po 2 synchronizacjach z rzędu, bez tracebacku (jest w `/bledy`) | `NOTIFY_ERRORS=0` |
 | ✅ Podsumowanie tygodnia | w niedzielę wieczorem: co przyszło + terminy na 7 dni | `NOTIFY_SUMMARY=0` |
 
 Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, więc nie dostaniesz 50 powiadomień o starych rzeczach.

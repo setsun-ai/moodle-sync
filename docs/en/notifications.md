@@ -12,7 +12,7 @@ All channels are optional and can be combined. The wizard (`python -m moodle_syn
 | 📅 New / changed deadlines | a teacher added or **moved** a deadline (needs [Google Calendar](google-calendar.md)) | `NOTIFY_DEADLINES=0` |
 | 📢 Announcement | a new post in a course's *Announcements* forum: full text + link | `NOTIFY_ANNOUNCEMENTS=0` |
 | 🎓 Grade | a new or changed grade for an assignment or quiz, with the teacher's feedback | `NOTIFY_GRADES=0` |
-| 🚨 Error | something broke. Tells you what to do (e.g. "renew the token"). The same error at most every 6 h | `NOTIFY_ERRORS=0` |
+| 🚨 Error | something broke. Tells you what to do (e.g. "renew the token"). The same error at most every 6 h. A server that doesn't answer, or no network: only after 2 syncs in a row, without the traceback (it's in `/errors`) | `NOTIFY_ERRORS=0` |
 | ✅ Weekly summary | Sunday evening: what came in this week + deadlines for the next 7 days | `NOTIFY_SUMMARY=0` |
 
 The first run only *remembers* existing announcements and grades, so you won't get 50 notifications about old things.

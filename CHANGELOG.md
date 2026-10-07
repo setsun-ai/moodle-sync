@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.9.1 (2026-10)
+
+- A Moodle server that doesn't answer (timeout, connection refused, HTTP 502/503/504) or no network is notified only when it lasts 2 syncs in a row - university servers often vanish for a moment. The notification names the server in one sentence instead of a traceback; the full output stays in `/errors`.
+
 ## 1.9.0 (2026-10)
 
 - *New course materials* names the course: files are grouped under each course. With semester folders the notification (and `/new`) showed the semester instead.

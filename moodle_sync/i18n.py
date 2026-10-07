@@ -461,6 +461,13 @@ MESSAGES: dict[str, dict[str, str]] = {
                            "en": "Cloud: duplicated folders/files with the same name: {n} (they'll be merged)"},
     "hint_network": {"pl": "Brak sieci / DNS - sprawdź połączenie z internetem.",
                      "en": "No network / DNS - check the internet connection."},
+    "hint_server_down": {"pl": "Serwer {host} nie odpowiada (nieudane synchronizacje z rzędu: {n}). Zwykle to "
+                               "chwilowa awaria po stronie uczelni - spróbuję ponownie przy następnej synchronizacji. "
+                               "Pełny komunikat: /bledy",
+                         "en": "The server {host} isn't responding (failed syncs in a row: {n}). Usually a short "
+                               "outage on the university's side - I'll try again on the next sync. Full output: /errors"},
+    "run_transient_wait": {"pl": "Problem z siecią lub serwerem ({n}/{runs}) - powiadomię, jeśli się powtórzy.",
+                           "en": "Network or server problem ({n}/{runs}) - I'll notify you if it happens again."},
     "weekly_title": {"pl": "Działam — podsumowanie tygodnia", "en": "Still running — weekly summary"},
     "weekly_counts": {"pl": "W tym tygodniu: {files} nowych plików, {posts} ogłoszeń, {grades} ocen.",
                       "en": "This week: {files} new files, {posts} announcements, {grades} grades."},

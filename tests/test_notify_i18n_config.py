@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from moodle_sync import config, notify, runner, setup_wizard
+from moodle_sync import config, notify, runner, setup_wizard, state
 from moodle_sync.i18n import MESSAGES, t
 
 PACKAGE = Path(__file__).resolve().parent.parent / "moodle_sync"
@@ -129,6 +129,56 @@ class TestRunner:
         runner.alert(state, "Files", "something else broke")
         assert len(sent) == 2
         assert "python -m moodle_sync token" in sent[0][2]  # the hint tells what to do
+
+    TIMEOUT = ("Traceback (most recent call last):\n"
+               "requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='moodle.example.edu', port=443): "
+               "Max retries exceeded with url: /webservice/rest/server.php (Caused by ConnectTimeoutError("
+               "<HTTPSConnection(host='moodle.example.edu', port=443) at 0x7544ab30>, 'Connection to "
+               "moodle.example.edu timed out. (connect timeout=30)'))")
+
+    def run_with(self, monkeypatch, results):
+        """runner._run with one fake step whose (exit code, output) come from `results`, one per run."""
+        sent = []
+        monkeypatch.setattr(runner, "notify", lambda *a, **k: sent.append(a))
+        monkeypatch.setattr(runner, "weekly_summary", lambda state: None)
+
+        def step():
+            code, output = results.pop(0)
+            print(output)
+            return code
+
+        monkeypatch.setattr(runner, "STEPS", [("step_files", step)])
+        return sent
+
+    def test_server_timeout_is_notified_only_when_it_repeats(self, monkeypatch):
+        sent = self.run_with(monkeypatch, [(1, self.TIMEOUT), (0, "ok"), (1, self.TIMEOUT), (1, self.TIMEOUT),
+                                           (1, self.TIMEOUT)])
+        runner._run()
+        runner._run()  # works again: the streak starts over
+        runner._run()
+        assert sent == []
+        runner._run()
+        [(kind, title, message)] = [s[:3] for s in sent]
+        assert kind == "errors" and "moodle.example.edu" in message and "failed syncs in a row: 2" in message
+        assert "Traceback" not in message and "/errors" in message
+        runner._run()
+        assert len(sent) == 1  # still the same problem: at most every ALERT_REPEAT_HOURS
+        assert "moodle.example.edu" in state.load()["last_errors"]["Downloading files"]  # /errors has it all
+
+    def test_other_errors_are_notified_at_once(self, monkeypatch):
+        sent = self.run_with(monkeypatch, [(1, "MoodleError [invalidtoken]")])
+        runner._run()
+        assert len(sent) == 1 and "python -m moodle_sync token" in sent[0][2]
+
+    @pytest.mark.parametrize("output, host", [
+        (TIMEOUT, "moodle.example.edu"),
+        ("requests.exceptions.HTTPError: 503 Server Error: Service Unavailable for url: "
+         "https://moodle.example.edu/webservice/rest/server.php", "moodle.example.edu"),
+        ("ConnectionRefusedError: [Errno 111] Connection refused", "Moodle"),
+    ])
+    def test_server_down_is_recognised(self, output, host):
+        assert next(key for needle, key in runner.KNOWN_PROBLEMS if needle in output) == "hint_server_down"
+        assert runner.server_of(output) == host
 
     def test_tee_keeps_tail_and_partial_line(self):
         tee = runner.Tee(None)
