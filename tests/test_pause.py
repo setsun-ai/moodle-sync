@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from moodle_sync import config, pause, runner
+from moodle_sync import config, pause, runner, sites
 
 
 @pytest.fixture
@@ -35,10 +35,10 @@ def test_unreadable_pause_file_keeps_it_paused():
 
 def test_sites_and_labels(second_site, monkeypatch):
     monkeypatch.setenv("SITE_LABEL", "UNI1")
-    assert pause.sites() == [config.DATA_DIR, second_site.resolve()]
-    assert [pause.label(s) for s in pause.sites()] == ["UNI1", "UNI2"]
+    assert sites.sites() == [config.DATA_DIR, second_site.resolve()]
+    assert [sites.label(s) for s in sites.sites()] == ["UNI1", "UNI2"]
     (second_site / ".env").unlink()
-    assert pause.label(second_site.resolve()) == "site-2"
+    assert sites.label(second_site.resolve()) == "site-2"
 
 
 def test_pausing_a_missing_folder_fails(tmp_path):

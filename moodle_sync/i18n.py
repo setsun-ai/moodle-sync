@@ -510,6 +510,7 @@ MESSAGES: dict[str, dict[str, str]] = {
                              "synchronizacji.\n",
                        "en": "⏸ <b>Pausing the sync</b>\nA paused site downloads nothing, leaves the calendar alone and "
                              "sends no notifications. Once resumed, the next sync catches up on everything.\n"},
+    "ui_site_unavailable": {"pl": "⚠️ Nie udało się zajrzeć do {error}", "en": "⚠️ Couldn't look into {error}"},
     "ui_pause_running": {"pl": "✅ {site}: działa", "en": "✅ {site}: running"},
     "ui_pause_paused": {"pl": "⏸ {site}: wstrzymana {when}", "en": "⏸ {site}: paused {when}"},
     "ui_pause_missing": {"pl": "❓ {site}: nie ma takiego folderu – sprawdź OTHER_SITES",

@@ -44,8 +44,8 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/new` `/nowe` | recently downloaded materials |
 | `/grades` `/oceny` | latest grades |
 | `/status` | last run, result of each step, free disk space, uptime |
-| `/courses` `/kursy` | a course → its sections → materials, with links to your Drive copy, shared links and Moodle |
-| `/today` `/dzis` | what appeared in your courses today; `/today 1` = yesterday, `/today 12.10` = that day |
+| `/courses` `/kursy` | a course → its sections → materials, with links to your Drive copy, shared links and Moodle. Courses of a second site (`OTHER_SITES`) are listed too, as "UG · course" |
+| `/today` `/dzis` | what appeared in your courses today (on every site); `/today 1` = yesterday, `/today 12.10` = that day |
 | `/submit` `/oddaj`, or just send a file | submit it to an assignment (needs `MOODLE_ACTIONS=1`, see [Configuration](configuration.md)) |
 | `/forum` | start a discussion in a course forum (`MOODLE_ACTIONS=1`) |
 | `/attendance` `/obecnosc`, or send a link / QR photo | mark attendance (`MOODLE_ACTIONS=1`) |

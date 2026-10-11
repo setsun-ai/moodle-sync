@@ -2,6 +2,11 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.11.0 (2026-10)
+
+- `/courses` and `/today` show the courses of a second site too (`OTHER_SITES`): the first copy's bot reads that site's `.env` and data for the moment. Its courses appear as "UG · course"; when that site is down, your other courses still show, with a short note.
+- The bot writes it to its log when Telegram rejects the command menu (until now the old menu just stayed).
+
 ## 1.10.0 (2026-10)
 
 - `/pause` (`/pauza`) in the bot: pause the sync for 1 day, 7 days or until resumed, and resume it. A paused site downloads nothing, leaves the calendar alone and sends no notifications; the timer keeps running (and pinging the healthcheck), so after resuming the next sync catches up. With `OTHER_SITES` (data folders, comma-separated) the first copy's bot pauses a second site too; `/status` shows what is paused.

@@ -738,3 +738,56 @@ def test_pause_another_site_from_the_bot(bot, monkeypatch, tmp_path):
 
     click("pr:1")
     assert pause.paused_until(site.resolve()) is None and "✅ UNI2: running" in bot["edits"][-1][0]
+
+
+@pytest.fixture
+def other_site(bot, monkeypatch, tmp_path):
+    """A second copy (OTHER_SITES) with its own Moodle: courses depend on the site in use."""
+    from moodle_sync import config
+
+    site = tmp_path / "site-2"
+    site.mkdir()
+    (site / ".env").write_text("MOODLE_BASE_URL=https://other.example.edu\nMOODLE_TOKEN=t2\nSITE_LABEL=UNI2\n",
+                               encoding="utf-8")
+    monkeypatch.setenv("MOODLE_BASE_URL", "https://moodle.example.edu")
+    monkeypatch.setenv("OTHER_SITES", str(site))
+    by_site = {"https://moodle.example.edu": [{"id": 10, "fullname": "LCMS"}],
+               "https://other.example.edu": [{"id": 10, "fullname": "Shared course"}]}
+
+    def my_courses():
+        if by_site[config.moodle_base_url()] is None:
+            raise ConnectionError(f"{config.moodle_base_url()} timed out")
+        return by_site[config.moodle_base_url()]
+
+    monkeypatch.setattr(moodle, "my_courses", my_courses)
+    monkeypatch.setattr(moodle, "course_contents", lambda course_id: [
+        {"name": f"Week of {config.moodle_base_url()}", "modules": [
+            {"id": 1, "modname": "url", "name": "Link", "url": "https://x.example/1",
+             "contents": [{"timemodified": int(time.time())}]}]}])
+    monkeypatch.setattr(coursebrowse, "drive_links", lambda: {})
+    return by_site
+
+
+def test_courses_of_another_site_in_the_bot(bot, other_site):
+    interactive.handle_command("kursy", [], "1")
+    assert bot["sent"][-1][1] == [[("LCMS", "c:10")], [("UNI2 · Shared course", "c:10@1")]]
+    click("c:10@1")
+    text, rows = bot["edits"][-1]
+    assert "Shared course" in text and rows[0] == [("Week of https://other.example.edu", "s:10@1:0")]
+    click("s:10@1:0")
+    assert "Shared course" in bot["edits"][-1][0] and bot["edits"][-1][1] == [[(interactive.t("ui_back"), "c:10@1")]]
+    click("c:10")  # old buttons (this site) keep working
+    assert "LCMS" in bot["edits"][-1][0]
+
+
+def test_another_site_down_does_not_hide_this_one(bot, other_site):
+    other_site["https://other.example.edu"] = None
+    interactive.handle_command("kursy", [], "1")
+    text, rows = bot["sent"][-1]
+    assert rows == [[("LCMS", "c:10")]] and "UNI2: https://other.example.edu timed out" in text
+
+
+def test_today_covers_every_site(bot, other_site):
+    interactive.handle_command("dzis", [], "1")
+    text = bot["sent"][-1][0]
+    assert "LCMS" in text and "UNI2 · Shared course" in text

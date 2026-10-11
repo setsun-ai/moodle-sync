@@ -122,8 +122,8 @@ cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
-To pause or resume the second site from the first copy's bot (`/pause`), tell the first copy where its data is
-and restart the bot:
+The bot runs in the first copy only. To see the second site's courses in `/courses` and `/today` and to pause it
+with `/pause`, tell the first copy where the second one's data is, and restart the bot:
 
 ```bash
 .venv/bin/python -m moodle_sync set OTHER_SITES $HOME/moodle-sync-2
@@ -173,7 +173,7 @@ the same command - it continues where it stopped.
 | `NOTIFY_FILES`, `NOTIFY_DEADLINES`, `NOTIFY_ANNOUNCEMENTS`, `NOTIFY_GRADES`, `NOTIFY_ERRORS`, `NOTIFY_SUMMARY` | `0` mutes that kind. |
 | `WATCH_ALL_FORUMS` | `1` = all forums, not just announcements. Includes student discussions, so it can be noisy. |
 | `HEALTHCHECK_URL` | Dead-man alarm (healthchecks.io ping URL). |
-| `OTHER_SITES` | Data folders of other sites (comma-separated) that the bot's `/pause` can pause too. See [A second Moodle site](#a-second-moodle-site-eg-one-inter-university-course). |
+| `OTHER_SITES` | Data folders of other sites (comma-separated): the bot shows their courses in `/courses` and `/today` and can pause them with `/pause`. See [A second Moodle site](#a-second-moodle-site-eg-one-inter-university-course). |
 
 ## `courses.json`
 

@@ -26,7 +26,7 @@ from .textutil import clean_text, shorten
 DRIVE_LINKS_TTL = 30 * 60
 ICONS = {"resource": "📄", "folder": "📁", "url": "🔗", "assign": "📎", "forum": "💬", "quiz": "❓",
          "page": "📝", "attendance": "✋", "label": "🏷", "lesson": "📚", "choice": "🗳", "feedback": "🗳"}
-_drive_cache = {"ts": 0.0, "links": {}}
+_drive_cache: dict[str, dict] = {}  # cloud folder -> {"ts", "links"}: each site has its own
 
 
 def esc(text) -> str:
@@ -39,10 +39,11 @@ def drive_links(force: bool = False) -> dict:
     """Path under DRIVE_DEST (casefolded) -> Google Drive link; {} when there's no drive remote."""
     if not config.rclone_remote():
         return {}
-    if not force and time.time() - _drive_cache["ts"] < DRIVE_LINKS_TTL:
-        return _drive_cache["links"]
     from . import storage
 
+    cached = _drive_cache.get(storage.target())
+    if cached and not force and time.time() - cached["ts"] < DRIVE_LINKS_TTL:
+        return cached["links"]
     links = {}
     try:
         out = subprocess.run([config.rclone_bin(), "lsjson", "-R", "--files-only", "--no-mimetype", "--no-modtime",
@@ -52,7 +53,7 @@ def drive_links(force: bool = False) -> dict:
                 links[item["Path"].casefold()] = f"https://drive.google.com/file/d/{item['ID']}/view"
     except (OSError, subprocess.SubprocessError, ValueError):
         pass
-    _drive_cache.update(ts=time.time(), links=links)
+    _drive_cache[storage.target()] = {"ts": time.time(), "links": links}
     return links
 
 

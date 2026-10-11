@@ -15,18 +15,27 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
+DATA_PATHS = ("DATA_DIR", "ENV_FILE", "STATE_FILE", "LOCK_FILE", "LOG_DIR", "CLIENT_SECRET_FILE", "GOOGLE_TOKEN_FILE",
+              "COURSES_FILES")
+
+
+def use_data_dir(path) -> None:
+    """Point every data file at `path` (sites.use switches the bot to another site's folder for a moment)."""
+    global DATA_DIR, ENV_FILE, STATE_FILE, LOCK_FILE, LOG_DIR, CLIENT_SECRET_FILE, GOOGLE_TOKEN_FILE, COURSES_FILES
+    DATA_DIR = Path(path).resolve()
+    ENV_FILE = DATA_DIR / ".env"
+    STATE_FILE = DATA_DIR / "state.json"
+    LOCK_FILE = DATA_DIR / ".moodle_sync.lock"
+    LOG_DIR = DATA_DIR / "logs"
+    CLIENT_SECRET_FILE = DATA_DIR / "client_secret.json"
+    GOOGLE_TOKEN_FILE = DATA_DIR / "google_token.json"
+    # courses.json (przedmioty.json is the legacy name from the first version)
+    COURSES_FILES = [DATA_DIR / "courses.json", DATA_DIR / "przedmioty.json"]
+
+
 # Where user data lives (.env, state.json, tokens, downloads). Defaults to the
 # project folder; set MOODLE_SYNC_DATA_DIR to keep code and data separate.
-DATA_DIR = Path(os.environ.get("MOODLE_SYNC_DATA_DIR", PROJECT_DIR)).resolve()
-
-ENV_FILE = DATA_DIR / ".env"
-STATE_FILE = DATA_DIR / "state.json"
-LOCK_FILE = DATA_DIR / ".moodle_sync.lock"
-LOG_DIR = DATA_DIR / "logs"
-CLIENT_SECRET_FILE = DATA_DIR / "client_secret.json"
-GOOGLE_TOKEN_FILE = DATA_DIR / "google_token.json"
-# courses.json (przedmioty.json is the legacy name from the first version)
-COURSES_FILES = [DATA_DIR / "courses.json", DATA_DIR / "przedmioty.json"]
+use_data_dir(os.environ.get("MOODLE_SYNC_DATA_DIR", PROJECT_DIR))
 
 
 def reload() -> None:

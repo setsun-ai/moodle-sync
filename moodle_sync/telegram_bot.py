@@ -31,7 +31,7 @@ from pathlib import Path
 
 import requests
 
-from . import __version__, config, interactive, notify, pause, state as state_mod, updater
+from . import __version__, config, interactive, notify, pause, sites, state as state_mod, updater
 from .i18n import t, weekday
 
 RUN_INTERVAL_MIN = 15  # only for display ("next run at ...")
@@ -104,10 +104,10 @@ def cmd_status(chat_id: str) -> str:
             lines.append(esc(t("bot_next_run", time=datetime.fromtimestamp(next_run).strftime("%H:%M"))))
     else:
         lines.append(esc(t("bot_never_ran")))
-    for site in pause.sites():
+    for site in sites.sites():
         until = pause.paused_until(site) if site.is_dir() else None
         if until is not None:
-            lines.append(t("ui_pause_paused", site=esc(pause.label(site)), when=esc(interactive.pause_text(until))))
+            lines.append(t("ui_pause_paused", site=esc(sites.label(site)), when=esc(interactive.pause_text(until))))
     files = sum(1 for e in state.get("downloaded", {}).values() if e.get("path"))
     lines.append(esc(t("bot_files_count", n=files)))
     usage = shutil.disk_usage(config.DATA_DIR)
@@ -310,7 +310,9 @@ def register_menu() -> None:
     lang = config.language()
     commands = [{"command": name, "description": t(MENU_DESCRIPTIONS.get(name) or COMMANDS[name][1])[:256]}
                 for name in MENU_NAMES[lang]]
-    requests.post(f"{notify.telegram_api()}/setMyCommands", json={"commands": commands}, timeout=15)
+    resp = requests.post(f"{notify.telegram_api()}/setMyCommands", json={"commands": commands}, timeout=15)
+    if resp.status_code != 200:  # the menu silently stays the old one - say why in the bot's log
+        print(f"[telegram] setMyCommands: HTTP {resp.status_code} {resp.text[:200]}", flush=True)
 
 
 def setup(wait_seconds: int = 180) -> int:

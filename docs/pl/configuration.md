@@ -122,8 +122,8 @@ cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
-Żeby wstrzymywać i wznawiać drugi Moodle z bota pierwszej kopii (`/pauza`), podaj pierwszej kopii folder jego
-danych i uruchom bota ponownie:
+Bot działa tylko w pierwszej kopii. Żeby widzieć kursy drugiego Moodle w `/kursy` i `/dzis` oraz wstrzymywać go
+przez `/pauza`, podaj pierwszej kopii folder danych drugiej i uruchom bota ponownie:
 
 ```bash
 .venv/bin/python -m moodle_sync set OTHER_SITES $HOME/moodle-sync-2
@@ -173,7 +173,7 @@ jeszcze raz i uruchom to samo polecenie - zacznie od miejsca, w którym skończy
 | `NOTIFY_FILES`, `NOTIFY_DEADLINES`, `NOTIFY_ANNOUNCEMENTS`, `NOTIFY_GRADES`, `NOTIFY_ERRORS`, `NOTIFY_SUMMARY` | `0` wycisza dany rodzaj. |
 | `WATCH_ALL_FORUMS` | `1` = wszystkie fora, nie tylko ogłoszenia. Obejmuje też dyskusje studentów, więc bywa głośno. |
 | `HEALTHCHECK_URL` | Alarm „nie działa” (Ping URL z healthchecks.io). |
-| `OTHER_SITES` | Foldery danych innych kopii (po przecinku), które `/pauza` w bocie też może wstrzymać. Zobacz [Drugi Moodle](#drugi-moodle-np-jeden-kurs-międzyuczelniany). |
+| `OTHER_SITES` | Foldery danych innych kopii (po przecinku): bot pokazuje ich kursy w `/kursy` i `/dzis` i może je wstrzymać przez `/pauza`. Zobacz [Drugi Moodle](#drugi-moodle-np-jeden-kurs-międzyuczelniany). |
 
 ## `courses.json`
 

@@ -2,6 +2,11 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.11.0 (2026-10)
+
+- `/kursy` i `/dzis` pokazują też kursy drugiego Moodle (`OTHER_SITES`): bot pierwszej kopii na chwilę czyta `.env` i dane tamtej kopii. Jej kursy mają dopisek „UG · kurs”; gdy tamten serwer nie odpowiada, pozostałe kursy i tak się pokazują, z krótką informacją.
+- Bot zapisuje w logu, gdy Telegram odrzuci menu komend (do tej pory po prostu zostawało stare).
+
 ## 1.10.0 (2026-10)
 
 - `/pauza` (`/pause`) w bocie: wstrzymaj synchronizację na 1 dzień, 7 dni albo do odwołania i wznów ją. Wstrzymana kopia niczego nie pobiera, nie zmienia kalendarza i nie wysyła powiadomień; timer działa dalej (i wysyła sygnał do healthchecks), więc po wznowieniu najbliższa synchronizacja wszystko nadrobi. Z `OTHER_SITES` (foldery danych, po przecinku) bot pierwszej kopii wstrzymuje też drugi Moodle; `/status` pokazuje, co jest wstrzymane.

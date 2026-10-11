@@ -3,6 +3,7 @@ The interactive part of the Telegram bot: buttons, files and short conversations
 
     /courses /kursy        a course -> its sections -> what's in them (links to Drive / Moodle)
     /today   /dzis [N]     what appeared in your courses today (N days ago, "wczoraj", "12.10")
+                           both also on OTHER_SITES (sites.py)
     a file                 submit it to an assignment (MOODLE_ACTIONS=1)
     /forum                 start a discussion in a forum (MOODLE_ACTIONS=1)
     /attendance /obecnosc  mark attendance; or send the link / a photo of the QR code (MOODLE_ACTIONS=1)
@@ -31,6 +32,7 @@ from . import (
     moodle,
     notify,
     pause,
+    sites,
     state as state_mod,
     storage,
     studyplan,
@@ -142,16 +144,42 @@ def parse_day(args: list[str]) -> int:
 
 # --- course preview ------------------------------------------------------------------------
 
-def course_rows(courses: list[dict]) -> list:
+def course_rows(courses: list[dict], site: int = 0, prefix: str = "") -> list:
     from .files import course_display_name
 
     cfg = config.load_courses_config()
-    return [[(course_display_name(c["fullname"], cfg), f"c:{c['id']}")] for c in courses]
+    return [[(prefix + course_display_name(c["fullname"], cfg), f"c:{course_ref(site, c['id'])}")] for c in courses]
+
+
+def course_ref(site: int, course_id: int) -> str:
+    """A course in a button: "12" on this site, "12@1" on the first of OTHER_SITES (course ids repeat)."""
+    return f"{course_id}@{site}" if site else str(course_id)
+
+
+def parse_ref(ref: str):
+    course, _, site = ref.partition("@")
+    return sites.sites()[int(site or 0)], int(course)
+
+
+def each_site(collect) -> tuple[list, list[str]]:
+    """collect(index, prefix) on every site; another site that fails becomes a note, not an error."""
+    found, notes = [], []
+    for i, site in enumerate(sites.sites()):
+        if i and not site.is_dir():
+            continue  # /pause tells about a wrong OTHER_SITES
+        prefix = f"{sites.label(site)} · " if i else ""
+        try:
+            with sites.use(site):
+                found += collect(i, prefix)
+        except sites.SiteError as e:
+            notes.append(t("ui_site_unavailable", error=esc(str(e)[:300])))
+    return found, notes
 
 
 def show_courses(chat: str, message_id: int | None = None) -> None:
-    rows = course_rows(moodle.my_courses())
-    (edit(chat, message_id, t("ui_courses"), rows) if message_id else send(chat, t("ui_courses"), rows))
+    rows, notes = each_site(lambda i, prefix: course_rows(moodle.my_courses(), i, prefix))
+    text = "\n\n".join([t("ui_courses"), *notes])
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
 
 
 def course_name(course_id: int) -> str:
@@ -161,26 +189,30 @@ def course_name(course_id: int) -> str:
     return course_display_name(course["fullname"], config.load_courses_config())
 
 
-def show_sections(chat: str, message_id: int, course_id: int) -> None:
-    sections = coursebrowse.course_sections(course_id)
-    lang = config.moodle_content_language()
-    rows = [[(clean_text(s.get("name", ""), lang) or "—", f"s:{course_id}:{i}")]
-            for i, s in enumerate(sections[:40])]
+def show_sections(chat: str, message_id: int, ref: str) -> None:
+    site, course_id = parse_ref(ref)
+    with sites.use(site):
+        sections = coursebrowse.course_sections(course_id)
+        lang = config.moodle_content_language()
+        rows = [[(clean_text(s.get("name", ""), lang) or "—", f"s:{ref}:{i}")] for i, s in enumerate(sections[:40])]
+        name = course_name(course_id)
     rows.append([(t("ui_back"), "cl")])
-    edit(chat, message_id, f"📘 <b>{esc(course_name(course_id))}</b>\n" + t("ui_sections"), rows)
+    edit(chat, message_id, f"📘 <b>{esc(name)}</b>\n" + t("ui_sections"), rows)
 
 
-def show_section(chat: str, message_id: int, course_id: int, index: int) -> None:
-    sections = coursebrowse.course_sections(course_id)
-    index = max(0, min(index, len(sections) - 1))
-    text = coursebrowse.render_section(course_name(course_id), sections[index], coursebrowse.downloaded_paths(),
-                                       coursebrowse.drive_links())
+def show_section(chat: str, message_id: int, ref: str, index: int) -> None:
+    site, course_id = parse_ref(ref)
+    with sites.use(site):
+        sections = coursebrowse.course_sections(course_id)
+        index = max(0, min(index, len(sections) - 1))
+        text = coursebrowse.render_section(course_name(course_id), sections[index], coursebrowse.downloaded_paths(),
+                                           coursebrowse.drive_links())
     nav = []
     if index > 0:
-        nav.append(("◀", f"s:{course_id}:{index - 1}"))
-    nav.append((t("ui_back"), f"c:{course_id}"))
+        nav.append(("◀", f"s:{ref}:{index - 1}"))
+    nav.append((t("ui_back"), f"c:{ref}"))
     if index < len(sections) - 1:
-        nav.append(("▶", f"s:{course_id}:{index + 1}"))
+        nav.append(("▶", f"s:{ref}:{index + 1}"))
     edit(chat, message_id, text, [nav])
 
 
@@ -188,11 +220,18 @@ def show_day(chat: str, offset: int, message_id: int | None = None) -> None:
     from .files import course_display_name
 
     start, end, day = coursebrowse.day_bounds(offset)
-    cfg = config.load_courses_config()
-    contents = [(course_display_name(c["fullname"], cfg), moodle.course_contents(c["id"])) for c in moodle.my_courses()]
-    blocks = coursebrowse.render_day(contents, start, end, coursebrowse.downloaded_paths(), coursebrowse.drive_links())
+
+    def collect(i, prefix):
+        cfg = config.load_courses_config()
+        contents = [(prefix + course_display_name(c["fullname"], cfg), moodle.course_contents(c["id"]))
+                    for c in moodle.my_courses()]
+        return coursebrowse.render_day(contents, start, end, coursebrowse.downloaded_paths(),
+                                       coursebrowse.drive_links())
+
+    blocks, notes = each_site(collect)
     title = t("ui_day", day=day.strftime("%d.%m.%Y"))
     text = title + "\n\n" + ("\n\n".join(blocks) if blocks else t("ui_day_empty"))
+    text += "".join("\n\n" + note for note in notes)
     nav = [("◀", f"d:{offset + 1}")] + ([("▶", f"d:{offset - 1}")] if offset > 0 else [])
     (edit(chat, message_id, text, [nav]) if message_id else send(chat, text, [nav]))
 
@@ -778,8 +817,8 @@ def pause_text(until: float) -> str:
 
 def show_pause(chat: str, message_id: int | None = None) -> None:
     lines, rows = [t("ui_pause_title")], []
-    for i, site in enumerate(pause.sites()):
-        name = pause.label(site)
+    for i, site in enumerate(sites.sites()):
+        name = sites.label(site)
         if not site.is_dir():
             lines.append(t("ui_pause_missing", site=esc(site)))
             continue
@@ -797,7 +836,7 @@ def show_pause(chat: str, message_id: int | None = None) -> None:
 
 def set_pause(chat: str, message_id: int, index: int, days: int | None) -> None:
     """days None = resume."""
-    site = pause.sites()[index]
+    site = sites.sites()[index]
     if days is None:
         pause.resume(site)
     else:
@@ -963,10 +1002,10 @@ def on_callback(cq: dict, chat: str) -> None:
         elif kind == "syc":
             run_sync(chat, message_id, int(rest))
         elif kind == "c":
-            show_sections(chat, message_id, int(rest))
+            show_sections(chat, message_id, rest)
         elif kind == "s":
-            course, index = rest.split(":")
-            show_section(chat, message_id, int(course), int(index))
+            ref, index = rest.rsplit(":", 1)
+            show_section(chat, message_id, ref, int(index))
         elif kind == "d":
             show_day(chat, max(0, int(rest)), message_id)
         elif kind == "sa" and STATE.get("assigns") and STATE.get("file"):
