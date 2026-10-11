@@ -480,12 +480,14 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
                        "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
                        "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/karta — link do karty przedmiotu spoza katalogu\n/bledy — szczegóły ostatnich błędów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz (wszystko albo jeden kurs)\n"
+                       "/pauza — wstrzymaj albo wznów synchronizację\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
                        "/grades — latest grades\n/courses — browse courses and materials\n/today — what's new today (/today 1, /today 12.10)\n"
                        "/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
                        "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/assign — assign Moodle courses to subjects\n/card — a card link for a subject outside the catalogue\n/errors — details of the last errors\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
+                       "/pause — pause or resume the sync\n"
                        "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},
@@ -500,6 +502,23 @@ MESSAGES: dict[str, dict[str, str]] = {
     "bot_reorganize_done": {"pl": "Przenoszenie zakończone (chmura zaktualizuje się przy najbliższej synchronizacji)",
                             "en": "Moving finished (the cloud catches up on the next sync)"},
     "bot_cmd_help": {"pl": "Lista komend", "en": "List of commands"},
+    "bot_cmd_pause": {"pl": "Wstrzymaj albo wznów synchronizację", "en": "Pause or resume the sync"},
+    "run_paused": {"pl": "⏸ Synchronizacja wstrzymana {when} (/pauza w bocie) - nic nie robię.",
+                   "en": "⏸ Sync paused {when} (/pause in the bot) - doing nothing."},
+    "ui_pause_title": {"pl": "⏸ <b>Wstrzymywanie synchronizacji</b>\nWstrzymana kopia nie pobiera plików, nie zmienia "
+                             "kalendarza i nie wysyła powiadomień. Po wznowieniu nadrobi wszystko przy najbliższej "
+                             "synchronizacji.\n",
+                       "en": "⏸ <b>Pausing the sync</b>\nA paused site downloads nothing, leaves the calendar alone and "
+                             "sends no notifications. Once resumed, the next sync catches up on everything.\n"},
+    "ui_pause_running": {"pl": "✅ {site}: działa", "en": "✅ {site}: running"},
+    "ui_pause_paused": {"pl": "⏸ {site}: wstrzymana {when}", "en": "⏸ {site}: paused {when}"},
+    "ui_pause_missing": {"pl": "❓ {site}: nie ma takiego folderu – sprawdź OTHER_SITES",
+                         "en": "❓ {site}: no such folder – check OTHER_SITES"},
+    "ui_pause_until": {"pl": "do {when}", "en": "until {when}"},
+    "ui_pause_indefinitely": {"pl": "do odwołania", "en": "until resumed"},
+    "ui_pause_day": {"pl": "⏸ {site}: 1 dzień", "en": "⏸ {site}: 1 day"},
+    "ui_pause_week": {"pl": "7 dni", "en": "7 days"},
+    "ui_pause_resume": {"pl": "▶️ {site}: wznów", "en": "▶️ {site}: resume"},
     "bot_cmd_update": {"pl": "Zainstaluj najnowszą wersję z GitHuba", "en": "Install the newest version from GitHub"},
     "bot_cmd_rollback": {"pl": "Wróć do poprzedniej wersji", "en": "Go back to the previous version"},
     "bot_update_checking": {"pl": "Szukam nowej wersji na GitHubie…", "en": "Checking GitHub for a new version…"},

@@ -8,6 +8,7 @@ answered, anything else is ignored without a reply):
     /grades     /oceny     latest grades
     /status                last run, free disk space, uptime
     /sync                  run the sync now
+    /pause      /pauza     pause or resume the sync (see interactive.py)
     /update                install the newest GitHub release (updater.py), then restart
     /rollback              back to the version before the last /update
     /help       /pomoc     list of commands
@@ -30,7 +31,7 @@ from pathlib import Path
 
 import requests
 
-from . import __version__, config, interactive, notify, state as state_mod, updater
+from . import __version__, config, interactive, notify, pause, state as state_mod, updater
 from .i18n import t, weekday
 
 RUN_INTERVAL_MIN = 15  # only for display ("next run at ...")
@@ -103,6 +104,10 @@ def cmd_status(chat_id: str) -> str:
             lines.append(esc(t("bot_next_run", time=datetime.fromtimestamp(next_run).strftime("%H:%M"))))
     else:
         lines.append(esc(t("bot_never_ran")))
+    for site in pause.sites():
+        until = pause.paused_until(site) if site.is_dir() else None
+        if until is not None:
+            lines.append(t("ui_pause_paused", site=esc(pause.label(site)), when=esc(interactive.pause_text(until))))
     files = sum(1 for e in state.get("downloaded", {}).values() if e.get("path"))
     lines.append(esc(t("bot_files_count", n=files)))
     usage = shutil.disk_usage(config.DATA_DIR)
@@ -202,9 +207,11 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
 }
 # Menu in Telegram: Polish names for Polish users, English otherwise.
 MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "kursy", "dzis", "oddaj", "forum", "obecnosc", "plan", "obieralne",
-                     "przypisz", "karta", "status", "bledy", "sync", "reorganize", "porzadki", "update", "rollback", "pomoc"],
+                     "przypisz", "karta", "status", "bledy", "sync", "pauza", "reorganize", "porzadki", "update",
+                     "rollback", "pomoc"],
               "en": ["deadlines", "new", "grades", "courses", "today", "submit", "forum", "attendance", "plan",
-                     "electives", "assign", "card", "status", "errors", "sync", "reorganize", "cleanup", "update", "rollback", "help"]}
+                     "electives", "assign", "card", "status", "errors", "sync", "pause", "reorganize", "cleanup",
+                     "update", "rollback", "help"]}
 MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help", "kursy": "bot_cmd_courses", "courses": "bot_cmd_courses",
                      "dzis": "bot_cmd_today", "today": "bot_cmd_today", "oddaj": "bot_cmd_submit",
@@ -212,7 +219,8 @@ MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oce
                      "attendance": "bot_cmd_attendance", "obieralne": "bot_cmd_electives",
                      "electives": "bot_cmd_electives", "porzadki": "bot_cmd_cleanup", "cleanup": "bot_cmd_cleanup",
                      "przypisz": "bot_cmd_assign", "assign": "bot_cmd_assign", "karta": "bot_cmd_card",
-                     "card": "bot_cmd_card", "bledy": "bot_cmd_errors", "errors": "bot_cmd_errors"}
+                     "card": "bot_cmd_card", "bledy": "bot_cmd_errors", "errors": "bot_cmd_errors",
+                     "pauza": "bot_cmd_pause", "pause": "bot_cmd_pause"}
 
 
 def command_of(text: str) -> str:

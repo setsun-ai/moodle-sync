@@ -16,6 +16,7 @@ logs/
 *.part
 *.relocating
 .moodle_sync.lock
+paused.json
 .run_all.lock
 
 # --- Python ---

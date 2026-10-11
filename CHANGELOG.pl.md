@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.10.0 (2026-10)
+
+- `/pauza` (`/pause`) w bocie: wstrzymaj synchronizację na 1 dzień, 7 dni albo do odwołania i wznów ją. Wstrzymana kopia niczego nie pobiera, nie zmienia kalendarza i nie wysyła powiadomień; timer działa dalej (i wysyła sygnał do healthchecks), więc po wznowieniu najbliższa synchronizacja wszystko nadrobi. Z `OTHER_SITES` (foldery danych, po przecinku) bot pierwszej kopii wstrzymuje też drugi Moodle; `/status` pokazuje, co jest wstrzymane.
+
 ## 1.9.1 (2026-10)
 
 - Serwer Moodle, który nie odpowiada (przekroczony czas, odmowa połączenia, HTTP 502/503/504), albo brak sieci są zgłaszane dopiero, gdy trwają 2 synchronizacje z rzędu - serwery uczelni często znikają na chwilę. Powiadomienie podaje serwer w jednym zdaniu zamiast tracebacku; pełny komunikat zostaje w `/bledy`.

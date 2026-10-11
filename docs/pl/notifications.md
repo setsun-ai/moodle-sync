@@ -55,6 +55,7 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/bledy` `/errors` | ostatnia synchronizacja krok po kroku, z pełnym wynikiem kroków z błędem |
 | `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
 | `/sync` | synchronizuj teraz: wszystko albo wybrany kurs |
+| `/pauza` `/pause` | wstrzymaj synchronizację na 1 dzień, 7 dni albo do odwołania i wznów ją - także drugiego Moodle (`OTHER_SITES`, zobacz [Konfiguracja](configuration.md)). Wstrzymana kopia niczego nie pobiera i nic nie wysyła; timer działa dalej, a healthchecks nadal dostaje sygnał |
 | `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |
 | `/rollback` | wróć do wersji sprzed ostatniego `/update` |
 | `/plan` | semestry i przedmioty z planu studiów (zobacz [Konfiguracja](configuration.md)) |

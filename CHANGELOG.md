@@ -2,6 +2,10 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.10.0 (2026-10)
+
+- `/pause` (`/pauza`) in the bot: pause the sync for 1 day, 7 days or until resumed, and resume it. A paused site downloads nothing, leaves the calendar alone and sends no notifications; the timer keeps running (and pinging the healthcheck), so after resuming the next sync catches up. With `OTHER_SITES` (data folders, comma-separated) the first copy's bot pauses a second site too; `/status` shows what is paused.
+
 ## 1.9.1 (2026-10)
 
 - A Moodle server that doesn't answer (timeout, connection refused, HTTP 502/503/504) or no network is notified only when it lasts 2 syncs in a row - university servers often vanish for a moment. The notification names the server in one sentence instead of a traceback; the full output stays in `/errors`.

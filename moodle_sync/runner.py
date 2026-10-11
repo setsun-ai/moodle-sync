@@ -38,7 +38,7 @@ from pathlib import Path
 
 import requests
 
-from . import calendar_sync, config, files, moodle, state as state_mod, storage, studyplan, watch
+from . import calendar_sync, config, files, moodle, pause, state as state_mod, storage, studyplan, watch
 from .i18n import t, weekday
 from .notify import _redact as notify_redact, bullet_list, notify
 
@@ -241,6 +241,13 @@ def run(log_file: str | None = None) -> int:
 
 
 def _run() -> int:
+    until = pause.paused_until()
+    if until is not None:  # /pause in the bot; the healthcheck still hears from us, so it doesn't raise the alarm
+        when = t("ui_pause_until", when=f"{datetime.fromtimestamp(until):%d.%m %H:%M}") if until else \
+            t("ui_pause_indefinitely")
+        print(t("run_paused", when=when), flush=True)
+        ping_healthcheck("", "paused")
+        return 0
     with SingleInstance() as lock:
         if not lock.acquired:
             print(t("run_busy"))

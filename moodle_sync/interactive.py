@@ -6,6 +6,7 @@ The interactive part of the Telegram bot: buttons, files and short conversations
     a file                 submit it to an assignment (MOODLE_ACTIONS=1)
     /forum                 start a discussion in a forum (MOODLE_ACTIONS=1)
     /attendance /obecnosc  mark attendance; or send the link / a photo of the QR code (MOODLE_ACTIONS=1)
+    /pause /pauza          pause or resume the sync of this site and of OTHER_SITES (pause.py)
     ⬇️ under "new materials" the bot sends the file itself (TELEGRAM_FILE_BUTTONS=0 hides the buttons)
 
 Nothing that changes Moodle happens without a "✅" tap on a summary of exactly
@@ -22,7 +23,18 @@ from pathlib import Path
 
 import requests
 
-from . import assignments, attendance, config, coursebrowse, moodle, notify, state as state_mod, storage, studyplan
+from . import (
+    assignments,
+    attendance,
+    config,
+    coursebrowse,
+    moodle,
+    notify,
+    pause,
+    state as state_mod,
+    storage,
+    studyplan,
+)
 from .i18n import t
 from .textutil import clean_text
 
@@ -92,7 +104,7 @@ COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": 
             "submit": "submit", "oddaj": "submit", "electives": "electives", "obieralne": "electives",
             "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup", "assign": "assign",
             "przypisz": "assign", "card": "card", "karta": "card", "errors": "errors", "bledy": "errors",
-            "błędy": "errors", "sync": "sync"}
+            "błędy": "errors", "sync": "sync", "pause": "pause", "pauza": "pause"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -105,7 +117,7 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
         {"courses": show_courses, "today": lambda c: show_day(c, parse_day(args)),
          "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
          "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign, "card": show_cards,
-         "errors": show_errors, "sync": show_sync}[kind](chat)
+         "errors": show_errors, "sync": show_sync, "pause": show_pause}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -757,6 +769,42 @@ def run_sync(chat: str, message_id: int, course_id: int | None) -> None:
          + (f"\n<pre>{esc(tail)}</pre>" if tail else ""))
 
 
+# --- pausing a site ------------------------------------------------------------------------------
+
+def pause_text(until: float) -> str:
+    return t("ui_pause_until", when=f"{datetime.fromtimestamp(until):%d.%m %H:%M}") if until else \
+        t("ui_pause_indefinitely")
+
+
+def show_pause(chat: str, message_id: int | None = None) -> None:
+    lines, rows = [t("ui_pause_title")], []
+    for i, site in enumerate(pause.sites()):
+        name = pause.label(site)
+        if not site.is_dir():
+            lines.append(t("ui_pause_missing", site=esc(site)))
+            continue
+        until = pause.paused_until(site)
+        if until is None:
+            lines.append(t("ui_pause_running", site=esc(name)))
+            rows.append([(t("ui_pause_day", site=name), f"pz:{i}:1"), (t("ui_pause_week"), f"pz:{i}:7"),
+                         (t("ui_pause_indefinitely"), f"pz:{i}:0")])
+        else:
+            lines.append(t("ui_pause_paused", site=esc(name), when=pause_text(until)))
+            rows.append([(t("ui_pause_resume", site=name), f"pr:{i}")])
+    text = "\n".join(lines)
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
+
+
+def set_pause(chat: str, message_id: int, index: int, days: int | None) -> None:
+    """days None = resume."""
+    site = pause.sites()[index]
+    if days is None:
+        pause.resume(site)
+    else:
+        pause.pause(site, days)
+    show_pause(chat, message_id)
+
+
 def cli(*args: str):
     import subprocess
     import sys
@@ -978,6 +1026,11 @@ def on_callback(cq: dict, chat: str) -> None:
             save_elective(chat, message_id, int(rest))
         elif data == "cu!":
             do_cleanup(chat, message_id)
+        elif kind == "pz":
+            index, days = rest.split(":")
+            set_pause(chat, message_id, int(index), int(days))
+        elif kind == "pr":
+            set_pause(chat, message_id, int(rest), None)
         elif kind in ("dl", "dla"):
             send_new_files(chat, rest, batch=kind == "dla")
         else:

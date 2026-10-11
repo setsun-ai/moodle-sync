@@ -714,3 +714,27 @@ def test_new_command_shows_the_course_not_the_semester():
 
     state_mod.save({"downloaded": {"a": {"path": "Semester 2/Biochemistry/Lectures/a.pdf", "ts": time.time()}}})
     assert "<b>Biochemistry</b>: a.pdf" in telegram_bot.cmd_new("1")
+
+
+def test_pause_another_site_from_the_bot(bot, monkeypatch, tmp_path):
+    from moodle_sync import config, pause, telegram_bot
+
+    site = tmp_path / "site-2"
+    site.mkdir()
+    (site / ".env").write_text("SITE_LABEL=UNI2\n", encoding="utf-8")
+    monkeypatch.setenv("SITE_LABEL", "UNI1")
+    monkeypatch.setenv("OTHER_SITES", f"{site},{tmp_path / 'typo'}")
+    interactive.handle_command("pauza", [], "1")
+    text, rows = bot["sent"][-1]
+    assert "✅ UNI1: running" in text and "✅ UNI2: running" in text and "OTHER_SITES" in text
+    assert rows[1] == [("⏸ UNI2: 1 day", "pz:1:1"), ("7 days", "pz:1:7"), ("until resumed", "pz:1:0")]
+
+    click("pz:1:7")
+    assert pause.paused_until(site.resolve()) == pytest.approx(time.time() + 7 * 86400, abs=5)
+    assert pause.paused_until(config.DATA_DIR) is None
+    text, rows = bot["edits"][-1]
+    assert "⏸ UNI2: paused until" in text and rows[1] == [("▶️ UNI2: resume", "pr:1")]
+    assert "⏸ UNI2: paused until" in telegram_bot.cmd_status("1")
+
+    click("pr:1")
+    assert pause.paused_until(site.resolve()) is None and "✅ UNI2: running" in bot["edits"][-1][0]

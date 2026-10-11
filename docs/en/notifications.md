@@ -55,6 +55,7 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/errors` `/bledy` | the last sync step by step, with the full output of failed steps |
 | `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
 | `/sync` | sync now: everything, or pick one course |
+| `/pause` `/pauza` | pause the sync for 1 day, 7 days or until resumed, and resume it - also of a second site (`OTHER_SITES`, see [Configuration](configuration.md)). A paused site downloads nothing and sends nothing; the timer keeps running and the healthcheck still gets its ping |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
 | `/rollback` | go back to the version before the last `/update` |
 | `/plan` | semesters and subjects of your study plan (see [Configuration](configuration.md)) |
