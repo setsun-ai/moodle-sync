@@ -5,6 +5,7 @@ One full run: what the scheduler (systemd / Task Scheduler / launchd) starts.
        syllabus   subject cards from the study plan (STUDY_PLAN_URL) -> DOWNLOAD_DIR
     2. storage    DOWNLOAD_DIR -> cloud (rclone) + backup of state.json
     3. calendar   deadlines -> Google Calendar (✅ = done)
+       reminders  what you haven't handed in, REMIND_HOURS before the deadline
     4. watch      new announcements and grades -> notifications
 
 Steps are independent: a download error doesn't block uploading what's
@@ -14,9 +15,12 @@ the tool works from day one with whatever you've set up.
 
 "Am I alive?":
   - on Sunday evening a weekly summary (what came in + deadlines for the
-    coming week) - no summary on Sunday = something is wrong,
+    coming week, also of OTHER_SITES) - no summary on Sunday = something is wrong,
   - optionally healthchecks.io (HEALTHCHECK_URL): the service alerts YOU when
     the pings stop, e.g. when the Raspberry Pi dies.
+
+Running out of disk space (below LOW_DISK_GB, default 1) is notified once a day -
+an SD card full of lecture slides would stop everything without another word.
 
 Errors are notified, but the same error at most every ALERT_REPEAT_HOURS -
 running every 15 minutes, an expired token must not flood your phone. A server
@@ -25,9 +29,11 @@ TRANSIENT_RUNS runs in a row: university servers often vanish for a moment.
 """
 
 import hashlib
+import html
 import io
 import os
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -38,7 +44,19 @@ from pathlib import Path
 
 import requests
 
-from . import calendar_sync, config, files, moodle, pause, state as state_mod, storage, studyplan, watch
+from . import (
+    calendar_sync,
+    config,
+    files,
+    moodle,
+    pause,
+    reminders,
+    sites,
+    state as state_mod,
+    storage,
+    studyplan,
+    watch,
+)
 from .i18n import t, weekday
 from .notify import _redact as notify_redact, bullet_list, notify
 
@@ -54,6 +72,7 @@ STEPS = [
     ("step_syllabus", lambda: studyplan.run()),
     ("step_storage", lambda: storage.run()),
     ("step_calendar", lambda: calendar_sync.run()),
+    ("step_reminders", lambda: reminders.run()),
     ("step_watch", lambda: watch.run()),
 ]
 
@@ -201,21 +220,51 @@ def weekly_summary(state: dict, force: bool = False) -> None:
     if not force and (now.weekday() != WEEKLY_DAY or now.hour < WEEKLY_HOUR or time.time() - last < 3 * 86400):
         return
     week_ago = time.time() - 7 * 86400
-    w = state.get("watch", {})
-    n_files = sum(1 for e in state.get("downloaded", {}).values() if e.get("ts", 0) >= week_ago)
-    n_posts = sum(1 for ts in w.get("forums", {}).get("seen", {}).values() if ts >= week_ago)
-    n_grades = sum(1 for v in w.get("grades", {}).get("items", {}).values()
-                   if v.get("grade") and v.get("ts", 0) >= week_ago)
-    lines = [t("weekly_counts", files=n_files, posts=n_posts, grades=n_grades)]
-    try:
-        upcoming = [f"{'✅' if done else '⏰'} {weekday(datetime.fromtimestamp(ts).weekday())} "
-                    f"{datetime.fromtimestamp(ts):%d.%m %H:%M}  {text}"
-                    for ts, text, done in calendar_sync.upcoming_deadlines(days=7)]
+
+    def collect(i, prefix):  # one summary for every site (OTHER_SITES set NOTIFY_SUMMARY=0 themselves)
+        st = state if i == 0 else state_mod.load()
+        w = st.get("watch", {})
+        n_files = sum(1 for e in st.get("downloaded", {}).values() if e.get("ts", 0) >= week_ago)
+        n_posts = sum(1 for ts in w.get("forums", {}).get("seen", {}).values() if ts >= week_ago)
+        n_grades = sum(1 for v in w.get("grades", {}).get("items", {}).values()
+                       if v.get("grade") and v.get("ts", 0) >= week_ago)
+        counts = prefix + t("weekly_counts", files=n_files, posts=n_posts, grades=n_grades)
+        try:
+            return [(counts, [(ts, prefix + text, done) for ts, text, done in calendar_sync.upcoming_deadlines(days=7)],
+                     None)]
+        except Exception as e:  # the summary must arrive even when Moodle is down
+            if i:
+                raise  # another site: sites.each turns it into a note
+            return [(counts, [], e)]
+
+    results, notes = sites.each(collect)
+    lines = [counts for counts, _, _ in results]
+    upcoming = [f"{'✅' if done else '⏰'} {weekday(datetime.fromtimestamp(ts).weekday())} "
+                f"{datetime.fromtimestamp(ts):%d.%m %H:%M}  {text}"
+                for ts, text, done in sorted((d for _, items, _ in results for d in items), key=lambda d: d[0])]
+    errors = [error for _, _, error in results if error]
+    if upcoming or not errors:  # "none 🎉" only when we really know
         lines.append("\n" + t("weekly_deadlines") + "\n" + (bullet_list(upcoming, 15) if upcoming else t("weekly_none")))
-    except Exception as e:  # the summary must arrive even when Moodle is down
-        lines.append("\n" + t("weekly_deadlines_failed", error=e))
+    lines += ["\n" + t("weekly_deadlines_failed", error=error) for error in errors]
+    lines += ["\n" + html.unescape(note) for note in notes]  # notify escapes the text itself
     notify("summary", t("weekly_title"), "\n".join(lines))
     state.setdefault("weekly", {})["last"] = time.time()
+
+
+def check_disk(state: dict) -> None:
+    """Notify (once a day) when the disk with the downloads has less than LOW_DISK_GB free."""
+    limit = float(config.env("LOW_DISK_GB", "1") or 0)
+    folder = config.download_dir()
+    usage = shutil.disk_usage(folder if folder.exists() else config.DATA_DIR)
+    free = usage.free / 1e9
+    if not limit or free >= limit:
+        state.pop("disk_alert", None)
+        return
+    if time.time() - state.get("disk_alert", 0) < 86400:
+        return
+    state["disk_alert"] = time.time()
+    hint = t("disk_low_keep_local") if config.keep_local() and config.rclone_remote() else ""
+    notify("errors", t("disk_low_title"), t("disk_low_body", free=free, total=usage.total / 1e9) + hint, urgent=True)
 
 
 def _open_log(path: Path):
@@ -283,6 +332,10 @@ def _run() -> int:
             weekly_summary(state)
         except Exception as e:
             print(f"[weekly] {e}")
+        try:
+            check_disk(state)
+        except (OSError, ValueError) as e:
+            print(f"[disk] {e}")
         state_mod.save(state)
 
         summary = "\n".join(f"{name}: {result}" for name, result, _ in steps)

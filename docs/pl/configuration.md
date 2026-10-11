@@ -101,6 +101,8 @@ przyjdą na ten sam czat). Potem w tym samym terminalu:
 export MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2
 .venv/bin/python -m moodle_sync set STATE_BACKUP_DEST _moodle_sync_2   # nigdy wspólna kopia stanu
 .venv/bin/python -m moodle_sync set SYLLABUS 0                         # karty pobiera pierwsza kopia
+.venv/bin/python -m moodle_sync set NOTIFY_LABEL 1                     # jej powiadomienia mają [UG]
+.venv/bin/python -m moodle_sync set NOTIFY_SUMMARY 0                   # obejmuje ją podsumowanie pierwszej kopii
 echo '{"only": ["fragment nazwy kursu"]}' > ~/moodle-sync-2/courses.json
 ```
 
@@ -122,8 +124,8 @@ cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
-Bot działa tylko w pierwszej kopii. Żeby widzieć kursy drugiego Moodle w `/kursy` i `/dzis` oraz wstrzymywać go
-przez `/pauza`, podaj pierwszej kopii folder danych drugiej i uruchom bota ponownie:
+Bot działa tylko w pierwszej kopii. Żeby widzieć drugi Moodle w `/kursy`, `/dzis`, `/terminy`, `/nowe` i `/oceny`
+oraz wstrzymywać go przez `/pauza`, podaj pierwszej kopii folder danych drugiej i uruchom bota ponownie:
 
 ```bash
 .venv/bin/python -m moodle_sync set OTHER_SITES $HOME/moodle-sync-2
@@ -152,6 +154,7 @@ jeszcze raz i uruchom to samo polecenie - zacznie od miejsca, w którym skończy
 | `RCLONE_REMOTE` | (puste) | Nazwa remote'a rclone. Puste = bez wysyłki. |
 | `DRIVE_DEST` | `Moodle` | Folder docelowy w chmurze. |
 | `KEEP_LOCAL` | `1` | `0` = usuwaj lokalne kopie po wysłaniu. |
+| `LOW_DISK_GB` | `1` | Powiadom (raz dziennie), gdy na dysku z pobranymi plikami zostanie mniej wolnego miejsca. `0` = wyłączone. |
 | `RCLONE_BIN` | `rclone` | Ścieżka do rclone, jeśli nie ma go w PATH. |
 | `STATE_BACKUP_DEST` | `_moodle_sync` obok `DRIVE_DEST` | Gdzie trafia kopia `state.json`. |
 
@@ -170,10 +173,13 @@ jeszcze raz i uruchom to samo polecenie - zacznie od miejsca, w którym skończy
 | `DISCORD_WEBHOOK_URL` | Webhook kanału Discord. |
 | `NTFY_TOPIC`, `NTFY_SERVER` | Powiadomienia push ntfy. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`, `EMAIL_FROM` | E-mail. |
-| `NOTIFY_FILES`, `NOTIFY_DEADLINES`, `NOTIFY_ANNOUNCEMENTS`, `NOTIFY_GRADES`, `NOTIFY_ERRORS`, `NOTIFY_SUMMARY` | `0` wycisza dany rodzaj. |
+| `NOTIFY_FILES`, `NOTIFY_DEADLINES`, `NOTIFY_REMINDERS`, `NOTIFY_ANNOUNCEMENTS`, `NOTIFY_GRADES`, `NOTIFY_ERRORS`, `NOTIFY_SUMMARY` | `0` wycisza dany rodzaj. |
+| `REMIND_HOURS` | Ile godzin przed terminem przypomnieć o nieoddanym zadaniu lub quizie. Domyślnie `24,3`; `0` = wyłączone. |
+| `QUIET_HOURS` | np. `23-7` albo `22:30-6:45`: w tych godzinach powiadomienia przychodzą bez dźwięku. Domyślnie brak. |
+| `NOTIFY_LABEL` | `1` = `[SITE_LABEL]` przed tytułem każdego powiadomienia - dla drugiego Moodle na tym samym czacie. |
 | `WATCH_ALL_FORUMS` | `1` = wszystkie fora, nie tylko ogłoszenia. Obejmuje też dyskusje studentów, więc bywa głośno. |
 | `HEALTHCHECK_URL` | Alarm „nie działa” (Ping URL z healthchecks.io). |
-| `OTHER_SITES` | Foldery danych innych kopii (po przecinku): bot pokazuje ich kursy w `/kursy` i `/dzis` i może je wstrzymać przez `/pauza`. Zobacz [Drugi Moodle](#drugi-moodle-np-jeden-kurs-międzyuczelniany). |
+| `OTHER_SITES` | Foldery danych innych kopii (po przecinku): bot pokazuje je w `/kursy`, `/dzis`, `/terminy`, `/nowe` i `/oceny` i może je wstrzymać przez `/pauza`. Zobacz [Drugi Moodle](#drugi-moodle-np-jeden-kurs-międzyuczelniany). |
 
 ## `courses.json`
 

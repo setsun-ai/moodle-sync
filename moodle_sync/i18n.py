@@ -26,6 +26,41 @@ MESSAGES: dict[str, dict[str, str]] = {
     "step_calendar": {"pl": "Kalendarz", "en": "Calendar"},
     "step_watch": {"pl": "Ogłoszenia i oceny", "en": "Announcements and grades"},
     "step_syllabus": {"pl": "Karty przedmiotów", "en": "Subject cards"},
+    "restore_exists": {"pl": "{name}: już jest, zostawiam (nadpisanie: restore --force)",
+                       "en": "{name}: already there, kept (to replace it: restore --force)"},
+    "restore_missing": {"pl": "{name}: brak w kopii ({source})", "en": "{name}: not in the backup ({source})"},
+    "restore_invalid": {"pl": "{name}: kopia jest uszkodzona (to nie JSON), nie przywracam",
+                        "en": "{name}: the backup is damaged (not JSON), not restored"},
+    "restore_done": {"pl": "{name}: przywrócono", "en": "{name}: restored"},
+    "restore_state_files": {"pl": "Stan zna {n} pobranych plików - nie zostaną pobrane ani ogłoszone drugi raz.",
+                            "en": "The state knows {n} downloaded files - they won't be downloaded or announced again."},
+    "disk_low_title": {"pl": "Kończy się miejsce na dysku", "en": "Running out of disk space"},
+    "disk_low_body": {"pl": "Wolne: {free:.1f} GB z {total:.0f} GB. Gdy miejsca zabraknie, pobieranie stanie.",
+                      "en": "Free: {free:.1f} GB of {total:.0f} GB. When it runs out, downloads stop."},
+    "disk_low_keep_local": {"pl": " Pliki są już w chmurze, więc możesz trzymać je tylko tam: "
+                                  "python -m moodle_sync set KEEP_LOCAL 0",
+                            "en": " Your files are in the cloud already, so you can keep them only there: "
+                                  "python -m moodle_sync set KEEP_LOCAL 0"},
+    "ui_set_title": {"pl": "⚙️ <b>Powiadomienia · {site}</b>\nKliknij, żeby włączyć 🔔 albo wyciszyć 🔕. Zmiany działają "
+                           "od najbliższej synchronizacji.",
+                     "en": "⚙️ <b>Notifications · {site}</b>\nTap to switch on 🔔 or mute 🔕. Changes apply from the "
+                           "next sync."},
+    "ui_set_files": {"pl": "Materiały", "en": "Materials"},
+    "ui_set_reminders": {"pl": "Przypomnienia", "en": "Reminders"},
+    "ui_set_deadlines": {"pl": "Zmiany terminów", "en": "Deadline changes"},
+    "ui_set_announcements": {"pl": "Ogłoszenia", "en": "Announcements"},
+    "ui_set_grades": {"pl": "Oceny", "en": "Grades"},
+    "ui_set_summary": {"pl": "Podsumowanie", "en": "Weekly summary"},
+    "ui_set_errors": {"pl": "Błędy", "en": "Errors"},
+    "ui_set_quiet": {"pl": "🌙 Cisza nocna: {value} ▸", "en": "🌙 Quiet hours: {value} ▸"},
+    "ui_set_remind": {"pl": "⏰ Przypomnienia (h przed terminem): {value} ▸", "en": "⏰ Reminders (h before): {value} ▸"},
+    "ui_set_off": {"pl": "wyłączone", "en": "off"},
+    "bot_cmd_settings": {"pl": "Ustawienia powiadomień", "en": "Notification settings"},
+    "step_reminders": {"pl": "Przypomnienia", "en": "Reminders"},
+    "remind_off": {"pl": "Przypomnienia wyłączone (REMIND_HOURS, NOTIFY_REMINDERS) albo brak kanału powiadomień.",
+                   "en": "Reminders are off (REMIND_HOURS, NOTIFY_REMINDERS) or there's no notification channel."},
+    "remind_sent": {"pl": "Wysłane przypomnienia: {n}", "en": "Reminders sent: {n}"},
+    "remind_title": {"pl": "Za {left} termin – jeszcze nie oddane", "en": "Due in {left} – not handed in yet"},
     "course_skipped": {"pl": "[pominięto] {course}: {error}", "en": "[skipped] {course}: {error}"},
     "choose_number": {"pl": "Wybierz numer", "en": "Choose a number"},
     "yes_no_default_yes": {"pl": "[T/n]", "en": "[Y/n]"},
@@ -481,6 +516,8 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
                        "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/karta — link do karty przedmiotu spoza katalogu\n/bledy — szczegóły ostatnich błędów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz (wszystko albo jeden kurs)\n"
                        "/pauza — wstrzymaj albo wznów synchronizację\n"
+                       "/szukaj — znajdź pobrany plik (np. /szukaj wykład 3)\n"
+                       "/ustawienia — które powiadomienia, cisza nocna, przypomnienia\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
                  "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
@@ -488,6 +525,8 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
                        "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/assign — assign Moodle courses to subjects\n/card — a card link for a subject outside the catalogue\n/errors — details of the last errors\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
                        "/pause — pause or resume the sync\n"
+                       "/search — find a downloaded file (e.g. /search lecture 3)\n"
+                       "/settings — which notifications, quiet hours, reminders\n"
                        "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},
@@ -511,6 +550,13 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "en": "⏸ <b>Pausing the sync</b>\nA paused site downloads nothing, leaves the calendar alone and "
                              "sends no notifications. Once resumed, the next sync catches up on everything.\n"},
     "ui_site_unavailable": {"pl": "⚠️ Nie udało się zajrzeć do {error}", "en": "⚠️ Couldn't look into {error}"},
+    "ui_search_help": {"pl": "🔎 Napisz, czego szukać: /szukaj wykład 3 (kurs albo nazwa pliku, bez polskich znaków też zadziała)",
+        "en": "🔎 Tell me what to look for: /search lecture 3 (course or file name)"},
+    "ui_search_none": {"pl": "🔎 Nic nie pasuje do „{query}” wśród pobranych plików.",
+        "en": "🔎 Nothing among the downloaded files matches \"{query}\"."},
+    "ui_search_found": {"pl": "🔎 Pasujące pliki ({n}) dla „{query}”, najnowsze pierwsze:",
+        "en": "🔎 Matching files ({n}) for \"{query}\", newest first:"},
+    "bot_cmd_search": {"pl": "Znajdź pobrany plik (np. /szukaj wykład 3)", "en": "Find a downloaded file (e.g. /search lecture 3)"},
     "ui_pause_running": {"pl": "✅ {site}: działa", "en": "✅ {site}: running"},
     "ui_pause_paused": {"pl": "⏸ {site}: wstrzymana {when}", "en": "⏸ {site}: paused {when}"},
     "ui_pause_missing": {"pl": "❓ {site}: nie ma takiego folderu – sprawdź OTHER_SITES",

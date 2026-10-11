@@ -34,11 +34,12 @@ Komentarz prowadzącego: Dobra robota, uwagi w sekcji 3.
 - 🗂️ **Semestry i karty przedmiotów.** Wskaż swój kierunek w katalogu ECTS swojej uczelni, a przedmioty trafią do folderów *Semestr 1 / Semestr 2 …* nazwanych jak w planie studiów, z kartą przedmiotu (sylabusem) obok materiałów, sprawdzaną co miesiąc pod kątem zmian.
 - 📅 **Terminy → Kalendarz Google.** Oddane zadania dostają ✅ i przestają przypominać. Przesunięte terminy się aktualizują, a Ty dostajesz powiadomienie. Zajęcia trafiają do osobnego kalendarza, który możesz ukryć. Outlook i kalendarz Apple mogą zamiast tego korzystać z linku subskrypcji.
 - 📢 **Ogłoszenia i 🎓 oceny** od prowadzących trafiają prosto na telefon, razem z komentarzem prowadzącego.
+- ⏰ **Przypomnienia o tym, czego jeszcze nie oddałeś,** 24 h i 3 h przed terminem – nigdy o tym, co już oddane. Cisza nocna wycisza powiadomienia w nocy.
 - 🔔 **Kanał do wyboru:** Telegram (z komendami `/terminy`, `/sync`...), Discord, ntfy albo e-mail.
 - 🧙 **Kreator konfiguracji:** sam sprawdza, jak loguje Twoja uczelnia (hasło czy SSO), i prowadzi krok po kroku. `doctor` sprawdza całość.
 - 🖥️ **Działa, jak chcesz:** dwuklik, kiedy masz ochotę, automatycznie, gdy komputer jest włączony, albo 24/7 na Raspberry Pi.
 - 🌍 **Po polsku i po angielsku:** komunikaty, bot i dokumentacja.
-- 📱 **Moodle w Telegramie:** przeglądaj sekcje kursu z linkami prosto do kopii na Dysku (`/kursy`), sprawdź, co pojawiło się dziś (`/dzis`), a jeśli włączysz (`MOODLE_ACTIONS=1`) – oddawaj zadania, wysyłając botowi plik (sprawdzony pod kątem dozwolonych formatów i rozmiaru, nazwany jak zadanie), pisz na forach i zaznaczaj obecność z kodu QR, linku albo hasła. Nic nie zostanie wysłane bez Twojego ✅.
+- 📱 **Moodle w Telegramie:** przeglądaj sekcje kursu z linkami prosto do kopii na Dysku (`/kursy`), sprawdź, co pojawiło się dziś (`/dzis`), znajdź dowolny pobrany plik i odbierz go na czacie (`/szukaj`), a jeśli włączysz (`MOODLE_ACTIONS=1`) – oddawaj zadania, wysyłając botowi plik (sprawdzony pod kątem dozwolonych formatów i rozmiaru, nazwany jak zadanie), pisz na forach i zaznaczaj obecność z kodu QR, linku albo hasła. Nic nie zostanie wysłane bez Twojego ✅.
 - 🔒 **Prywatnie, domyślnie tylko do odczytu:** Twoje dane zostają na Twoim komputerze i w Twojej chmurze. Oddaje i publikuje tylko to, co potwierdzisz w bocie, i tylko z `MOODLE_ACTIONS=1`.
 
 ## Szybki start

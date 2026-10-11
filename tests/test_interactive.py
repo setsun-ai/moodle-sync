@@ -791,3 +791,86 @@ def test_today_covers_every_site(bot, other_site):
     interactive.handle_command("dzis", [], "1")
     text = bot["sent"][-1][0]
     assert "LCMS" in text and "UNI2 · Shared course" in text
+
+
+@pytest.fixture
+def two_downloads(bot, monkeypatch, tmp_path):
+    """Downloaded files on this site and on a second one (OTHER_SITES), each with its own state.json."""
+    import json
+
+    from moodle_sync import config
+
+    site = tmp_path / "site-2"
+    (site / "downloads" / "Semester 1" / "Shared" / "Lectures").mkdir(parents=True)
+    (site / "downloads" / "Semester 1" / "Shared" / "Lectures" / "Wykład 3.pdf").write_bytes(b"other")
+    (site / ".env").write_text("SITE_LABEL=UNI2\n", encoding="utf-8")
+    (site / "state.json").write_text(json.dumps({"downloaded": {
+        "id-b": {"path": "Semester 1/Shared/Lectures/Wykład 3.pdf", "ts": 200}}}), encoding="utf-8")
+    folder = config.download_dir() / "Semester 1" / "Algorithms" / "Lectures"
+    folder.mkdir(parents=True)
+    (folder / "Lecture 3.pdf").write_bytes(b"own")
+    config.STATE_FILE.write_text(json.dumps({"downloaded": {
+        "id-a": {"path": "Semester 1/Algorithms/Lectures/Lecture 3.pdf", "ts": 100},
+        "id-a-old": {"path": "Semester 1/Algorithms/Lectures/Lecture 3.pdf", "ts": 50},  # older revision
+        "id-c": {"path": "Semester 1/Algorithms/Labs/lab.pdf", "ts": 300}}}), encoding="utf-8")
+    monkeypatch.setenv("OTHER_SITES", str(site))
+    docs = []
+    monkeypatch.setattr(interactive, "send_document",
+                        lambda chat, path, caption: docs.append((path.read_bytes(), caption)) or True)
+    return docs
+
+
+def test_download_button_from_another_sites_notification(bot, two_downloads):
+    from moodle_sync import files
+
+    click(f"dl:{files.file_token('id-b')}")
+    assert two_downloads == [(b"other", "📘 UNI2 · Shared")]
+
+
+def test_search_downloaded_files_on_every_site(bot, two_downloads):
+    from moodle_sync import files
+
+    interactive.handle_command("szukaj", ["wyklad", "3"], "1")  # no diacritics needed
+    text, rows = bot["sent"][-1]
+    assert "(1)" in text and "<b>UNI2 · Shared</b>: Wykład 3.pdf" in text
+    interactive.handle_command("szukaj", ["3"], "1")
+    text, rows = bot["sent"][-1]
+    assert rows == [[("⬇️ Wykład 3.pdf", f"dl:{files.file_token('id-b')}")],
+                    [("⬇️ Lecture 3.pdf", f"dl:{files.file_token('id-a')}")]]  # newest first, one per file
+    click(rows[1][0][1])
+    assert two_downloads == [(b"own", "📘 Algorithms")]
+    interactive.handle_command("szukaj", ["nothing-like-this"], "1")
+    assert "Nothing" in bot["sent"][-1][0]
+    interactive.handle_command("szukaj", [], "1")
+    assert "/search" in bot["sent"][-1][0]
+
+
+def test_notification_settings_in_the_bot(bot, monkeypatch, tmp_path):
+    from moodle_sync import config
+
+    site = tmp_path / "site-2"
+    site.mkdir()
+    (site / ".env").write_text("SITE_LABEL=UNI2\nNOTIFY_SUMMARY=0\n", encoding="utf-8")
+    monkeypatch.setenv("OTHER_SITES", str(site))
+    monkeypatch.setenv("SITE_LABEL", "UNI1")
+    interactive.handle_command("ustawienia", [], "1")
+    text, rows = bot["sent"][-1]
+    assert "UNI1" in text and rows[0] == [("✅ Materials", "stt:0:FILES"), ("✅ Reminders", "stt:0:REMINDERS")]
+    assert rows[-1] == [("• UNI1", "sts:0"), ("UNI2", "sts:1")]
+
+    click("stt:0:GRADES")
+    assert "NOTIFY_GRADES=0" in config.ENV_FILE.read_text() and not config.env_bool("NOTIFY_GRADES", True)
+    assert ("🔕 Grades", "stt:0:GRADES") in [b for row in bot["edits"][-1][1] for b in row]
+    click("stq:0")
+    click("stq:0")
+    assert "QUIET_HOURS=23-7" in config.ENV_FILE.read_text()
+    click("str:0")
+    assert "REMIND_HOURS=48,24,3" in config.ENV_FILE.read_text()
+
+    click("sts:1")
+    assert ("🔕 Weekly summary", "stt:1:SUMMARY") in [b for row in bot["edits"][-1][1] for b in row]
+    click("stt:1:SUMMARY")
+    assert "NOTIFY_SUMMARY=1" in (site / ".env").read_text()  # the other site's .env
+    assert "NOTIFY_SUMMARY" not in config.ENV_FILE.read_text()
+    click("stt:1:EVIL_KEY")  # only known settings are ever written
+    assert "EVIL" not in (site / ".env").read_text()

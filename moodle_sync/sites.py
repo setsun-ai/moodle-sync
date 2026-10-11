@@ -2,10 +2,11 @@
 Other Moodle sites synced by a second copy (see "A second Moodle site" in docs/*/configuration.md).
 
 Only the first copy runs the Telegram bot. OTHER_SITES (data folders, comma-separated) lets it
-pause those sites (pause.py) and show their courses in /courses and /today: for that moment
-use() switches .env and the data files (state.json, courses.json) to the other site's folder.
+pause those sites (pause.py) and show them in /courses, /today, /deadlines, /new and /grades: for
+that moment use() switches .env and the data files (state.json, courses.json) to the other site's folder.
 """
 
+import html
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -13,6 +14,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from . import config, moodle, notify
+from .i18n import t
 
 # The bot's own settings: it keeps talking to you in the same chat and language.
 KEEP = ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "LANGUAGE")
@@ -33,6 +35,24 @@ def label(site: Path) -> str:
     if site == config.DATA_DIR:
         return config.site_label()
     return (dotenv_values(site / ".env").get("SITE_LABEL") or "").strip() or site.name
+
+
+def each(collect) -> tuple[list, list[str]]:
+    """
+    collect(index, prefix) on every site, results joined; prefix is "" here and "UG · " on another site.
+    Another site that fails becomes a note (HTML) instead of an error, so this site's answer still comes.
+    """
+    found, notes = [], []
+    for i, site in enumerate(sites()):
+        if i and not site.is_dir():
+            continue  # /pause tells about a wrong OTHER_SITES
+        prefix = f"{label(site)} · " if i else ""
+        try:
+            with use(site):
+                found += collect(i, prefix)
+        except SiteError as e:
+            notes.append(t("ui_site_unavailable", error=html.escape(str(e)[:300])))
+    return found, notes
 
 
 @contextmanager

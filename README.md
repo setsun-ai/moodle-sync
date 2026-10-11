@@ -36,11 +36,12 @@ Teacher's feedback: Good work, see comments in section 3.
 - 🗂️ **Semesters and subject cards.** Point it at your field of study in your university's ECTS catalogue and courses go into *Semester 1 / Semester 2 …* folders named after the subjects, with each subject's card (syllabus) downloaded next to its materials and re-checked for changes.
 - 📅 **Deadlines → Google Calendar.** Submitted assignments get ✅ and stop reminding you. Moved deadlines are updated and notified. Classes go into a separate calendar you can hide. Outlook or Apple Calendar can use a subscription link instead.
 - 📢 **Announcements and 🎓 grades** from teachers go straight to your phone, including teacher feedback.
+- ⏰ **Reminders of what you haven't handed in yet,** 24 h and 3 h before the deadline - never about what you've already submitted. Quiet hours keep the night silent.
 - 🔔 **Your choice of channel:** Telegram (with commands like `/deadlines`, `/sync`), Discord, ntfy or e-mail.
 - 🧙 **Setup wizard:** finds out how your university logs in (password or SSO) and guides you. `doctor` checks everything.
 - 🖥️ **Runs how you want:** double-click when you feel like it, automatically while your computer is on, or 24/7 on a Raspberry Pi.
 - 🌍 **English and Polish:** messages, bot and documentation.
-- 📱 **Moodle in Telegram:** browse a course's sections with links straight to your Drive copy (`/courses`), see what appeared today (`/today`), and - if you switch it on (`MOODLE_ACTIONS=1`) - submit an assignment by sending the bot a file (checked against the allowed types and size, renamed after the assignment), post to a forum and mark attendance from a QR code, a link or a password. Nothing is sent without your ✅.
+- 📱 **Moodle in Telegram:** browse a course's sections with links straight to your Drive copy (`/courses`), see what appeared today (`/today`), find any downloaded file and get it in the chat (`/search`), and - if you switch it on (`MOODLE_ACTIONS=1`) - submit an assignment by sending the bot a file (checked against the allowed types and size, renamed after the assignment), post to a forum and mark attendance from a QR code, a link or a password. Nothing is sent without your ✅.
 - 🔒 **Private, read-only by default:** your data stays on your computer and your cloud. It submits or posts only what you confirm in the bot, and only with `MOODLE_ACTIONS=1`.
 
 ## Quick start

@@ -132,13 +132,14 @@ Kopię rozpakowaną z archiwum wydania (nie klon git) można też zaktualizować
 
 ## Karta SD padła
 
-1. Przygotuj nową kartę (kroki 1–4).
-2. Przed `install-server.sh` przywróć stan z kopii w chmurze, robionej przy każdym przebiegu (jeśli używasz rclone):
+1. Przygotuj nową kartę (kroki 1–4), wgraj kod do `~/moodle-sync` i przywróć zachowane sekrety: `.env`, `google_token.json`, `~/.config/rclone/rclone.conf`.
+2. Przed `install-server.sh` (on włącza timer) przywróć stan z kopii w chmurze, robionej przy każdym przebiegu:
    ```bash
    cd ~/moodle-sync
-   rclone copyto <remote>:_moodle_sync/state.json state.json
-   rclone copyto <remote>:_moodle_sync/przedmioty.json przedmioty.json   # albo courses.json, jeśli był
+   python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
+   .venv/bin/python -m moodle_sync restore
    ```
-   Kopia leży obok `DRIVE_DEST`, np. dla `DRIVE_DEST=Studia/Moodle` w `gdrive:Studia/_moodle_sync/`.
+   Przywraca `state.json` i `courses.json` / `przedmioty.json` z kopii obok `DRIVE_DEST` (np. dla `DRIVE_DEST=Studia/Moodle` z `gdrive:Studia/_moodle_sync/`), nie nadpisuje istniejących plików (chyba że z `--force`) i odrzuca uszkodzoną kopię. Drugi Moodle: to samo z `MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2` na początku.
+3. Uruchom `install-server.sh`.
 
 Sekretów (`.env`, `google_token.json`, `rclone.conf`) w kopii **celowo nie ma**. **Trzymaj ich kopię na komputerze.** Bez `state.json` nic się nie zepsuje: Pi pobierze wszystko ponownie (w chmurze i kalendarzu nic się nie zdubluje) i wyśle jedno duże powiadomienie o „nowych” plikach.

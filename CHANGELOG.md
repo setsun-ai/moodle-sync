@@ -2,6 +2,20 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.12.0 (2026-10)
+
+- `/deadlines`, `/new` and `/grades` include a second site too (`OTHER_SITES`), in one list sorted by time, its items marked "UG · ". When that site is down, the rest still shows, with a short note.
+- ⏰ Reminders: an assignment or quiz you haven't handed in yet is reminded about 24 h and 3 h before the deadline (`REMIND_HOURS`, `NOTIFY_REMINDERS=0` mutes them). Never about what you've submitted, each reminder once.
+- `/search` (`/szukaj`): find a downloaded file by course or name on every site, diacritics optional, with ⬇️ buttons.
+- `QUIET_HOURS=23-7`: notifications in those hours arrive without a sound (Telegram silent message, ntfy low priority).
+- `NOTIFY_LABEL=1`: `[SITE_LABEL]` in front of notification titles, for a second site in the same chat.
+- One weekly summary for every site: the first copy's summary includes `OTHER_SITES` (set `NOTIFY_SUMMARY=0` in the second copy).
+- `/status` and `/errors` show a second site's last run too.
+- `/settings` (`/ustawienia`) in the bot: switch notification kinds on and off, pick quiet hours and reminder times, for a second site too - no SSH, it writes `.env`.
+- `restore`: brings `state.json` and the courses config back from the cloud backup after a new SD card or a reinstall, so nothing is downloaded and announced again. Never overwrites without `--force`, refuses a damaged backup.
+- A notification when the disk with the downloads is almost full (below `LOW_DISK_GB`, default 1 GB, once a day), with a hint about `KEEP_LOCAL=0`.
+- Fix: **⬇️ Download** under a second site's *New course materials* answered "no longer tracked" - the bot now looks the file up on every site.
+
 ## 1.11.0 (2026-10)
 
 - `/courses` and `/today` show the courses of a second site too (`OTHER_SITES`): the first copy's bot reads that site's `.env` and data for the moment. Its courses appear as "UG · course"; when that site is down, your other courses still show, with a short note.

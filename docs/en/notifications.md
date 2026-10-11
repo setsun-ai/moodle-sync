@@ -10,12 +10,16 @@ All channels are optional and can be combined. The wizard (`python -m moodle_syn
 |---|---|---|
 | 📚 New course materials | new or replaced files were downloaded, grouped by course. In Telegram with **⬇️ Download** buttons | `NOTIFY_FILES=0` |
 | 📅 New / changed deadlines | a teacher added or **moved** a deadline (needs [Google Calendar](google-calendar.md)) | `NOTIFY_DEADLINES=0` |
+| ⏰ Reminder | an assignment or quiz you **haven't handed in** is due in 24 h, and again in 3 h (`REMIND_HOURS`). Never for what you've submitted | `NOTIFY_REMINDERS=0` |
 | 📢 Announcement | a new post in a course's *Announcements* forum: full text + link | `NOTIFY_ANNOUNCEMENTS=0` |
 | 🎓 Grade | a new or changed grade for an assignment or quiz, with the teacher's feedback | `NOTIFY_GRADES=0` |
-| 🚨 Error | something broke. Tells you what to do (e.g. "renew the token"). The same error at most every 6 h. A server that doesn't answer, or no network: only after 2 syncs in a row, without the traceback (it's in `/errors`) | `NOTIFY_ERRORS=0` |
-| ✅ Weekly summary | Sunday evening: what came in this week + deadlines for the next 7 days | `NOTIFY_SUMMARY=0` |
+| 🚨 Error | something broke, or the disk is almost full (`LOW_DISK_GB`, once a day). Tells you what to do (e.g. "renew the token"). The same error at most every 6 h. A server that doesn't answer, or no network: only after 2 syncs in a row, without the traceback (it's in `/errors`) | `NOTIFY_ERRORS=0` |
+| ✅ Weekly summary | Sunday evening: what came in this week + deadlines for the next 7 days, a second site (`OTHER_SITES`) included | `NOTIFY_SUMMARY=0` |
 
 The first run only *remembers* existing announcements and grades, so you won't get 50 notifications about old things.
+
+- **Quiet hours:** `QUIET_HOURS=23-7` - at night notifications still arrive right away, but silently (Telegram: no sound, ntfy: low priority), so nothing waits until morning and nothing wakes you.
+- **Two sites in one chat:** `NOTIFY_LABEL=1` in the second copy's `.env` puts `[UG]` (its `SITE_LABEL`) in front of its notifications.
 
 ## Which channel?
 
@@ -40,10 +44,10 @@ The first run only *remembers* existing announcements and grades, so you won't g
 
 | | |
 |---|---|
-| `/deadlines` `/terminy` | upcoming deadlines (14 days) straight from Moodle, ✅ = already submitted |
-| `/new` `/nowe` | recently downloaded materials |
-| `/grades` `/oceny` | latest grades |
-| `/status` | last run, result of each step, free disk space, uptime |
+| `/deadlines` `/terminy` | upcoming deadlines (14 days) straight from Moodle, ✅ = already submitted; also of a second site (`OTHER_SITES`) |
+| `/new` `/nowe` | recently downloaded materials, also of a second site |
+| `/grades` `/oceny` | latest grades, also of a second site |
+| `/status` | last run, result of each step, free disk space, uptime - for a second site too |
 | `/courses` `/kursy` | a course → its sections → materials, with links to your Drive copy, shared links and Moodle. Courses of a second site (`OTHER_SITES`) are listed too, as "UG · course" |
 | `/today` `/dzis` | what appeared in your courses today (on every site); `/today 1` = yesterday, `/today 12.10` = that day |
 | `/submit` `/oddaj`, or just send a file | submit it to an assignment (needs `MOODLE_ACTIONS=1`, see [Configuration](configuration.md)) |
@@ -52,7 +56,9 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/electives` `/obieralne` | pick your elective subjects (study plan) |
 | `/assign` `/przypisz` | put a Moodle course under a subject or module of the plan, rename its folder, add a semester |
 | `/card` `/karta` | your own link to the card of a subject outside the catalogue |
-| `/errors` `/bledy` | the last sync step by step, with the full output of failed steps |
+| `/errors` `/bledy` | the last sync step by step, with the full output of failed steps - for a second site too |
+| `/settings` `/ustawienia` | switch notification kinds on and off, pick quiet hours and reminder times - for a second site too, no SSH needed (writes `.env`) |
+| `/search` `/szukaj` | find a downloaded file by course or name on every site (`/search lecture 3`, diacritics optional), with **⬇️** buttons |
 | `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
 | `/sync` | sync now: everything, or pick one course |
 | `/pause` `/pauza` | pause the sync for 1 day, 7 days or until resumed, and resume it - also of a second site (`OTHER_SITES`, see [Configuration](configuration.md)). A paused site downloads nothing and sends nothing; the timer keeps running and the healthcheck still gets its ping |

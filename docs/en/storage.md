@@ -91,7 +91,7 @@ The file must stay writable, because rclone saves refreshed tokens into it. Trea
 
 ### Backup of the program's memory
 
-After every upload, `state.json` (plus `courses.json`) is copied to `_moodle_sync/` next to `DRIVE_DEST` (`STATE_BACKUP_DEST`). After a disk failure, restore it with `rclone copyto` ([how](raspberry-pi.md#sd-card-died)). Secrets are never uploaded.
+After every upload, `state.json` (plus `courses.json`) is copied to `_moodle_sync/` next to `DRIVE_DEST` (`STATE_BACKUP_DEST`). After a disk failure, bring it back with `python -m moodle_sync restore` ([how](raspberry-pi.md#sd-card-died)). Secrets are never uploaded.
 
 ## Changing categories later
 

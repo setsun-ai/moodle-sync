@@ -18,7 +18,7 @@ SENSITIVE_OR_STATEFUL = [
     "HEALTHCHECK_URL", "WATCH_ALL_FORUMS", "SYNC_CLASSES", "OTHER_SITES",
     "STUDY_PLAN_URL", "STUDY_START", "SEMESTER_FOLDERS", "SYLLABUS", "STUDY_CATALOG",
     "MOODLE_ACTIONS", "MOODLE_PRIVATE_TOKEN", "STUDENT_ID", "SUBMISSION_NAME",
-    "NOTIFY_FILES", "NOTIFY_DEADLINES", "NOTIFY_ANNOUNCEMENTS", "NOTIFY_GRADES", "NOTIFY_ERRORS", "NOTIFY_SUMMARY",
+    "NOTIFY_FILES", "NOTIFY_DEADLINES", "NOTIFY_REMINDERS", "NOTIFY_LABEL", "QUIET_HOURS", "REMIND_HOURS", "NOTIFY_ANNOUNCEMENTS", "NOTIFY_GRADES", "NOTIFY_ERRORS", "NOTIFY_SUMMARY",
 ]
 
 
@@ -27,6 +27,7 @@ def isolated(tmp_path, monkeypatch):
     for key in SENSITIVE_OR_STATEFUL:
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("LANGUAGE", "en")
+    monkeypatch.setenv("LOW_DISK_GB", "0")  # tests don't depend on this machine's free space
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(config, "ENV_FILE", tmp_path / ".env")
     monkeypatch.setattr(config, "STATE_FILE", tmp_path / "state.json")

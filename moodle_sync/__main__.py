@@ -14,6 +14,7 @@ Command line: python -m moodle_sync <command>
     ics         print the calendar subscription URL (Outlook / Apple Calendar)
     bot         run the Telegram bot            [--setup]
     notify-test send a test notification to all configured channels
+    restore     bring back state.json from the cloud backup (new SD card) [--force]
     set         change one setting in .env safely, e.g.: set LANGUAGE pl
 """
 
@@ -95,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("bot", help="run the Telegram bot")
     p.add_argument("--setup", action="store_true", help="connect the bot to your chat")
     sub.add_parser("notify-test", help="send a test notification")
+    p = sub.add_parser("restore", help="bring back state.json from the cloud backup (new SD card, reinstall)")
+    p.add_argument("--force", action="store_true", help="replace files that already exist")
     p = sub.add_parser("set", help="change one setting in .env safely, e.g.: set LANGUAGE pl")
     p.add_argument("key")
     p.add_argument("value")
@@ -154,6 +157,9 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "bot":
         from . import telegram_bot
         return telegram_bot.setup() if args.setup else telegram_bot.run()
+    if cmd == "restore":
+        from .storage import restore
+        return restore(force=args.force)
     if cmd == "notify-test":
         from .i18n import t
         from .notify import channels, notify

@@ -9,6 +9,8 @@ answered, anything else is ignored without a reply):
     /status                last run, free disk space, uptime
     /sync                  run the sync now
     /pause      /pauza     pause or resume the sync (see interactive.py)
+    /search     /szukaj    find a downloaded file (see interactive.py)
+    /settings   /ustawienia notification settings (see interactive.py)
     /update                install the newest GitHub release (updater.py), then restart
     /rollback              back to the version before the last /update
     /help       /pomoc     list of commands
@@ -49,48 +51,61 @@ def fmt_when(ts: float) -> str:
 
 # --- commands ---------------------------------------------------------------------------
 
+def with_notes(text: str, notes: list[str]) -> str:
+    """A reply plus notes about other sites that didn't answer (sites.each)."""
+    return "\n\n".join([text, *notes])
+
+
 def cmd_deadlines(chat_id: str) -> str:
     from .calendar_sync import upcoming_deadlines
 
-    items = upcoming_deadlines(days=14)
+    items, notes = sites.each(lambda i, prefix: [(ts, prefix + text, done)
+                                                 for ts, text, done in upcoming_deadlines(days=14)])
     if not items:
-        return "📅 " + esc(t("bot_no_deadlines"))
+        return with_notes("📅 " + esc(t("bot_no_deadlines")), notes)
     lines = ["📅 <b>" + esc(t("bot_deadlines_header")) + "</b>"]
-    for ts, text, done in items:
+    for ts, text, done in sorted(items, key=lambda item: item[0]):
         lines.append(f"{'✅' if done else '⏰'} <b>{esc(fmt_when(ts))}</b>  {esc(text)}")
-    return "\n".join(lines)
+    return with_notes("\n".join(lines), notes)
 
 
 def cmd_new(chat_id: str) -> str:
     from .files import course_of_path
 
-    downloaded = state_mod.load().get("downloaded", {})
-    recent = sorted((e for e in downloaded.values() if e.get("ts") and e.get("path")),
-                    key=lambda e: e["ts"], reverse=True)[:12]
+    def collect(i, prefix):
+        downloaded = state_mod.load().get("downloaded", {})
+        return [(e["ts"], prefix + course_of_path(e["path"]), e["path"].rsplit("/", 1)[-1])
+                for e in downloaded.values() if e.get("ts") and e.get("path")]
+
+    found, notes = sites.each(collect)
+    recent = sorted(found, key=lambda item: item[0], reverse=True)[:12]
     if not recent:
-        return "📚 " + esc(t("bot_no_new"))
+        return with_notes("📚 " + esc(t("bot_no_new")), notes)
     lines = ["📚 <b>" + esc(t("bot_new_header")) + "</b>"]
-    for e in recent:
-        name = e["path"].rsplit("/", 1)[-1]
-        lines.append(f"• {esc(fmt_when(e['ts']))} — <b>{esc(course_of_path(e['path']))}</b>: {esc(name)}")
-    return "\n".join(lines)
+    for ts, course, name in recent:
+        lines.append(f"• {esc(fmt_when(ts))} — <b>{esc(course)}</b>: {esc(name)}")
+    return with_notes("\n".join(lines), notes)
 
 
 def cmd_grades(chat_id: str) -> str:
-    items = state_mod.load().get("watch", {}).get("grades", {}).get("items", {})
-    graded = sorted((v for v in items.values() if v.get("grade")), key=lambda v: v.get("ts", 0), reverse=True)[:12]
+    def collect(i, prefix):
+        items = state_mod.load().get("watch", {}).get("grades", {}).get("items", {})
+        return [{**v, "course": prefix + v.get("course", "")} for v in items.values() if v.get("grade")]
+
+    found, notes = sites.each(collect)
+    graded = sorted(found, key=lambda v: v.get("ts", 0), reverse=True)[:12]
     if not graded:
-        return "🎓 " + esc(t("bot_no_grades"))
+        return with_notes("🎓 " + esc(t("bot_no_grades")), notes)
     lines = ["🎓 <b>" + esc(t("bot_grades_header")) + "</b>"]
     for v in graded:
-        lines.append(f"• <b>{esc(v['grade'])}</b> — {esc(v.get('name', '?'))} <i>({esc(v.get('course', ''))})</i>")
-    return "\n".join(lines)
+        lines.append(f"• <b>{esc(v['grade'])}</b> — {esc(v.get('name', '?'))} <i>({esc(v['course'])})</i>")
+    return with_notes("\n".join(lines), notes)
 
 
-def cmd_status(chat_id: str) -> str:
-    state = state_mod.load()
+def run_lines(state: dict) -> list[str]:
+    """The last run of a site: when, how long, each step, the next run."""
     last = state.get("last_run")
-    lines = ["🤖 <b>" + esc(t("bot_status_header")) + "</b> · moodle-sync " + esc(__version__)]
+    lines = []
     if last:
         lines.append(esc(t("bot_last_run", when=fmt_when(last["end"]), secs=int(last["end"] - last["start"]))))
         for step in last["steps"]:
@@ -104,12 +119,18 @@ def cmd_status(chat_id: str) -> str:
             lines.append(esc(t("bot_next_run", time=datetime.fromtimestamp(next_run).strftime("%H:%M"))))
     else:
         lines.append(esc(t("bot_never_ran")))
+    files = sum(1 for e in state.get("downloaded", {}).values() if e.get("path"))
+    lines.append(esc(t("bot_files_count", n=files)))
+    return lines
+
+
+def cmd_status(chat_id: str) -> str:
+    lines = ["🤖 <b>" + esc(t("bot_status_header")) + "</b> · moodle-sync " + esc(__version__)]
+    lines += run_lines(state_mod.load())
     for site in sites.sites():
         until = pause.paused_until(site) if site.is_dir() else None
         if until is not None:
             lines.append(t("ui_pause_paused", site=esc(sites.label(site)), when=esc(interactive.pause_text(until))))
-    files = sum(1 for e in state.get("downloaded", {}).values() if e.get("path"))
-    lines.append(esc(t("bot_files_count", n=files)))
     usage = shutil.disk_usage(config.DATA_DIR)
     lines.append(esc(t("bot_disk", free=usage.free / 1e9, total=usage.total / 1e9)))
     try:
@@ -117,7 +138,9 @@ def cmd_status(chat_id: str) -> str:
         lines.append(esc(t("bot_uptime", d=int(up // 86400), h=int(up % 86400 // 3600))))
     except OSError:
         pass  # not Linux
-    return "\n".join(lines)
+    others, notes = sites.each(lambda i, prefix: ["", f"<b>{esc(prefix.removesuffix(' · '))}</b>",
+                                                  *run_lines(state_mod.load())] if i else [])
+    return "\n".join(lines + others + notes)
 
 
 def cmd_sync(chat_id: str, announce: bool = True) -> str:
@@ -207,11 +230,11 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
 }
 # Menu in Telegram: Polish names for Polish users, English otherwise.
 MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "kursy", "dzis", "oddaj", "forum", "obecnosc", "plan", "obieralne",
-                     "przypisz", "karta", "status", "bledy", "sync", "pauza", "reorganize", "porzadki", "update",
-                     "rollback", "pomoc"],
+                     "przypisz", "karta", "szukaj", "ustawienia", "status", "bledy", "sync", "pauza", "reorganize", "porzadki",
+                     "update", "rollback", "pomoc"],
               "en": ["deadlines", "new", "grades", "courses", "today", "submit", "forum", "attendance", "plan",
-                     "electives", "assign", "card", "status", "errors", "sync", "pause", "reorganize", "cleanup",
-                     "update", "rollback", "help"]}
+                     "electives", "assign", "card", "search", "settings", "status", "errors", "sync", "pause", "reorganize",
+                     "cleanup", "update", "rollback", "help"]}
 MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help", "kursy": "bot_cmd_courses", "courses": "bot_cmd_courses",
                      "dzis": "bot_cmd_today", "today": "bot_cmd_today", "oddaj": "bot_cmd_submit",
@@ -220,7 +243,9 @@ MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oce
                      "electives": "bot_cmd_electives", "porzadki": "bot_cmd_cleanup", "cleanup": "bot_cmd_cleanup",
                      "przypisz": "bot_cmd_assign", "assign": "bot_cmd_assign", "karta": "bot_cmd_card",
                      "card": "bot_cmd_card", "bledy": "bot_cmd_errors", "errors": "bot_cmd_errors",
-                     "pauza": "bot_cmd_pause", "pause": "bot_cmd_pause"}
+                     "pauza": "bot_cmd_pause", "pause": "bot_cmd_pause",
+                     "szukaj": "bot_cmd_search", "search": "bot_cmd_search",
+                     "ustawienia": "bot_cmd_settings", "settings": "bot_cmd_settings"}
 
 
 def command_of(text: str) -> str:

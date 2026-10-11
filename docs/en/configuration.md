@@ -101,6 +101,8 @@ notifications from both arrive in the same chat). Then, in the same terminal:
 export MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2
 .venv/bin/python -m moodle_sync set STATE_BACKUP_DEST _moodle_sync_2   # never share the state backup
 .venv/bin/python -m moodle_sync set SYLLABUS 0                         # cards come from the first copy
+.venv/bin/python -m moodle_sync set NOTIFY_LABEL 1                     # its notifications say [UG]
+.venv/bin/python -m moodle_sync set NOTIFY_SUMMARY 0                   # the first copy's summary covers it
 echo '{"only": ["part of the course name"]}' > ~/moodle-sync-2/courses.json
 ```
 
@@ -122,8 +124,8 @@ cp ~/moodle-sync/google_token.json ~/moodle-sync-2/
 MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2 .venv/bin/python -m moodle_sync set SITE_LABEL UG
 ```
 
-The bot runs in the first copy only. To see the second site's courses in `/courses` and `/today` and to pause it
-with `/pause`, tell the first copy where the second one's data is, and restart the bot:
+The bot runs in the first copy only. To see the second site in `/courses`, `/today`, `/deadlines`, `/new` and
+`/grades` and to pause it with `/pause`, tell the first copy where the second one's data is, and restart the bot:
 
 ```bash
 .venv/bin/python -m moodle_sync set OTHER_SITES $HOME/moodle-sync-2
@@ -152,6 +154,7 @@ the same command - it continues where it stopped.
 | `RCLONE_REMOTE` | (empty) | rclone remote name. Empty = no upload. |
 | `DRIVE_DEST` | `Moodle` | Target folder in the cloud. |
 | `KEEP_LOCAL` | `1` | `0` = delete local copies after upload. |
+| `LOW_DISK_GB` | `1` | Notify (once a day) when less than this is free on the disk with the downloads. `0` = off. |
 | `RCLONE_BIN` | `rclone` | Path to rclone if it isn't on PATH. |
 | `STATE_BACKUP_DEST` | `_moodle_sync` next to `DRIVE_DEST` | Where the `state.json` backup goes. |
 
@@ -170,10 +173,13 @@ the same command - it continues where it stopped.
 | `DISCORD_WEBHOOK_URL` | Discord channel webhook. |
 | `NTFY_TOPIC`, `NTFY_SERVER` | ntfy push. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`, `EMAIL_FROM` | E-mail. |
-| `NOTIFY_FILES`, `NOTIFY_DEADLINES`, `NOTIFY_ANNOUNCEMENTS`, `NOTIFY_GRADES`, `NOTIFY_ERRORS`, `NOTIFY_SUMMARY` | `0` mutes that kind. |
+| `NOTIFY_FILES`, `NOTIFY_DEADLINES`, `NOTIFY_REMINDERS`, `NOTIFY_ANNOUNCEMENTS`, `NOTIFY_GRADES`, `NOTIFY_ERRORS`, `NOTIFY_SUMMARY` | `0` mutes that kind. |
+| `REMIND_HOURS` | Hours before a deadline to remind you of an assignment or quiz you haven't handed in yet. Default `24,3`; `0` = off. |
+| `QUIET_HOURS` | e.g. `23-7` or `22:30-6:45`: in those hours notifications arrive without a sound. Default: none. |
+| `NOTIFY_LABEL` | `1` = `[SITE_LABEL]` in front of every notification title - for a second site in the same chat. |
 | `WATCH_ALL_FORUMS` | `1` = all forums, not just announcements. Includes student discussions, so it can be noisy. |
 | `HEALTHCHECK_URL` | Dead-man alarm (healthchecks.io ping URL). |
-| `OTHER_SITES` | Data folders of other sites (comma-separated): the bot shows their courses in `/courses` and `/today` and can pause them with `/pause`. See [A second Moodle site](#a-second-moodle-site-eg-one-inter-university-course). |
+| `OTHER_SITES` | Data folders of other sites (comma-separated): the bot shows them in `/courses`, `/today`, `/deadlines`, `/new` and `/grades` and can pause them with `/pause`. See [A second Moodle site](#a-second-moodle-site-eg-one-inter-university-course). |
 
 ## `courses.json`
 

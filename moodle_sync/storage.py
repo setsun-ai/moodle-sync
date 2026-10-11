@@ -356,6 +356,49 @@ def backup_state() -> None:
                 print(t("storage_backup_failed", name=name))
 
 
+def restore(force: bool = False) -> int:
+    """
+    Bring back state.json (+ courses config) from the cloud backup - after a new SD card or a reinstall,
+    so nothing is downloaded and announced again. Needs .env restored first (secrets aren't backed up).
+    Existing files are kept unless force; a backup that isn't valid JSON is never put in place.
+    """
+    from .runner import LOCK_BUSY, SingleInstance
+
+    usable, reason = status()
+    if not usable:
+        print(reason)
+        return 1
+    with SingleInstance() as lock:  # not under a running sync
+        if not lock.acquired:
+            print(t("run_busy"))
+            return LOCK_BUSY
+        restored = 0
+        for name in BACKUP_FILES:
+            path = config.DATA_DIR / name
+            if path.exists() and not force:
+                print(t("restore_exists", name=name))
+                continue
+            tmp = path.with_name(path.name + ".restoring")
+            source = f"{config.rclone_remote()}:{config.state_backup_dest()}/{name}"
+            if rclone("copyto", source, str(tmp), "-q", quiet=True) != 0 or not tmp.exists():
+                tmp.unlink(missing_ok=True)
+                print(t("restore_missing", name=name, source=source))
+                continue
+            try:
+                json.loads(tmp.read_text(encoding="utf-8"))
+            except ValueError:
+                tmp.unlink()
+                print(t("restore_invalid", name=name))
+                continue
+            os.replace(tmp, path)
+            restored += 1
+            print(t("restore_done", name=name))
+    if (config.DATA_DIR / "state.json").exists():
+        n = sum(1 for e in state_mod.load().get("downloaded", {}).values() if e.get("path"))
+        print(t("restore_state_files", n=n))
+    return 0 if restored else 1
+
+
 def check() -> int:
     ok, reason = status()
     if not ok:

@@ -91,7 +91,7 @@ Plik musi być zapisywalny, bo rclone zapisuje w nim odświeżone tokeny. Traktu
 
 ### Kopia pamięci programu
 
-Po każdej wysyłce `state.json` (oraz `courses.json` / `przedmioty.json`) trafia do `_moodle_sync/` obok `DRIVE_DEST` (`STATE_BACKUP_DEST`). Po awarii dysku przywrócisz go przez `rclone copyto` ([jak](raspberry-pi.md#karta-sd-padła)). Sekrety nigdy nie są wysyłane.
+Po każdej wysyłce `state.json` (oraz `courses.json` / `przedmioty.json`) trafia do `_moodle_sync/` obok `DRIVE_DEST` (`STATE_BACKUP_DEST`). Po awarii dysku przywrócisz go przez `python -m moodle_sync restore` ([jak](raspberry-pi.md#karta-sd-padła)). Sekrety nigdy nie są wysyłane.
 
 ## Zmiana kategorii później
 

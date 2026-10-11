@@ -6,8 +6,11 @@ Notifications - sent to EVERY configured channel (all optional, combine freely):
     ntfy       NTFY_TOPIC [+ NTFY_SERVER]              (push app, no account needed)
     e-mail     SMTP_HOST, SMTP_USER, SMTP_PASSWORD [+ SMTP_PORT, EMAIL_TO, EMAIL_FROM]
 
-Each kind can be switched off: NOTIFY_FILES, NOTIFY_DEADLINES,
+Each kind can be switched off: NOTIFY_FILES, NOTIFY_DEADLINES, NOTIFY_REMINDERS,
 NOTIFY_ANNOUNCEMENTS, NOTIFY_GRADES, NOTIFY_ERRORS, NOTIFY_SUMMARY (=0).
+NOTIFY_LABEL=1 puts [SITE_LABEL] in front of every title (two sites in one chat).
+QUIET_HOURS=23-7: in those hours notifications still arrive at once, but without a sound
+(Telegram: silent message, ntfy: low priority).
 
 A notification failure must never break the sync - errors are only printed.
 Setup guide: docs/*/notifications.md
@@ -17,6 +20,7 @@ import html
 import re
 import smtplib
 import ssl
+from datetime import datetime
 from email.message import EmailMessage
 
 import requests
@@ -24,12 +28,12 @@ import requests
 from . import config
 
 KIND_EMOJI = {
-    "files": "📚", "deadlines": "📅", "announcements": "📢", "grades": "🎓",
+    "files": "📚", "deadlines": "📅", "reminders": "⏰", "announcements": "📢", "grades": "🎓",
     "errors": "🚨", "summary": "✅", "test": "🔔",
 }
 KIND_TAGS = {  # ntfy shows these as emoji
-    "files": "books", "deadlines": "date", "announcements": "loudspeaker", "grades": "mortar_board",
-    "errors": "rotating_light", "summary": "white_check_mark", "test": "bell",
+    "files": "books", "deadlines": "date", "reminders": "alarm_clock", "announcements": "loudspeaker",
+    "grades": "mortar_board", "errors": "rotating_light", "summary": "white_check_mark", "test": "bell",
 }
 TELEGRAM_LIMIT = 4096
 DISCORD_LIMIT = 2000
@@ -45,6 +49,17 @@ def _redact(text: str) -> str:
         if secret:
             text = text.replace(secret, "***")
     return text
+
+
+def quiet_now(now: datetime | None = None) -> bool:
+    """Inside QUIET_HOURS ("23-7", "22:30-6:45"; empty = never)?"""
+    m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?", config.env("QUIET_HOURS"))
+    if not m:
+        return False
+    start, end = int(m[1]) * 60 + int(m[2] or 0), int(m[3]) * 60 + int(m[4] or 0)
+    now = now or datetime.now()
+    minute = now.hour * 60 + now.minute
+    return start <= minute < end if start <= end else minute >= start or minute < end
 
 
 def channels() -> list[str]:
@@ -70,7 +85,8 @@ def keyboard(rows: list) -> dict:
                                 for row in rows if row]}
 
 
-def send_telegram_html(text: str, chat_id: str | None = None, buttons: list | None = None) -> bool:
+def send_telegram_html(text: str, chat_id: str | None = None, buttons: list | None = None,
+                       silent: bool = False) -> bool:
     """Send ready HTML (parse_mode=HTML), optionally with buttons (see keyboard). Returns True on success."""
     chat_id = chat_id or config.env("TELEGRAM_CHAT_ID")
     if not (config.env("TELEGRAM_BOT_TOKEN") and chat_id):
@@ -78,6 +94,8 @@ def send_telegram_html(text: str, chat_id: str | None = None, buttons: list | No
     if len(text) > TELEGRAM_LIMIT:
         text = text[: TELEGRAM_LIMIT - 20] + "\n…"
     extra = {"reply_markup": keyboard(buttons)} if buttons else {}
+    if silent:
+        extra["disable_notification"] = True
     try:
         resp = requests.post(f"{telegram_api()}/sendMessage", timeout=15, json={
             "chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True, **extra,
@@ -114,11 +132,11 @@ def _send_discord(title: str, message: str, emoji: str) -> bool:
         return False
 
 
-def _send_ntfy(title: str, message: str, kind: str, urgent: bool) -> bool:
+def _send_ntfy(title: str, message: str, kind: str, urgent: bool, silent: bool = False) -> bool:
     # JSON publishing, because HTTP headers (Title:) don't like non-ASCII letters.
     payload = {
         "topic": config.env("NTFY_TOPIC"), "title": title, "message": message[:3900] or title,
-        "tags": [KIND_TAGS.get(kind, "bell")], "priority": 4 if urgent else 3,
+        "tags": [KIND_TAGS.get(kind, "bell")], "priority": 2 if silent else 4 if urgent else 3,
     }
     try:
         requests.post(config.env("NTFY_SERVER", "https://ntfy.sh").rstrip("/"), json=payload,
@@ -161,17 +179,20 @@ def notify(kind: str, title: str, message: str = "", urgent: bool = False, butto
     """
     if kind != "test" and not config.env_bool(f"NOTIFY_{kind.upper()}", True):
         return
+    if config.env_bool("NOTIFY_LABEL", False):
+        title = f"[{config.site_label()}] {title}"
     emoji = KIND_EMOJI.get(kind, "🔔")
+    silent = quiet_now()
     for channel in channels():
         if channel == "telegram":
             text = f"{emoji} <b>{html.escape(title)}</b>"
             if message:
                 text += "\n" + html.escape(message)
-            send_telegram_html(text, buttons=buttons)
+            send_telegram_html(text, buttons=buttons, silent=silent)
         elif channel == "discord":
             _send_discord(title, message, emoji)
         elif channel == "ntfy":
-            _send_ntfy(title, message, kind, urgent)
+            _send_ntfy(title, message, kind, urgent, silent)
         elif channel == "email":
             _send_email(title, message)
 

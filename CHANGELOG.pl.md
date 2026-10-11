@@ -2,6 +2,20 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.12.0 (2026-10)
+
+- `/terminy`, `/nowe` i `/oceny` obejmują też drugi Moodle (`OTHER_SITES`): jedna lista posortowana według czasu, jego pozycje z dopiskiem „UG · ”. Gdy tamten serwer nie odpowiada, reszta i tak się pokazuje, z krótką informacją.
+- ⏰ Przypomnienia: o zadaniu albo quizie, którego jeszcze nie oddałeś, 24 h i 3 h przed terminem (`REMIND_HOURS`, `NOTIFY_REMINDERS=0` wycisza). Nigdy o tym, co już oddane, każde przypomnienie raz.
+- `/szukaj` (`/search`): znajdź pobrany plik po kursie albo nazwie na każdym Moodle, polskie znaki niepotrzebne, z przyciskami ⬇️.
+- `QUIET_HOURS=23-7`: powiadomienia w tych godzinach przychodzą bez dźwięku (Telegram: wyciszona wiadomość, ntfy: niski priorytet).
+- `NOTIFY_LABEL=1`: `[SITE_LABEL]` przed tytułem powiadomień, dla drugiego Moodle na tym samym czacie.
+- Jedno podsumowanie tygodnia dla wszystkich Moodle: podsumowanie pierwszej kopii obejmuje `OTHER_SITES` (w drugiej kopii ustaw `NOTIFY_SUMMARY=0`).
+- `/status` i `/bledy` pokazują też ostatni przebieg drugiego Moodle.
+- `/ustawienia` (`/settings`) w bocie: włączaj i wyciszaj rodzaje powiadomień, wybierz ciszę nocną i godziny przypomnień, także dla drugiego Moodle - bez SSH, zapisuje `.env`.
+- `restore`: przywraca `state.json` i konfigurację kursów z kopii w chmurze po nowej karcie SD albo reinstalacji, więc nic nie jest pobierane ani ogłaszane drugi raz. Bez `--force` niczego nie nadpisuje, uszkodzoną kopię odrzuca.
+- Powiadomienie, gdy na dysku z pobranymi plikami kończy się miejsce (poniżej `LOW_DISK_GB`, domyślnie 1 GB, raz dziennie), z podpowiedzią o `KEEP_LOCAL=0`.
+- Poprawka: **⬇️ Pobierz** pod *Nowymi materiałami* z drugiego Moodle odpowiadało „nie śledzę już tego pliku” - bot szuka teraz pliku na każdym Moodle.
+
 ## 1.11.0 (2026-10)
 
 - `/kursy` i `/dzis` pokazują też kursy drugiego Moodle (`OTHER_SITES`): bot pierwszej kopii na chwilę czyta `.env` i dane tamtej kopii. Jej kursy mają dopisek „UG · kurs”; gdy tamten serwer nie odpowiada, pozostałe kursy i tak się pokazują, z krótką informacją.

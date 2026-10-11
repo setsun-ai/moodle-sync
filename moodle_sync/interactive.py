@@ -8,6 +8,8 @@ The interactive part of the Telegram bot: buttons, files and short conversations
     /forum                 start a discussion in a forum (MOODLE_ACTIONS=1)
     /attendance /obecnosc  mark attendance; or send the link / a photo of the QR code (MOODLE_ACTIONS=1)
     /pause /pauza          pause or resume the sync of this site and of OTHER_SITES (pause.py)
+    /search /szukaj WORDS  downloaded files whose course or name has all the words, with ⬇️ buttons
+    /settings /ustawienia  notification kinds, quiet hours and reminders - here and on OTHER_SITES (.env)
     ⬇️ under "new materials" the bot sends the file itself (TELEGRAM_FILE_BUTTONS=0 hides the buttons)
 
 Nothing that changes Moodle happens without a "✅" tap on a summary of exactly
@@ -38,7 +40,7 @@ from . import (
     studyplan,
 )
 from .i18n import t
-from .textutil import clean_text
+from .textutil import clean_text, normalize_for_matching
 
 LIMIT = 3900
 STATE: dict = {}  # the bot serves one chat, so one conversation state
@@ -106,7 +108,8 @@ COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": 
             "submit": "submit", "oddaj": "submit", "electives": "electives", "obieralne": "electives",
             "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup", "assign": "assign",
             "przypisz": "assign", "card": "card", "karta": "card", "errors": "errors", "bledy": "errors",
-            "błędy": "errors", "sync": "sync", "pause": "pause", "pauza": "pause"}
+            "błędy": "errors", "sync": "sync", "pause": "pause", "pauza": "pause", "search": "search",
+            "szukaj": "search", "settings": "settings", "ustawienia": "settings"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -119,7 +122,8 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
         {"courses": show_courses, "today": lambda c: show_day(c, parse_day(args)),
          "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
          "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign, "card": show_cards,
-         "errors": show_errors, "sync": show_sync, "pause": show_pause}[kind](chat)
+         "errors": show_errors, "sync": show_sync, "pause": show_pause,
+         "search": lambda c: search_files(c, args), "settings": show_settings}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -161,23 +165,8 @@ def parse_ref(ref: str):
     return sites.sites()[int(site or 0)], int(course)
 
 
-def each_site(collect) -> tuple[list, list[str]]:
-    """collect(index, prefix) on every site; another site that fails becomes a note, not an error."""
-    found, notes = [], []
-    for i, site in enumerate(sites.sites()):
-        if i and not site.is_dir():
-            continue  # /pause tells about a wrong OTHER_SITES
-        prefix = f"{sites.label(site)} · " if i else ""
-        try:
-            with sites.use(site):
-                found += collect(i, prefix)
-        except sites.SiteError as e:
-            notes.append(t("ui_site_unavailable", error=esc(str(e)[:300])))
-    return found, notes
-
-
 def show_courses(chat: str, message_id: int | None = None) -> None:
-    rows, notes = each_site(lambda i, prefix: course_rows(moodle.my_courses(), i, prefix))
+    rows, notes = sites.each(lambda i, prefix: course_rows(moodle.my_courses(), i, prefix))
     text = "\n\n".join([t("ui_courses"), *notes])
     (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
 
@@ -228,7 +217,7 @@ def show_day(chat: str, offset: int, message_id: int | None = None) -> None:
         return coursebrowse.render_day(contents, start, end, coursebrowse.downloaded_paths(),
                                        coursebrowse.drive_links())
 
-    blocks, notes = each_site(collect)
+    blocks, notes = sites.each(collect)
     title = t("ui_day", day=day.strftime("%d.%m.%Y"))
     text = title + "\n\n" + ("\n\n".join(blocks) if blocks else t("ui_day_empty"))
     text += "".join("\n\n" + note for note in notes)
@@ -733,19 +722,24 @@ def save_card_link(chat: str, url: str) -> None:
 
 # --- the last errors in full -------------------------------------------------------------------
 
-def show_errors(chat: str) -> None:
-    state = state_mod.load()
+def error_lines(state: dict, prefix: str = "", tail: int = 1500) -> list[str]:
     run = state.get("last_run") or {}
-    lines = [t("ui_err_title", when=datetime.fromtimestamp(run["end"]).strftime("%d.%m %H:%M") if run.get("end")
-               else "?")]
+    when = datetime.fromtimestamp(run["end"]).strftime("%d.%m %H:%M") if run.get("end") else "?"
+    lines = [(f"<b>{esc(prefix.removesuffix(' · '))}</b> · " if prefix else "") + t("ui_err_title", when=when)]
     lines += [f"{'✅' if code == 0 else '⏭' if code == 2 else '❌'} {esc(name)}: {esc(result)}"
               for name, result, code in run.get("steps", [])]
     errors = state.get("last_errors") or {}
     for name, output in errors.items():
-        lines += ["", f"<b>{esc(name)}</b>", f"<pre>{esc(output[-1500:])}</pre>"]
+        lines += ["", f"<b>{esc(name)}</b>", f"<pre>{esc(output[-tail:])}</pre>"]
     if not errors:
         lines += ["", t("ui_err_none")]
-    send(chat, "\n".join(lines))
+    return lines
+
+
+def show_errors(chat: str) -> None:
+    """The last run step by step - here and on OTHER_SITES (shorter output, so it all fits)."""
+    blocks, notes = sites.each(lambda i, prefix: [error_lines(state_mod.load(), prefix, 1500 if not i else 700)])
+    send(chat, "\n\n".join(["\n".join(lines) for lines in blocks] + notes))
 
 
 # --- old copies left next to moved files -----------------------------------------------------------
@@ -844,6 +838,49 @@ def set_pause(chat: str, message_id: int, index: int, days: int | None) -> None:
     show_pause(chat, message_id)
 
 
+# --- notification settings (.env) ----------------------------------------------------------------
+
+SETTING_KINDS = ["FILES", "REMINDERS", "DEADLINES", "ANNOUNCEMENTS", "GRADES", "SUMMARY", "ERRORS"]
+QUIET_CHOICES = ["", "22-7", "23-7", "0-7"]
+REMIND_CHOICES = ["24,3", "48,24,3", "24", "3", "0"]
+
+
+def next_choice(choices: list[str], current: str) -> str:
+    current = current.replace(" ", "")
+    return choices[(choices.index(current) + 1) % len(choices)] if current in choices else choices[0]
+
+
+def show_settings(chat: str, message_id: int | None = None, index: int = 0) -> None:
+    """One site's notification settings: a tap toggles or moves to the next choice and saves .env."""
+    all_sites = sites.sites()
+    site = all_sites[index]
+    with sites.use(site):
+        on = {kind: config.env_bool(f"NOTIFY_{kind}", True) for kind in SETTING_KINDS}
+        quiet, remind = config.env("QUIET_HOURS"), config.env("REMIND_HOURS", "24,3")
+    toggles = [(("✅ " if on[kind] else "🔕 ") + t(f"ui_set_{kind.lower()}"), f"stt:{index}:{kind}")
+               for kind in SETTING_KINDS]
+    rows = [toggles[i:i + 2] for i in range(0, len(toggles), 2)]
+    rows.append([(t("ui_set_quiet", value=quiet or t("ui_set_off")), f"stq:{index}")])
+    rows.append([(t("ui_set_remind", value=remind if remind not in ("", "0") else t("ui_set_off")), f"str:{index}")])
+    if len(all_sites) > 1:
+        rows.append([(("• " if i == index else "") + sites.label(s), f"sts:{i}") for i, s in enumerate(all_sites)
+                     if s.is_dir()])
+    text = t("ui_set_title", site=esc(sites.label(site)))
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
+
+
+def change_setting(chat: str, message_id: int, index: int, action: str, kind: str = "") -> None:
+    with sites.use(sites.sites()[index]):
+        if action == "toggle" and kind in SETTING_KINDS:
+            key = f"NOTIFY_{kind}"
+            config.set_env_var(key, "0" if config.env_bool(key, True) else "1")
+        elif action == "quiet":
+            config.set_env_var("QUIET_HOURS", next_choice(QUIET_CHOICES, config.env("QUIET_HOURS")))
+        elif action == "remind":
+            config.set_env_var("REMIND_HOURS", next_choice(REMIND_CHOICES, config.env("REMIND_HOURS", "24,3")))
+    show_settings(chat, message_id, index)
+
+
 def cli(*args: str):
     import subprocess
     import sys
@@ -902,7 +939,7 @@ def send_document(chat: str, path: Path, caption: str) -> bool:
     return bool(ok)
 
 
-def send_downloaded(chat: str, path: str) -> None:
+def send_downloaded(chat: str, path: str, prefix: str = "") -> None:
     from .files import course_of_path
 
     name = path.rsplit("/", 1)[-1]
@@ -915,7 +952,7 @@ def send_downloaded(chat: str, path: str) -> None:
             link = coursebrowse.drive_links().get(path.casefold())
             send(chat, t("ui_dl_too_big", name=esc(name), mb=src.stat().st_size / 1024 / 1024),
                  [[(t("ui_dl_open_drive"), link)]] if link else None)
-        elif not send_document(chat, src, f"📘 {esc(course_of_path(path))}"):
+        elif not send_document(chat, src, f"📘 {esc(prefix + course_of_path(path))}"):
             send(chat, t("ui_dl_failed", name=esc(name)))
     finally:
         if tmp:
@@ -923,17 +960,60 @@ def send_downloaded(chat: str, path: str) -> None:
 
 
 def send_new_files(chat: str, token: str, batch: bool) -> None:
-    """dl:<file> - one file, dla:<batch> - every file of one notification (files.download_buttons)."""
+    """
+    dl:<file> - one file, dla:<batch> - every file of one notification (files.download_buttons).
+    The button may come from another site's notification (OTHER_SITES): every site is searched.
+    """
     from .files import find_by_token
 
-    state = state_mod.load()
-    downloaded = state.get("downloaded", {})
-    ids = state.get("file_batches", {}).get(token, []) if batch else [find_by_token(token, downloaded)]
-    paths = [path for path in ((downloaded.get(fid) or {}).get("path") for fid in ids if fid) if path]
-    if not paths:
-        send(chat, t("ui_dl_gone"))
-    for path in paths:
-        send_downloaded(chat, path)
+    def collect(i, prefix):
+        state = state_mod.load()
+        downloaded = state.get("downloaded", {})
+        ids = state.get("file_batches", {}).get(token, []) if batch else [find_by_token(token, downloaded)]
+        return [(i, prefix, path) for path in ((downloaded.get(fid) or {}).get("path") for fid in ids if fid)
+                if path]
+
+    found, notes = sites.each(collect)
+    if not found:
+        send(chat, "\n\n".join([t("ui_dl_gone"), *notes]))
+    for i, prefix, path in found:
+        with sites.use(sites.sites()[i]):
+            send_downloaded(chat, path, prefix)
+
+
+SEARCH_SHOWN, SEARCH_BUTTONS = 15, 8
+
+
+def search_files(chat: str, args: list[str]) -> None:
+    from .files import course_of_path, file_token
+
+    words = [normalize_for_matching(w) for w in args if w.strip()]
+    if not words:
+        send(chat, t("ui_search_help"))
+        return
+
+    def collect(i, prefix):
+        newest = {}  # path -> entry: older revisions of a file point to the same path
+        for fid, e in state_mod.load().get("downloaded", {}).items():
+            path = e.get("path")
+            if path and all(w in normalize_for_matching(path) for w in words):
+                if path not in newest or e.get("ts", 0) > newest[path][0]:
+                    newest[path] = (e.get("ts", 0), fid)
+        return [(ts, prefix + course_of_path(path), path.rsplit("/", 1)[-1], file_token(fid))
+                for path, (ts, fid) in newest.items()]
+
+    found, notes = sites.each(collect)
+    query = esc(" ".join(args))
+    if not found:
+        send(chat, "\n\n".join([t("ui_search_none", query=query), *notes]))
+        return
+    found.sort(key=lambda item: item[0], reverse=True)  # newest first
+    lines = [t("ui_search_found", n=len(found), query=query)]
+    lines += [f"• <b>{esc(course)}</b>: {esc(name)}" for _, course, name, _ in found[:SEARCH_SHOWN]]
+    if len(found) > SEARCH_SHOWN:
+        lines.append(f"… (+{len(found) - SEARCH_SHOWN})")
+    rows = [[("⬇️ " + name, f"dl:{token}")] for _, _, name, token in found[:SEARCH_BUTTONS]]
+    send(chat, "\n".join(lines + notes), rows)
 
 
 # --- text replies and buttons ------------------------------------------------------------------
@@ -1065,6 +1145,15 @@ def on_callback(cq: dict, chat: str) -> None:
             save_elective(chat, message_id, int(rest))
         elif data == "cu!":
             do_cleanup(chat, message_id)
+        elif kind == "sts":
+            show_settings(chat, message_id, int(rest))
+        elif kind == "stt":
+            index, setting = rest.split(":")
+            change_setting(chat, message_id, int(index), "toggle", setting)
+        elif kind == "stq":
+            change_setting(chat, message_id, int(rest), "quiet")
+        elif kind == "str":
+            change_setting(chat, message_id, int(rest), "remind")
         elif kind == "pz":
             index, days = rest.split(":")
             set_pause(chat, message_id, int(index), int(days))

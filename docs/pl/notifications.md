@@ -10,12 +10,16 @@ Wszystkie kanały są opcjonalne i można je łączyć. Kreator (`python -m mood
 |---|---|---|
 | 📚 Nowe materiały | pobrano nowe albo podmienione pliki, pogrupowane według kursów. W Telegramie z przyciskami **⬇️ Pobierz** | `NOTIFY_FILES=0` |
 | 📅 Nowe / zmienione terminy | prowadzący dodał albo **przesunął** termin (wymaga [kalendarza Google](google-calendar.md)) | `NOTIFY_DEADLINES=0` |
+| ⏰ Przypomnienie | zadanie albo quiz, którego **jeszcze nie oddałeś**, ma termin za 24 h i ponownie za 3 h (`REMIND_HOURS`). Nigdy o tym, co już oddane | `NOTIFY_REMINDERS=0` |
 | 📢 Ogłoszenie | nowy wpis na forum *Ogłoszenia* kursu: pełna treść + link | `NOTIFY_ANNOUNCEMENTS=0` |
 | 🎓 Ocena | nowa albo zmieniona ocena zadania lub quizu, z komentarzem prowadzącego | `NOTIFY_GRADES=0` |
-| 🚨 Błąd | coś nie działa. Powiadomienie mówi, co zrobić (np. „odnów token”). Ten sam błąd najwyżej raz na 6 h. Serwer, który nie odpowiada, albo brak sieci: dopiero po 2 synchronizacjach z rzędu, bez tracebacku (jest w `/bledy`) | `NOTIFY_ERRORS=0` |
-| ✅ Podsumowanie tygodnia | w niedzielę wieczorem: co przyszło + terminy na 7 dni | `NOTIFY_SUMMARY=0` |
+| 🚨 Błąd | coś nie działa albo kończy się miejsce na dysku (`LOW_DISK_GB`, raz dziennie). Powiadomienie mówi, co zrobić (np. „odnów token”). Ten sam błąd najwyżej raz na 6 h. Serwer, który nie odpowiada, albo brak sieci: dopiero po 2 synchronizacjach z rzędu, bez tracebacku (jest w `/bledy`) | `NOTIFY_ERRORS=0` |
+| ✅ Podsumowanie tygodnia | w niedzielę wieczorem: co przyszło + terminy na 7 dni, razem z drugim Moodle (`OTHER_SITES`) | `NOTIFY_SUMMARY=0` |
 
 Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, więc nie dostaniesz 50 powiadomień o starych rzeczach.
+
+- **Cisza nocna:** `QUIET_HOURS=23-7` - w nocy powiadomienia dalej przychodzą od razu, ale bez dźwięku (Telegram: wyciszone, ntfy: niski priorytet), więc nic nie czeka do rana i nic Cię nie budzi.
+- **Dwa Moodle na jednym czacie:** `NOTIFY_LABEL=1` w `.env` drugiej kopii dodaje `[UG]` (jej `SITE_LABEL`) przed tytułem jej powiadomień.
 
 ## Który kanał?
 
@@ -40,10 +44,10 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 
 | | |
 |---|---|
-| `/terminy` `/deadlines` | najbliższe terminy (14 dni) prosto z Moodle, ✅ = już oddane |
-| `/nowe` `/new` | ostatnio pobrane materiały |
-| `/oceny` `/grades` | ostatnie oceny |
-| `/status` | ostatni przebieg, wynik każdego kroku, wolne miejsce, czas działania |
+| `/terminy` `/deadlines` | najbliższe terminy (14 dni) prosto z Moodle, ✅ = już oddane; także drugiego Moodle (`OTHER_SITES`) |
+| `/nowe` `/new` | ostatnio pobrane materiały, także z drugiego Moodle |
+| `/oceny` `/grades` | ostatnie oceny, także z drugiego Moodle |
+| `/status` | ostatni przebieg, wynik każdego kroku, wolne miejsce, czas działania - także drugiego Moodle |
 | `/kursy` `/courses` | kurs → sekcje → materiały, z linkami do kopii na Dysku, udostępnionymi linkami i Moodle. Kursy drugiego Moodle (`OTHER_SITES`) też są na liście, jako „UG · kurs” |
 | `/dzis` `/today` | co pojawiło się dziś w kursach (na każdym Moodle); `/dzis wczoraj`, `/dzis 12.10` = wybrany dzień |
 | `/oddaj` `/submit` albo po prostu wyślij plik | oddaj go do zadania (wymaga `MOODLE_ACTIONS=1`, zobacz [Konfiguracja](configuration.md)) |
@@ -52,7 +56,9 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/obieralne` `/electives` | wybierz przedmioty obieralne (plan studiów) |
 | `/przypisz` `/assign` | przypisz kurs z Moodle do przedmiotu albo modułu z planu, zmień nazwę folderu, dodaj semestr |
 | `/karta` `/card` | Twój link do karty przedmiotu spoza katalogu |
-| `/bledy` `/errors` | ostatnia synchronizacja krok po kroku, z pełnym wynikiem kroków z błędem |
+| `/bledy` `/errors` | ostatnia synchronizacja krok po kroku, z pełnym wynikiem kroków z błędem - także drugiego Moodle |
+| `/ustawienia` `/settings` | włączaj i wyciszaj rodzaje powiadomień, wybierz ciszę nocną i godziny przypomnień - także drugiego Moodle, bez SSH (zapisuje `.env`) |
+| `/szukaj` `/search` | znajdź pobrany plik po kursie albo nazwie na każdym Moodle (`/szukaj wyklad 3`, polskie znaki niepotrzebne), z przyciskami **⬇️** |
 | `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
 | `/sync` | synchronizuj teraz: wszystko albo wybrany kurs |
 | `/pauza` `/pause` | wstrzymaj synchronizację na 1 dzień, 7 dni albo do odwołania i wznów ją - także drugiego Moodle (`OTHER_SITES`, zobacz [Konfiguracja](configuration.md)). Wstrzymana kopia niczego nie pobiera i nic nie wysyła; timer działa dalej, a healthchecks nadal dostaje sygnał |

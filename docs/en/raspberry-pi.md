@@ -132,13 +132,14 @@ A copy unpacked from a release archive (not a git clone) can also be updated fro
 
 ## SD card died
 
-1. Set up a new card (steps 1-4).
-2. Before `install-server.sh`, restore the state from the cloud backup, which is made on every run (if you use rclone):
+1. Set up a new card (steps 1-4), put the code in `~/moodle-sync` and bring back the secrets you kept: `.env`, `google_token.json`, `~/.config/rclone/rclone.conf`.
+2. Before `install-server.sh` (it starts the timer), restore the state from the cloud backup, which is made on every run:
    ```bash
    cd ~/moodle-sync
-   rclone copyto <remote>:_moodle_sync/state.json state.json
-   rclone copyto <remote>:_moodle_sync/courses.json courses.json   # if you had one
+   python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
+   .venv/bin/python -m moodle_sync restore
    ```
-   The backup lives next to `DRIVE_DEST`, e.g. `gdrive:_moodle_sync/`.
+   It brings back `state.json` and `courses.json` from the backup next to `DRIVE_DEST` (e.g. `gdrive:_moodle_sync/`), never overwrites a file that's already there (`--force` does) and refuses a damaged backup. A second site: the same with `MOODLE_SYNC_DATA_DIR=$HOME/moodle-sync-2` in front.
+3. Run `install-server.sh`.
 
 Secrets (`.env`, `google_token.json`, `rclone.conf`) are **deliberately not** in the cloud backup. **Keep a copy of them on your computer.** Without `state.json` nothing breaks: the Pi re-downloads everything (nothing is duplicated in the cloud or the calendar) and sends one big "new files" notification.
