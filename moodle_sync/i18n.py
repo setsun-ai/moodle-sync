@@ -68,8 +68,9 @@ MESSAGES: dict[str, dict[str, str]] = {
                     "en": "⚙️ <b>{course}</b>\nWhat this course may send you and put into your calendar: ✅ on, "
                           "🔕 off. Files are downloaded either way, and /deadlines, /today and /courses show everything."},
     "ui_cp_global_off": {"pl": "⛔ Teraz nie działa dla żadnego kursu (wyłączone w /ustawienia albo brak Kalendarza "
-                               "Google): {kinds}",
-                         "en": "⛔ Off for every course right now (muted in /settings, or no Google Calendar): {kinds}"},
+                               "Google / Telegrama): {kinds}",
+                         "en": "⛔ Off for every course right now (muted in /settings, or no Google Calendar / "
+                               "Telegram): {kinds}"},
     "ui_cp_list": {"pl": "📘 <b>Ustawienia kursów</b>\n🔔 wszystko włączone · 🔉 część wyciszona · 🔕 wszystko "
                          "wyłączone. Wybierz kurs.",
                    "en": "📘 <b>Course settings</b>\n🔔 everything on · 🔉 partly muted · 🔕 everything off. "
@@ -84,6 +85,31 @@ MESSAGES: dict[str, dict[str, str]] = {
     "files_muted": {"pl": "Bez powiadomienia (wyciszone kursy): {n} plików",
                     "en": "Not notified (muted courses): {n} files"},
     "watch_muted": {"pl": "wyciszone w ustawieniach kursu: {title}", "en": "muted in the course settings: {title}"},
+    "ui_cp_autosend": {"pl": "📨 Pliki na czat", "en": "📨 Files to chat"},
+    "ui_cp_hidden_note": {"pl": "🙈 Kurs jest ukryty: nie synchronizuje się i nic z niego nie przychodzi, "
+                                "cokolwiek tu ustawisz. Pokażesz go w /kursy → 🙈 Ukryte.",
+                          "en": "🙈 This course is hidden: it isn't synced and nothing comes from it, whatever "
+                                "you set here. Show it again in /courses → 🙈 Hidden."},
+    "ui_set_autosend_some": {"pl": "📨 Nowe pliki na czat: tylko wybrane kursy ▸",
+                             "en": "📨 New files to chat: chosen courses only ▸"},
+    "ui_set_autosend_all": {"pl": "📨 Nowe pliki na czat: wszystkie kursy ▸", "en": "📨 New files to chat: every course ▸"},
+    "files_autosend_too_big": {"pl": "📨 {name}: powyżej 50 MB, nie wysyłam na czat (zostaje przycisk ⬇️)",
+                               "en": "📨 {name}: over 50 MB, not sent to the chat (the ⬇️ button stays)"},
+    "files_autosend_failed": {"pl": "📨 {name}: nie udało się wysłać na czat", "en": "📨 {name}: couldn't send it to the chat"},
+    "files_autosend_limit": {"pl": "📨 Na czat idzie najwyżej 10 plików naraz; {n} pozostałych ma przyciski ⬇️",
+                             "en": "📨 At most 10 files go to the chat at once; the other {n} have ⬇️ buttons"},
+    # --- hidden courses ---
+    "ui_hide": {"pl": "🙈 Ukryj kurs", "en": "🙈 Hide course"},
+    "ui_show": {"pl": "👁 Pokaż kurs", "en": "👁 Show course"},
+    "ui_hidden_button": {"pl": "🙈 Ukryte ({n}) ▸", "en": "🙈 Hidden ({n}) ▸"},
+    "ui_hidden_title": {"pl": "🙈 <b>Ukryte kursy</b>\nNie synchronizują się i nic z nich nie przychodzi; pliki pobierzesz "
+                              "na żądanie w /sync. Kurs ukryty na eNauczaniu (Moodle) jest ukryty i tutaj.",
+                        "en": "🙈 <b>Hidden courses</b>\nThey aren't synced and nothing comes from them; /sync fetches "
+                              "their files on request. A course hidden on Moodle's dashboard is hidden here too."},
+    "ui_hidden_done": {"pl": "🙈 Ukryto: <b>{course}</b>.", "en": "🙈 Hidden: <b>{course}</b>."},
+    "ui_shown_done": {"pl": "👁 Znów widoczny: <b>{course}</b>.", "en": "👁 Shown again: <b>{course}</b>."},
+    "ui_hide_moodle_failed": {"pl": "(Tylko w bocie – Moodle nie przyjął zmiany: {error})",
+                              "en": "(In the bot only - Moodle didn't take the change: {error})"},
     # --- /menu (tiles) ---
     "bot_cmd_menu": {"pl": "Wszystko jako kafelki", "en": "Everything as tiles"},
     "ui_hub_title": {"pl": "🧩 <b>Menu</b>\nWybierz kafelek. Pełna lista komend: /pomoc",
@@ -222,10 +248,12 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "en": "Saved. Preview: python -m moodle_sync plan"},
 
     # --- interactive bot (interactive.py) ---
-    "ui_sync_title": {"pl": "🔄 Synchronizacja: wszystko (jak co 15 minut) czy jeden kurs?",
-        "en": "🔄 Sync: everything (like every 15 minutes) or one course?"},
-    "ui_sync_all": {"pl": "🔄 Wszystko",
-        "en": "🔄 Everything"},
+    "ui_sync_title": {"pl": "🔄 Synchronizacja: aktualne kursy (jak co 15 minut) czy jeden kurs?",
+        "en": "🔄 Sync: current courses (like every 15 minutes) or one course?"},
+    "ui_sync_all": {"pl": "🔄 Aktualne",
+        "en": "🔄 Current"},
+    "ui_sync_hidden": {"pl": "🙈 Pliki z ukrytych kursów ({n})", "en": "🙈 Files of hidden courses ({n})"},
+    "ui_sync_hidden_name": {"pl": "ukryte kursy ({n})", "en": "hidden courses ({n})"},
     "ui_sync_pick": {"pl": "📚 Wybierz kurs",
         "en": "📚 Pick a course"},
     "ui_sync_pick_title": {"pl": "📚 Który kurs pobrać teraz? (potem wyślę nowe pliki do chmury)",

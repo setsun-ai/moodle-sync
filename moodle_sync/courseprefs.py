@@ -8,15 +8,22 @@ Per-course settings: what each course may send you and put into your calendar.
     reminders      🔔 reminders of what you haven't handed in
     calendar       📅 its deadlines in the "<SITE_LABEL> – deadlines" Google calendar
     classes        📅 its classes (attendance sessions) in the "<SITE_LABEL> – classes" calendar
+    autosend       📨 its new files sent to the Telegram chat as documents - OFF by default
+                   (AUTOSEND_FILES=1 turns it on for every course)
 
-Everything is on by default. Two places switch things off, the bot's choice wins:
+Everything else is on by default. Two places switch things off, the bot's choice wins:
   course_settings.json   written by the bot (/settings -> 📘 or /courses -> a course -> ⚙️), by course id
   courses.json "mute"    by a fragment of the course name, for setups without the bot:
                          {"mute": {"Sandbox": "all", "Library": ["announcements", "calendar"]}}
 
 The global switches (NOTIFY_*, SYNC_CLASSES in /settings) still apply on top: a kind muted there is muted
 for every course. Settings decide what is PUSHED to you; what you ask for (/deadlines, /today, /courses,
-the weekly summary) still shows every course.
+the weekly summary) still shows every course that isn't hidden.
+
+Hidden courses: like "Hide from the dashboard" in Moodle - and a course hidden there is hidden here too
+(core_enrol_get_users_courses -> "hidden"), unless you showed it in the bot. A hidden course isn't synced
+at all (files, calendar, announcements, grades, reminders) and leaves /courses, /today and /deadlines for
+the 🙈 Hidden list; /sync can still fetch its files on request.
 
 A file of its own, not state.json: the bot writes it at any moment, also while a sync runs (the sync saves
 state.json at the end and would undo the change); the sync only reads it.
@@ -30,7 +37,8 @@ from pathlib import Path
 from . import config
 from .i18n import t
 
-KINDS = ["files", "announcements", "grades", "deadlines", "reminders", "calendar", "classes"]
+KINDS = ["files", "announcements", "grades", "deadlines", "reminders", "calendar", "classes", "autosend"]
+OFF_BY_DEFAULT = {"autosend"}  # pushes whole files: only when you ask for it
 FILE = "course_settings.json"
 GLOBAL_SWITCHES = {"files": "NOTIFY_FILES", "announcements": "NOTIFY_ANNOUNCEMENTS", "grades": "NOTIFY_GRADES",
                    "deadlines": "NOTIFY_DEADLINES", "reminders": "NOTIFY_REMINDERS", "classes": "SYNC_CLASSES"}
@@ -53,9 +61,9 @@ def load() -> dict:
 
 
 def defaults(course: dict, cfg: dict) -> set[str]:
-    """Kinds that courses.json -> "mute" switches off for this course."""
+    """Kinds that are off for this course unless the bot says otherwise: courses.json -> "mute", autosend."""
     name = course.get("fullname", "").casefold()
-    off = set()
+    off = set() if config.env_bool("AUTOSEND_FILES", False) else set(OFF_BY_DEFAULT)
     for fragment, kinds in (cfg.get("mute") or {}).items():
         if fragment.casefold() in name:
             kinds = [kinds] if isinstance(kinds, str) else kinds
@@ -69,6 +77,9 @@ def muted(courses: list, cfg: dict | None = None) -> dict[int, set[str]]:
     saved = load()
     out = {}
     for c in courses:
+        if is_hidden(c, saved):
+            out[c["id"]] = set(KINDS)  # nothing from a hidden course, whatever its settings say
+            continue
         off = defaults(c, cfg)
         for kind, on in (saved.get(str(c["id"])) or {}).items():
             if kind in KINDS:
@@ -97,6 +108,10 @@ def switch(course: dict, kinds: list[str], on: bool, cfg: dict | None = None) ->
             entry.pop(kind, None)
         else:
             entry[kind] = on
+    _store(data, key, entry)
+
+
+def _store(data: dict, key: str, entry: dict) -> None:
     if entry:
         data[key] = entry
     else:
@@ -106,11 +121,39 @@ def switch(course: dict, kinds: list[str], on: bool, cfg: dict | None = None) ->
     os.replace(tmp, path())  # the sync may read it at any moment: never half a file
 
 
+# --- hidden courses ------------------------------------------------------------------------------
+
+def is_hidden(course: dict, saved: dict | None = None) -> bool:
+    """Hidden in the bot, or - when the bot never said - hidden on Moodle's dashboard."""
+    entry = ((load() if saved is None else saved).get(str(course["id"])) or {})
+    return bool(entry.get("hidden", course.get("hidden", False)))
+
+
+def active(courses: list) -> list:
+    """The courses that are synced: everything that isn't hidden."""
+    saved = load()
+    return [c for c in courses if not is_hidden(c, saved)]
+
+
+def set_hidden(course: dict, hidden: bool) -> None:
+    """Hide or show a course. Kept only while it differs from Moodle's own "hidden" flag of `course`."""
+    data = load()
+    key = str(course["id"])
+    entry = data.get(key) or {}
+    if hidden == bool(course.get("hidden", False)):
+        entry.pop("hidden", None)
+    else:
+        entry["hidden"] = hidden
+    _store(data, key, entry)
+
+
 def globally_off() -> set[str]:
-    """Kinds no course can do right now: muted in /settings, or the Google calendar isn't connected."""
+    """Kinds no course can do right now: muted in /settings, no Google calendar or no Telegram."""
     off = {kind for kind, key in GLOBAL_SWITCHES.items() if not config.env_bool(key, True)}
     if not config.GOOGLE_TOKEN_FILE.exists():
         off |= {"calendar", "classes", "deadlines"}
+    if not (config.env("TELEGRAM_BOT_TOKEN") and config.env("TELEGRAM_CHAT_ID")):
+        off.add("autosend")
     return off
 
 

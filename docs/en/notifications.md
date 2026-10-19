@@ -51,7 +51,7 @@ Every command below still works when typed:
 | `/new` `/nowe` | recently downloaded materials, also of a second site |
 | `/grades` `/oceny` | latest grades, also of a second site |
 | `/status` | last run, result of each step, free disk space, uptime - for a second site too |
-| `/courses` `/kursy` | a course → its sections → materials, with links to your Drive copy, shared links and Moodle. Courses of a second site (`OTHER_SITES`) are listed too, as "UG · course" |
+| `/courses` `/kursy` | a course → its sections → materials, with links to your Drive copy, shared links and Moodle. Courses of a second site (`OTHER_SITES`) are listed too, as "UG · course". Hidden courses wait under **🙈 Hidden** ([below](#hidden-courses)) |
 | `/today` `/dzis` | what appeared in your courses today (on every site); `/today 1` = yesterday, `/today 12.10` = that day |
 | `/submit` `/oddaj`, or just send a file | submit it to an assignment (needs `MOODLE_ACTIONS=1`, see [Configuration](configuration.md)) |
 | `/forum` | start a discussion in a course forum (`MOODLE_ACTIONS=1`) |
@@ -63,7 +63,7 @@ Every command below still works when typed:
 | `/settings` `/ustawienia` | switch notification kinds on and off, pick quiet hours and reminder times - for a second site too, no SSH needed (writes `.env`); **📘 Per course** tunes each course ([below](#per-course-settings)) |
 | `/search` `/szukaj` | find a downloaded file by course or name on every site (`/search lecture 3`, diacritics optional), with **⬇️** buttons |
 | `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
-| `/sync` | sync now: everything, or pick one course |
+| `/sync` | sync now: the current courses (as the timer does), one course, or **🙈 the files of hidden courses** |
 | `/pause` `/pauza` | pause the sync for 1 day, 7 days or until resumed, and resume it - also of a second site (`OTHER_SITES`, see [Configuration](configuration.md)). A paused site downloads nothing and sends nothing; the timer keeps running and the healthcheck still gets its ping |
 | `/update` | install the newest release from GitHub and restart the bot (copies unpacked from a release archive; in a git clone use `git pull`) |
 | `/rollback` | go back to the version before the last `/update` |
@@ -90,12 +90,23 @@ A tap switches one of these on ✅ or off 🔕:
 | Reminders | reminders of what you haven't handed in |
 | Deadlines in calendar | the course's deadlines in the "– deadlines" Google calendar. Switched off, they are removed from it; switched on again, they come back without a "new deadlines" notification |
 | Classes in calendar | the course's classes in the "– classes" calendar |
+| 📨 Files to chat | **off by default.** New files of the course arrive in the Telegram chat as documents, without tapping ⬇️ (up to 10 per sync, up to 50 MB each; bigger ones keep their ⬇️ button). Works without the bot process. `/settings` → **📨 New files to chat: every course** switches it on for all courses (`AUTOSEND_FILES=1`) |
 
-- **🔕 Mute the whole course** switches all of them off at once; the list shows 🔔 all on, 🔉 partly muted, 🔕 all off.
+- **🔕 Mute the whole course** switches all of them off at once (**🔔 Switch everything on** leaves 📨 as it is); the list shows 🔔 all on, 🔉 partly muted, 🔕 all off.
 - The switches in /settings still apply on top: a kind muted there is muted for every course (the course screen says so).
-- These settings decide what is **pushed** to you. When you ask - `/deadlines`, `/today`, `/courses`, `/grades`, the weekly summary - you still see every course.
+- These settings decide what is **pushed** to you. When you ask - `/deadlines`, `/today`, `/courses`, `/grades`, the weekly summary - you still see every course that isn't hidden.
 - Under an announcement or a grade there is **🔕 Mute this for this course**: one tap and that kind from that course stays quiet, also for a second site (`OTHER_SITES`). `TELEGRAM_FILE_BUTTONS=0` hides it together with the download buttons.
 - The bot keeps your choices in `course_settings.json` next to `state.json`; it is backed up to the cloud and brought back by `restore` with it. Without the bot, use `"mute"` in [`courses.json`](configuration.md#coursesjson).
+
+### Hidden courses
+
+Like *Hide from the dashboard* on Moodle: old semesters and courses you don't follow get out of the way.
+
+- **A course hidden on Moodle's dashboard is hidden here too.** In the bot: `/courses` → a course → **🙈 Hide course**, and **👁 Show course** brings it back.
+- A hidden course **isn't synced**: no files, calendar entries, announcements, grades or reminders, and it is left out of `/courses`, `/today` and `/deadlines`. Its files already downloaded stay where they are.
+- `/courses` lists the current courses and a **🙈 Hidden (N)** button with the rest. `/sync` → **🙈 Files of hidden courses** fetches their files once, on request; one course works from **📚 Pick a course** too.
+- Shown again, its calendar entries come back without a "new deadlines" notification and old announcements aren't sent again; a grade given meanwhile is.
+- With `MOODLE_ACTIONS=1` hiding in the bot also hides the course on Moodle's dashboard (the same setting the Moodle app changes). Without it, or if Moodle refuses, it is hidden in the bot only.
 
 ## Discord
 

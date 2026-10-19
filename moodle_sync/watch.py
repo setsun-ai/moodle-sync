@@ -82,7 +82,10 @@ def check_forums(courses: list, courses_by_id: dict, section: dict, cfg: dict, d
             if not forum_is_new:
                 new.append((forum, d))
         known_forums.add(forum["id"])
-    section["forums_known"] = sorted(known_forums)
+    # A forum no longer watched (a hidden course, WATCH_ALL_FORUMS off) is forgotten: watched again,
+    # it is remembered silently instead of reporting what was posted meanwhile.
+    watched_ids = {f["id"] for f in watched}
+    section["forums_known"] = sorted(f for f in known_forums if f in watched_ids)
 
     off = courseprefs.muted(courses, cfg)
     for forum, d in sorted(new, key=lambda x: x[1]["created"]):
@@ -192,7 +195,7 @@ def check_grades(courses: list, courses_by_id: dict, section: dict, cfg: dict, f
 
 
 def run(force: bool = False, dry_run: bool = False) -> int:
-    courses = moodle.my_courses()
+    courses = courseprefs.active(moodle.my_courses())  # a hidden course isn't watched (fewer requests)
     courses_by_id = {c["id"]: c for c in courses}
     cfg = config.load_courses_config()
     state = state_mod.load()

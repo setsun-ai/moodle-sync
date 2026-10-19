@@ -140,10 +140,13 @@ def course_label(course: dict | None, cfg: dict | None = None) -> str:
 def upcoming_deadlines(days: int = 14, kind: str = "") -> list[tuple[int, str, bool | None]]:
     """Upcoming deadlines straight from Moodle (no Google): [(timestamp, text, done?), ...].
 
-    kind: leave out courses that have it switched off (courseprefs, e.g. "reminders"); "" = every course.
+    Hidden courses are left out. kind: also leave out courses that have it switched off (courseprefs,
+    e.g. "reminders"); "" = every course that isn't hidden.
     """
-    courses = moodle.my_courses()
+    every = moodle.my_courses()
+    courses = courseprefs.active(every)
     by_id = {c["id"]: c for c in courses}
+    hidden = {c["id"] for c in every} - set(by_id)
     cfg = config.load_courses_config()
     off = courseprefs.muted(courses, cfg) if kind else {}
     open_ids = fetch_open_action_ids(past_days=0)
@@ -153,7 +156,7 @@ def upcoming_deadlines(days: int = 14, kind: str = "") -> list[tuple[int, str, b
     for e in fetch_events(courses, past_days=0, future_days=days):
         if e.get("eventtype") == "attendance" or e["timestart"] < now:
             continue
-        if kind and not courseprefs.allows(off, e.get("courseid"), kind):
+        if e.get("courseid") in hidden or (kind and not courseprefs.allows(off, e.get("courseid"), kind)):
             continue
         label = course_label(by_id.get(e.get("courseid")), cfg)
         out.append((e["timestart"], f"[{label}] {clean_text(e['name'], lang)}", is_done(e, open_ids)))

@@ -2,7 +2,8 @@
 The interactive part of the Telegram bot: buttons, files and short conversations.
 
     /menu    /start        everything below as tiles: one message, tapping edits it in place
-    /courses /kursy        a course -> its sections -> what's in them (links to Drive / Moodle)
+    /courses /kursy        a course -> its sections -> what's in them (links to Drive / Moodle);
+                           hidden courses (🙈, courseprefs.py) wait in their own list, a course is hidden there
     /today   /dzis [N]     what appeared in your courses today (N days ago, "wczoraj", "12.10")
                            both also on OTHER_SITES (sites.py)
     a file                 submit it to an assignment (MOODLE_ACTIONS=1)
@@ -169,10 +170,54 @@ def parse_ref(ref: str):
     return sites.sites()[int(site or 0)], int(course)
 
 
-def show_courses(chat: str, message_id: int | None = None) -> None:
-    rows, notes = sites.each(lambda i, prefix: course_rows(moodle.my_courses(), i, prefix))
-    text = "\n\n".join([t("ui_courses"), *notes])
+def split_hidden(i: int, prefix: str) -> list:
+    """[(hidden?, button row)] of one site's courses."""
+    courses = moodle.my_courses()
+    saved = courseprefs.load()
+    return [(courseprefs.is_hidden(c, saved), row) for c, row in zip(courses, course_rows(courses, i, prefix),
+                                                                      strict=True)]
+
+
+def show_courses(chat: str, message_id: int | None = None, note: str = "") -> None:
+    """The courses you follow; the hidden ones behind one 🙈 button."""
+    found, notes = sites.each(lambda i, prefix: split_hidden(i, prefix))
+    rows = [row for hidden, row in found if not hidden]
+    n_hidden = sum(1 for hidden, _ in found if hidden)
+    if n_hidden:
+        rows.append([(t("ui_hidden_button", n=n_hidden), "ch")])
+    text = "\n\n".join([*([note] if note else []), t("ui_courses"), *notes])
     (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
+
+
+def show_hidden_courses(chat: str, message_id: int) -> None:
+    found, notes = sites.each(lambda i, prefix: split_hidden(i, prefix))
+    rows = [[("🙈 " + text, data)] for hidden, [(text, data)] in found if hidden]
+    edit(chat, message_id, "\n\n".join([t("ui_hidden_title"), *notes]), rows + [[(t("ui_back"), "cl")]])
+
+
+def hide_in_moodle(course_id: int, hidden: bool) -> None:
+    """Moodle's own "Hide from the dashboard" (a user preference, the same the Moodle app sets)."""
+    pref = {"preferences[0][type]": f"block_myoverview_hidden_course_{course_id}"}
+    if hidden:
+        pref["preferences[0][value]"] = "1"  # no value = the preference is removed = shown again
+    moodle.call("core_user_update_user_preferences", **pref)
+
+
+def set_course_hidden(chat: str, message_id: int, ref: str, hidden: bool) -> None:
+    """Hide or show a course in the bot - and with MOODLE_ACTIONS=1 on Moodle's dashboard too."""
+    site, course_id = parse_ref(ref)
+    note = ""
+    with sites.use(site):
+        course = find_course(course_id)
+        if actions_enabled():
+            try:
+                hide_in_moodle(course_id, hidden)
+                course = {**course, "hidden": hidden}  # Moodle says so now: nothing to remember here
+            except (moodle.MoodleError, requests.RequestException) as e:
+                note = "\n" + t("ui_hide_moodle_failed", error=esc(moodle.redact(str(e))[:200]))
+        courseprefs.set_hidden(course, hidden)
+        name = course_name(course_id)
+    show_courses(chat, message_id, note=t("ui_hidden_done" if hidden else "ui_shown_done", course=esc(name)) + note)
 
 
 def course_name(course_id: int) -> str:
@@ -189,8 +234,11 @@ def show_sections(chat: str, message_id: int, ref: str) -> None:
         lang = config.moodle_content_language()
         rows = [[(clean_text(s.get("name", ""), lang) or "—", f"s:{ref}:{i}")] for i, s in enumerate(sections[:40])]
         name = course_name(course_id)
-    rows.append([(t("ui_cp_open"), f"cp:{ref}:c"), (t("ui_back"), "cl")])
-    edit(chat, message_id, f"📘 <b>{esc(name)}</b>\n" + t("ui_sections"), rows)
+        hidden = courseprefs.is_hidden(find_course(course_id))
+    rows.append([(t("ui_cp_open"), f"cp:{ref}:c"),
+                 (t("ui_show") if hidden else t("ui_hide"), f"hd:{ref}:{0 if hidden else 1}")])
+    rows.append([(t("ui_back"), "ch" if hidden else "cl")])
+    edit(chat, message_id, f"{'🙈' if hidden else '📘'} <b>{esc(name)}</b>\n" + t("ui_sections"), rows)
 
 
 def show_section(chat: str, message_id: int, ref: str, index: int) -> None:
@@ -217,7 +265,7 @@ def show_day(chat: str, offset: int, message_id: int | None = None) -> None:
     def collect(i, prefix):
         cfg = config.load_courses_config()
         contents = [(prefix + course_display_name(c["fullname"], cfg), moodle.course_contents(c["id"]))
-                    for c in moodle.my_courses()]
+                    for c in courseprefs.active(moodle.my_courses())]
         return coursebrowse.render_day(contents, start, end, coursebrowse.downloaded_paths(),
                                        coursebrowse.drive_links())
 
@@ -360,12 +408,12 @@ def links_only() -> bool:
 
 def start_attendance(chat: str) -> None:
     if links_only():  # the activities of your courses, one tap from Telegram
-        modules = attendance.attendance_modules(moodle.my_courses())
+        modules = attendance.attendance_modules(courseprefs.active(moodle.my_courses()))
         rows = [[(f"✋ {m['course']}: {m['name']}", m["url"])] for m in modules[:20]]
         send(chat, t("ui_att_open_pick") if rows else t("ui_att_no_modules"), rows)
         return
     send(chat, t("ui_att_searching"))
-    sessions = attendance.today_sessions(moodle.my_courses())
+    sessions = attendance.today_sessions(courseprefs.active(moodle.my_courses()))
     STATE["sessions"] = sessions
     if not sessions:
         send(chat, t("ui_att_none"))
@@ -770,36 +818,46 @@ def show_cleanup(chat: str) -> None:
 
 
 def show_sync(chat: str) -> None:
-    send(chat, t("ui_sync_title"), [[(t("ui_sync_all"), "sy*"), (t("ui_sync_pick"), "syl")], [(t("ui_cancel"), "x")]])
+    rows = [[(t("ui_sync_all"), "sy*"), (t("ui_sync_pick"), "syl")]]
+    n_hidden = len(moodle.my_courses()) - len(courseprefs.active(moodle.my_courses()))
+    if n_hidden:  # never synced by the timer: fetch their files once, on request
+        rows.append([(t("ui_sync_hidden", n=n_hidden), "syh")])
+    send(chat, t("ui_sync_title"), rows + [[(t("ui_cancel"), "x")]])
 
 
 def pick_sync_course(chat: str, message_id: int) -> None:
     from .files import course_display_name
 
     cfg = config.load_courses_config()
-    courses = sorted(moodle.my_courses(), key=lambda c: course_display_name(c["fullname"], cfg).casefold())
+    saved = courseprefs.load()
+    courses = sorted(moodle.my_courses(), key=lambda c: (courseprefs.is_hidden(c, saved),  # hidden ones last
+                                                         course_display_name(c["fullname"], cfg).casefold()))
     STATE["sync_names"] = {c["id"]: course_display_name(c["fullname"], cfg) for c in courses}
-    rows = [[(STATE["sync_names"][c["id"]], f"syc:{c['id']}")] for c in courses]
+    rows = [[(("🙈 " if courseprefs.is_hidden(c, saved) else "") + STATE["sync_names"][c["id"]], f"syc:{c['id']}")]
+            for c in courses]
     edit(chat, message_id, t("ui_sync_pick_title"), rows + [[(t("ui_cancel"), "x")]])
 
 
-def run_sync(chat: str, message_id: int, course_id: int | None) -> None:
-    """Everything (like the timer) or one course: its files, then the upload of what's new."""
+def run_sync(chat: str, message_id: int, course_ids: list[int] | None, name: str = "") -> None:
+    """Everything (like the timer), or some courses: their files, then the upload of what's new."""
     from .runner import SingleInstance
 
-    if course_id is None:
+    if course_ids is None:
         from .telegram_bot import cmd_sync
 
         edit(chat, message_id, "⏳ " + esc(t("bot_sync_started")))
         edit(chat, message_id, cmd_sync(chat, announce=False))
         return
-    name = (STATE.get("sync_names") or {}).get(course_id, str(course_id))
+    if not course_ids:
+        edit(chat, message_id, t("ui_expired"))
+        return
+    name = name or (STATE.get("sync_names") or {}).get(course_ids[0], str(course_ids[0]))
     with SingleInstance() as lock:  # not next to a scheduled sync
         if not lock.acquired:
             edit(chat, message_id, "⏳ " + esc(t("bot_sync_busy")))
             return
         edit(chat, message_id, t("ui_sync_course_started", course=esc(name)))
-        steps = [cli("download", "--course", str(course_id)), cli("upload")]
+        steps = [cli("download", *[arg for cid in course_ids for arg in ("--course", str(cid))]), cli("upload")]
     ok = all(p.returncode == 0 for p in steps)
     tail = "\n".join(line for line in steps[0].stdout.strip().splitlines()[-6:])
     edit(chat, message_id, ("✅ " if ok else "❌ ") + t("ui_sync_course_done", course=esc(name))
@@ -861,11 +919,13 @@ def show_settings(chat: str, message_id: int | None = None, index: int = 0) -> N
     with sites.use(site):
         on = {kind: config.env_bool(f"NOTIFY_{kind}", True) for kind in SETTING_KINDS}
         quiet, remind = config.env("QUIET_HOURS"), config.env("REMIND_HOURS", "24,3")
+        autosend = config.env_bool("AUTOSEND_FILES", False)
     toggles = [(("✅ " if on[kind] else "🔕 ") + t(f"ui_set_{kind.lower()}"), f"stt:{index}:{kind}")
                for kind in SETTING_KINDS]
     rows = [toggles[i:i + 2] for i in range(0, len(toggles), 2)]
     rows.append([(t("ui_set_quiet", value=quiet or t("ui_set_off")), f"stq:{index}")])
     rows.append([(t("ui_set_remind", value=remind if remind not in ("", "0") else t("ui_set_off")), f"str:{index}")])
+    rows.append([(t("ui_set_autosend_all" if autosend else "ui_set_autosend_some"), f"sta:{index}")])
     if len(all_sites) > 1:
         rows.append([(("• " if i == index else "") + sites.label(s), f"sts:{i}") for i, s in enumerate(all_sites)
                      if s.is_dir()])
@@ -883,13 +943,19 @@ def change_setting(chat: str, message_id: int, index: int, action: str, kind: st
             config.set_env_var("QUIET_HOURS", next_choice(QUIET_CHOICES, config.env("QUIET_HOURS")))
         elif action == "remind":
             config.set_env_var("REMIND_HOURS", next_choice(REMIND_CHOICES, config.env("REMIND_HOURS", "24,3")))
+        elif action == "autosend":
+            config.set_env_var("AUTOSEND_FILES", "0" if config.env_bool("AUTOSEND_FILES", False) else "1")
     show_settings(chat, message_id, index)
 
 
 # --- per-course settings (courseprefs.py) ---------------------------------------------------------
 
+LOUD_KINDS = [kind for kind in courseprefs.KINDS if kind not in courseprefs.OFF_BY_DEFAULT]
+
+
 def course_icon(off: set) -> str:
-    return "🔕" if len(off) == len(courseprefs.KINDS) else "🔉" if off else "🔔"
+    quiet = off & set(LOUD_KINDS)  # 📨 off is the default, not "muted"
+    return "🔕" if len(quiet) == len(LOUD_KINDS) else "🔉" if quiet else "🔔"
 
 
 def show_course_prefs_list(chat: str, message_id: int | None = None) -> None:
@@ -898,7 +964,7 @@ def show_course_prefs_list(chat: str, message_id: int | None = None) -> None:
 
     def collect(i, prefix):
         cfg = config.load_courses_config()
-        courses = moodle.my_courses()
+        courses = courseprefs.active(moodle.my_courses())  # a hidden course has nothing to set
         off = courseprefs.muted(courses, cfg)
         return [[(f"{course_icon(off.get(c['id'], set()))} {prefix}{course_display_name(c['fullname'], cfg)}",
                   f"cp:{course_ref(i, c['id'])}:s")] for c in courses]
@@ -918,16 +984,20 @@ def show_course_prefs(chat: str, message_id: int, ref: str, origin: str) -> None
     """One course: a toggle per kind (courseprefs.KINDS). origin "c" = opened from /courses, "s" = from the list."""
     site, course_id = parse_ref(ref)
     with sites.use(site):
-        off = courseprefs.muted([find_course(course_id)]).get(course_id, set())
+        course = find_course(course_id)
+        off = courseprefs.muted([course]).get(course_id, set())
+        hidden = courseprefs.is_hidden(course)
         name = course_name(course_id)
         everywhere = courseprefs.globally_off()
     toggles = [(("🔕 " if kind in off else "✅ ") + t(f"ui_cp_{kind}"), f"cpt:{ref}:{origin}:{kind}")
                for kind in courseprefs.KINDS]
     rows = [toggles[i:i + 2] for i in range(0, len(toggles), 2)]
-    all_off = len(off) == len(courseprefs.KINDS)
+    all_off = set(LOUD_KINDS) <= off
     rows.append([(t("ui_cp_all_on" if all_off else "ui_cp_all_off"), f"cpa:{ref}:{origin}:{0 if all_off else 1}")])
     rows.append([(t("ui_back"), f"c:{ref}" if origin == "c" else "stc")])
     text = t("ui_cp_title", course=esc(name))
+    if hidden:
+        text += "\n\n" + t("ui_cp_hidden_note")
     if everywhere:
         text += "\n\n" + t("ui_cp_global_off", kinds=esc(", ".join(t(f"ui_cp_{k}") for k in courseprefs.KINDS
                                                                     if k in everywhere)))
@@ -1039,7 +1109,7 @@ def do_cleanup(chat: str, message_id: int) -> None:
 
 # --- "download" buttons under the new-files notification ------------------------------------------
 
-TELEGRAM_UPLOAD_MB = 50  # the most a bot may send
+TELEGRAM_UPLOAD_MB = notify.TELEGRAM_UPLOAD_MB
 
 
 def local_file(path: str) -> tuple[Path | None, str | None]:
@@ -1061,14 +1131,7 @@ def local_file(path: str) -> tuple[Path | None, str | None]:
 
 
 def send_document(chat: str, path: Path, caption: str) -> bool:
-    with open(path, "rb") as fh:
-        resp = requests.post(f"{notify.telegram_api()}/sendDocument", timeout=300,
-                             data={"chat_id": chat, "caption": caption[:1000], "parse_mode": "HTML"},
-                             files={"document": (path.name, fh)})
-    ok = resp.status_code == 200 and resp.json().get("ok")
-    if not ok:
-        print(f"[telegram] sendDocument: HTTP {resp.status_code} {resp.text[:200]}")
-    return bool(ok)
+    return notify.send_telegram_document(path, caption, chat)
 
 
 def send_downloaded(chat: str, path: str, prefix: str = "") -> None:
@@ -1210,12 +1273,20 @@ def on_callback(cq: dict, chat: str) -> None:
             edit(chat, message_id, t("ui_cancelled"))
         elif data == "cl":
             show_courses(chat, message_id)
+        elif data == "ch":
+            show_hidden_courses(chat, message_id)
+        elif kind == "hd":
+            ref, hide = rest.rsplit(":", 1)
+            set_course_hidden(chat, message_id, ref, hide == "1")
         elif data == "sy*":
             run_sync(chat, message_id, None)
         elif data == "syl":
             pick_sync_course(chat, message_id)
         elif kind == "syc":
-            run_sync(chat, message_id, int(rest))
+            run_sync(chat, message_id, [int(rest)])
+        elif data == "syh":
+            hidden = [c["id"] for c in moodle.my_courses() if courseprefs.is_hidden(c)]
+            run_sync(chat, message_id, hidden, t("ui_sync_hidden_name", n=len(hidden)))
         elif kind == "c":
             show_sections(chat, message_id, rest)
         elif kind == "s":
@@ -1289,6 +1360,8 @@ def on_callback(cq: dict, chat: str) -> None:
             change_setting(chat, message_id, int(rest), "quiet")
         elif kind == "str":
             change_setting(chat, message_id, int(rest), "remind")
+        elif kind == "sta":
+            change_setting(chat, message_id, int(rest), "autosend")
         elif kind == "pz":
             index, days = rest.split(":")
             set_pause(chat, message_id, int(index), int(days))
@@ -1314,7 +1387,9 @@ def on_callback(cq: dict, chat: str) -> None:
                 switch_course_prefs(chat, message_id, ref, origin, [pref], None)
         elif kind == "cpa":
             ref, origin, mute = rest.split(":")
-            switch_course_prefs(chat, message_id, ref, origin, courseprefs.KINDS, mute == "0")
+            # "everything on" leaves 📨 alone: whole files in the chat only when you ask for them
+            switch_course_prefs(chat, message_id, ref, origin, LOUD_KINDS if mute == "0" else courseprefs.KINDS,
+                                mute == "0")
         elif kind == "cpq":
             course, key, pref = rest.split(":")
             quick_mute(chat, int(course), key, pref)

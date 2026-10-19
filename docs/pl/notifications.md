@@ -51,7 +51,7 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/nowe` `/new` | ostatnio pobrane materiały, także z drugiego Moodle |
 | `/oceny` `/grades` | ostatnie oceny, także z drugiego Moodle |
 | `/status` | ostatni przebieg, wynik każdego kroku, wolne miejsce, czas działania - także drugiego Moodle |
-| `/kursy` `/courses` | kurs → sekcje → materiały, z linkami do kopii na Dysku, udostępnionymi linkami i Moodle. Kursy drugiego Moodle (`OTHER_SITES`) też są na liście, jako „UG · kurs” |
+| `/kursy` `/courses` | kurs → sekcje → materiały, z linkami do kopii na Dysku, udostępnionymi linkami i Moodle. Kursy drugiego Moodle (`OTHER_SITES`) też są na liście, jako „UG · kurs”. Ukryte kursy czekają pod **🙈 Ukryte** ([niżej](#ukryte-kursy)) |
 | `/dzis` `/today` | co pojawiło się dziś w kursach (na każdym Moodle); `/dzis wczoraj`, `/dzis 12.10` = wybrany dzień |
 | `/oddaj` `/submit` albo po prostu wyślij plik | oddaj go do zadania (wymaga `MOODLE_ACTIONS=1`, zobacz [Konfiguracja](configuration.md)) |
 | `/forum` | załóż wątek na forum kursu (`MOODLE_ACTIONS=1`) |
@@ -63,7 +63,7 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/ustawienia` `/settings` | włączaj i wyciszaj rodzaje powiadomień, wybierz ciszę nocną i godziny przypomnień - także drugiego Moodle, bez SSH (zapisuje `.env`); **📘 Ustawienia kursów** dla każdego kursu osobno ([niżej](#ustawienia-kursów)) |
 | `/szukaj` `/search` | znajdź pobrany plik po kursie albo nazwie na każdym Moodle (`/szukaj wyklad 3`, polskie znaki niepotrzebne), z przyciskami **⬇️** |
 | `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
-| `/sync` | synchronizuj teraz: wszystko albo wybrany kurs |
+| `/sync` | synchronizuj teraz: aktualne kursy (jak timer), wybrany kurs albo **🙈 pliki z ukrytych kursów** |
 | `/pauza` `/pause` | wstrzymaj synchronizację na 1 dzień, 7 dni albo do odwołania i wznów ją - także drugiego Moodle (`OTHER_SITES`, zobacz [Konfiguracja](configuration.md)). Wstrzymana kopia niczego nie pobiera i nic nie wysyła; timer działa dalej, a healthchecks nadal dostaje sygnał |
 | `/update` | zainstaluj najnowsze wydanie z GitHuba i zrestartuj bota (kopia rozpakowana z archiwum wydania; w klonie git użyj `git pull`) |
 | `/rollback` | wróć do wersji sprzed ostatniego `/update` |
@@ -90,12 +90,23 @@ Kliknięcie włącza ✅ albo wyłącza 🔕:
 | Przypomnienia | przypomnienia o tym, czego jeszcze nie oddałeś |
 | Terminy w kalendarzu | terminy kursu w kalendarzu Google „– terminy”. Po wyłączeniu znikają z niego; po ponownym włączeniu wracają bez powiadomienia o „nowych terminach” |
 | Zajęcia w kalendarzu | zajęcia kursu w kalendarzu „– zajęcia” |
+| 📨 Pliki na czat | **domyślnie wyłączone.** Nowe pliki kursu przychodzą na czat Telegrama jako dokumenty, bez klikania ⬇️ (do 10 na synchronizację, do 50 MB każdy; większe zostają z przyciskiem ⬇️). Działa bez procesu bota. `/ustawienia` → **📨 Nowe pliki na czat: wszystkie kursy** włącza je dla wszystkich kursów (`AUTOSEND_FILES=1`) |
 
-- **🔕 Wycisz cały kurs** wyłącza wszystko naraz; lista pokazuje 🔔 wszystko włączone, 🔉 część wyciszona, 🔕 wszystko wyłączone.
+- **🔕 Wycisz cały kurs** wyłącza wszystko naraz (**🔔 Włącz wszystko** nie rusza 📨); lista pokazuje 🔔 wszystko włączone, 🔉 część wyciszona, 🔕 wszystko wyłączone.
 - Przełączniki z /ustawienia nadal obowiązują: rodzaj wyciszony tam jest wyciszony dla każdego kursu (ekran kursu o tym mówi).
-- Te ustawienia decydują o tym, co bot Ci **wysyła sam**. Gdy pytasz – `/terminy`, `/dzis`, `/kursy`, `/oceny`, podsumowanie tygodnia – widzisz każdy kurs.
+- Te ustawienia decydują o tym, co bot Ci **wysyła sam**. Gdy pytasz – `/terminy`, `/dzis`, `/kursy`, `/oceny`, podsumowanie tygodnia – widzisz każdy kurs, który nie jest ukryty.
 - Pod ogłoszeniem i oceną jest **🔕 Wycisz to z tego kursu**: jedno kliknięcie i ten rodzaj z tego kursu milknie, także dla drugiego Moodle (`OTHER_SITES`). `TELEGRAM_FILE_BUTTONS=0` ukrywa go razem z przyciskami pobierania.
 - Bot zapisuje wybory w `course_settings.json` obok `state.json`; trafia on do kopii w chmurze i wraca z nią przez `restore`. Bez bota użyj `"mute"` w [`courses.json`](configuration.md#coursesjson).
+
+### Ukryte kursy
+
+Jak *Ukryj z panelu* na eNauczaniu: stare semestry i kursy, których nie śledzisz, nie przeszkadzają.
+
+- **Kurs ukryty na panelu Moodle jest ukryty i tutaj.** W bocie: `/kursy` → kurs → **🙈 Ukryj kurs**, a **👁 Pokaż kurs** go przywraca.
+- Ukryty kurs **nie synchronizuje się**: żadnych plików, wpisów w kalendarzu, ogłoszeń, ocen ani przypomnień, i znika z `/kursy`, `/dzis` i `/terminy`. Już pobrane pliki zostają na miejscu.
+- `/kursy` pokazuje aktualne kursy i przycisk **🙈 Ukryte (N)** z resztą. `/sync` → **🙈 Pliki z ukrytych kursów** pobiera ich pliki raz, na żądanie; pojedynczy kurs też z **📚 Wybierz kurs**.
+- Po ponownym pokazaniu wpisy w kalendarzu wracają bez powiadomienia o „nowych terminach”, a stare ogłoszenia nie przychodzą drugi raz; ocena wystawiona w międzyczasie przyjdzie.
+- Przy `MOODLE_ACTIONS=1` ukrycie w bocie ukrywa kurs także na panelu Moodle (to samo ustawienie, które zmienia aplikacja Moodle). Bez tego albo gdy Moodle odmówi, kurs jest ukryty tylko w bocie.
 
 ## Discord
 

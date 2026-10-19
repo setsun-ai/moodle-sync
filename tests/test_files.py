@@ -349,3 +349,50 @@ def test_muted_course_downloads_but_does_not_notify(monkeypatch):
     assert files.run() == 0
     assert sent[-1] == ("New course materials (1)", "📘 Algorithms\n• a.pdf")
     assert (config.download_dir() / "Databases").is_dir()  # downloaded all the same
+
+
+def test_hidden_course_is_synced_only_on_request(monkeypatch):
+    from moodle_sync import courseprefs, moodle
+
+    a = make_file()
+    b = make_file(id="url:b", fileurl="https://m.example/b.pdf", filename="b.pdf", course_id=11,
+                  course_name="Old course", module_id=101)
+    asked = []
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 10, "fullname": "Algorithms", "startdate": 0},
+                                                       {"id": 11, "fullname": "Old course", "hidden": True}])
+    monkeypatch.setattr(files, "collect_files",
+                        lambda courses: asked.append([c["id"] for c in courses]) or [f for f in (a, b) if f["course_id"]
+                                                                                      in {c["id"] for c in courses}])
+    monkeypatch.setattr(files, "download_file", lambda f, dest: (dest.parent.mkdir(parents=True, exist_ok=True),
+                                                                 dest.write_bytes(b"x")))
+    monkeypatch.setattr(files, "notify", lambda *a, **k: None)
+    assert files.run() == 0 and asked == [[10]]
+    assert courseprefs.is_hidden({"id": 11, "hidden": True})
+    assert files.run(course_ids=[11]) == 0 and asked[-1] == [11]  # /sync -> 🙈 hidden courses
+    assert "url:b" in state.load()["downloaded"]
+
+
+def test_autosend_puts_new_files_into_the_chat(monkeypatch):
+    from moodle_sync import courseprefs, moodle, notify
+
+    a = make_file()
+    b = make_file(id="url:b", fileurl="https://m.example/b.pdf", filename="b.pdf", course_id=11,
+                  course_name="Databases", module_id=101)
+    big = make_file(id="url:big", fileurl="https://m.example/big.pdf", filename="big.pdf", module_id=102)
+    sent, documents = [], []
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
+    algorithms = {"id": 10, "fullname": "Algorithms", "startdate": 0}
+    monkeypatch.setattr(moodle, "my_courses", lambda: [algorithms, {"id": 11, "fullname": "Databases", "startdate": 0}])
+    monkeypatch.setattr(files, "collect_files", lambda courses: [a, b, big])
+    monkeypatch.setattr(files, "download_file", lambda f, dest: (dest.parent.mkdir(parents=True, exist_ok=True),
+                                                                 dest.write_bytes(b"x" * (2 if f is big else 1))))
+    monkeypatch.setattr(notify, "TELEGRAM_UPLOAD_MB", 1.5 / 1024 / 1024)  # "big.pdf" is too big for Telegram
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False, buttons=None:
+                        sent.append(buttons))
+    monkeypatch.setattr(notify, "send_telegram_document",
+                        lambda path, caption, chat_id=None, silent=False: documents.append((path.name, caption)) or True)
+    courseprefs.switch(algorithms, ["autosend"], True)
+    assert files.run() == 0
+    assert documents == [("a.pdf", "📨 <b>Algorithms</b>")]
+    assert [row[0][0] for row in sent[-1]] == ["⬇️ big.pdf", "⬇️ b.pdf", "⬇️ Download all (2)"]  # a.pdf came itself

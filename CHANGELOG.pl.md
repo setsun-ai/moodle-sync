@@ -9,6 +9,9 @@
 - `courses.json` → `"mute"`: to samo według fragmentu nazwy kursu, dla instalacji bez bota (`{"Piaskownica": "all"}`).
 - **`/menu`** (i `/start`): wszystko jako kafelki w jednej wiadomości – 📅 📚 🎓 📘 🗓 🔎 ✋ ⚙️ oraz 🗂 Studia ▸ i 🛠 Serwis ▸. Kafelki otwierają się w miejscu, ↩️ Menu wraca; oddawanie i forum pojawiają się przy `MOODLE_ACTIONS=1`, Studia przy planie studiów.
 - Krótsze menu komend pod **/**: 10 komend na co dzień zamiast 23. Każda komenda dalej działa po wpisaniu, a `/pomoc` pokazuje je w grupach.
+- 📨 **Pliki na czat** (dla kursu, domyślnie wyłączone): nowe pliki kursu przychodzą na czat Telegrama jako dokumenty, bez klikania ⬇️ – do 10 na synchronizację, do 50 MB każdy. `/ustawienia` → **📨 Nowe pliki na czat: wszystkie kursy** (`AUTOSEND_FILES=1`) włącza je dla wszystkich kursów. Wysyła sama synchronizacja, proces bota niepotrzebny.
+- 🙈 **Ukryte kursy**, jak *Ukryj z panelu* na eNauczaniu – a kurs ukryty tam jest ukryty i tutaj. `/kursy` → kurs → **🙈 Ukryj kurs** / **👁 Pokaż kurs**; `/kursy` pokazuje aktualne kursy i **🙈 Ukryte (N)**. Ukryty kurs się nie synchronizuje (pliki, kalendarz, ogłoszenia, oceny, przypomnienia) i znika z `/dzis` i `/terminy`; `/sync` → **🙈 Pliki z ukrytych kursów** pobiera je na żądanie. Przy `MOODLE_ACTIONS=1` ukrycie w bocie ukrywa kurs też na panelu Moodle. **Uwaga:** kursy, które już ukryłeś w Moodle, po tej aktualizacji przestają się synchronizować.
+- `/sync` → **🔄 Aktualne** (wcześniej *Wszystko*): kursy, które nie są ukryte, tak jak robi to timer.
 - `course_settings.json` trafia do kopii w chmurze razem z `state.json` i wraca przez `restore`.
 
 ## 1.12.0 (2026-10)

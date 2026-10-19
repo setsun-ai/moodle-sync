@@ -9,6 +9,9 @@
 - `courses.json` → `"mute"`: the same by a fragment of the course name, for setups without the bot (`{"Sandbox": "all"}`).
 - **`/menu`** (and `/start`): everything as tiles in one message - 📅 📚 🎓 📘 🗓 🔎 ✋ ⚙️ plus 🗂 Studies ▸ and 🛠 Service ▸. Tiles open in place, ↩️ Menu goes back; submit and forum appear with `MOODLE_ACTIONS=1`, Studies with a study plan.
 - A shorter command menu under **/**: the 10 everyday commands instead of 23. Every command still works when typed, and `/help` lists them in groups.
+- 📨 **Files to chat** (per course, off by default): new files of the course arrive in the Telegram chat as documents, without tapping ⬇️ - up to 10 per sync, up to 50 MB each. `/settings` → **📨 New files to chat: every course** (`AUTOSEND_FILES=1`) switches it on for all courses. Sent by the sync itself, no bot process needed.
+- 🙈 **Hidden courses**, like *Hide from the dashboard* on Moodle - and a course hidden there is hidden here too. `/courses` → a course → **🙈 Hide course** / **👁 Show course**; `/courses` lists the current courses and **🙈 Hidden (N)**. A hidden course isn't synced (files, calendar, announcements, grades, reminders) and is left out of `/today` and `/deadlines`; `/sync` → **🙈 Files of hidden courses** fetches them on request. With `MOODLE_ACTIONS=1` hiding in the bot hides it on Moodle's dashboard too. **Note:** courses you had already hidden on Moodle stop syncing after this update.
+- `/sync` → **🔄 Current** (was *Everything*): the courses that aren't hidden, as the timer does.
 - `course_settings.json` is backed up to the cloud with `state.json` and brought back by `restore`.
 
 ## 1.12.0 (2026-10)

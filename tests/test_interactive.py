@@ -882,7 +882,8 @@ def test_course_settings_from_courses_and_from_settings(bot, other_site):
     from moodle_sync import courseprefs, sites
 
     click("c:10@1")
-    assert bot["edits"][-1][1][-1] == [("⚙️ Course settings", "cp:10@1:c"), (interactive.t("ui_back"), "cl")]
+    assert bot["edits"][-1][1][-2:] == [[("⚙️ Course settings", "cp:10@1:c"), ("🙈 Hide course", "hd:10@1:1")],
+                                        [(interactive.t("ui_back"), "cl")]]
     click("cp:10@1:c")
     text, rows = bot["edits"][-1]
     assert "Shared course" in text and "no Google Calendar" in text
@@ -903,8 +904,9 @@ def test_course_settings_from_courses_and_from_settings(bot, other_site):
     click("stc")
     assert bot["edits"][-1][1] == [[("🔔 LCMS", "cp:10:s")], [("🔕 UNI2 · Shared course", "cp:10@1:s")],
                                    [(interactive.t("ui_back"), "sts:0")]]
-    click("cpa:10@1:s:0")
+    click("cpa:10@1:s:0")  # everything on - but 📨 stays as it was (off)
     assert not (other / courseprefs.FILE).read_text().strip("{}\n ")
+    assert ("🔕 📨 Files to chat", "cpt:10@1:s:autosend") in bot["edits"][-1][1][3]
     assert bot["edits"][-1][1][-1] == [(interactive.t("ui_back"), "stc")]
 
 
@@ -961,3 +963,63 @@ def test_slim_command_menu(monkeypatch):
             assert name in telegram_bot.COMMANDS or name in interactive.COMMANDS
     for name in [n for group in interactive.HUB.values() for row in group for n in row]:
         assert interactive.t(f"ui_hub_{name}") != f"ui_hub_{name}"
+
+
+def test_hiding_courses_in_the_bot(bot, monkeypatch):
+    from moodle_sync import courseprefs
+
+    courses = [{"id": 10, "fullname": "LCMS"}, {"id": 11, "fullname": "Old physics", "hidden": True}]
+    monkeypatch.setattr(moodle, "my_courses", lambda: courses)
+    monkeypatch.setattr(coursebrowse, "course_sections", lambda course_id: [])
+    interactive.handle_command("kursy", [], "1")
+    assert bot["sent"][-1][1] == [[("LCMS", "c:10")], [("🙈 Hidden (1) ▸", "ch")]]  # hidden on Moodle
+    click("ch")
+    assert bot["edits"][-1][1] == [[("🙈 Old physics", "c:11")], [(interactive.t("ui_back"), "cl")]]
+    click("c:11")
+    assert ("👁 Show course", "hd:11:0") in bot["edits"][-1][1][-2] and bot["edits"][-1][1][-1][0][1] == "ch"
+
+    click("hd:10:1")  # without MOODLE_ACTIONS: only in the bot, Moodle isn't asked
+    text, rows = bot["edits"][-1]
+    assert "Hidden: <b>LCMS</b>" in text and rows == [[("🙈 Hidden (2) ▸", "ch")]]
+    assert courseprefs.load() == {"10": {"hidden": True}}
+
+    calls = []
+    monkeypatch.setenv("MOODLE_ACTIONS", "1")
+    monkeypatch.setattr(moodle, "call", lambda fn, **kw: calls.append((fn, kw)) or {})
+    click("hd:11:0")  # Moodle's own flag goes too: nothing left to remember locally for it
+    assert calls == [("core_user_update_user_preferences",
+                      {"preferences[0][type]": "block_myoverview_hidden_course_11"})]
+    assert courseprefs.load() == {"10": {"hidden": True}}
+
+    def refuse(fn, **kw):
+        raise moodle.MoodleError("nopermissions", "Sorry")
+
+    monkeypatch.setattr(moodle, "call", refuse)
+    click("hd:10:0")
+    assert "In the bot only" in bot["edits"][-1][0] and courseprefs.load() == {}
+
+
+def test_sync_of_hidden_courses(bot, monkeypatch):
+    courses = [{"id": 10, "fullname": "LCMS"}, {"id": 11, "fullname": "Old", "hidden": True},
+               {"id": 12, "fullname": "Older", "hidden": True}]
+    monkeypatch.setattr(moodle, "my_courses", lambda: courses)
+    runs = []
+    monkeypatch.setattr(interactive, "cli", lambda *args: runs.append(args) or
+                        type("P", (), {"returncode": 0, "stdout": "ok"})())
+    interactive.handle_command("sync", [], "1")
+    assert ("🙈 Files of hidden courses (2)", "syh") in bot["sent"][-1][1][1]
+    click("syh")
+    assert runs[0] == ("download", "--course", "11", "--course", "12") and runs[1] == ("upload",)
+    assert "hidden courses (2): done" in bot["edits"][-1][0]
+    click("syl")
+    assert [row[0][0] for row in bot["edits"][-1][1][:3]] == ["LCMS", "🙈 Old", "🙈 Older"]
+
+
+def test_autosend_for_every_course_in_settings(bot):
+    from moodle_sync import config
+
+    interactive.handle_command("settings", [], "1")
+    assert ("📨 New files to chat: chosen courses only ▸", "sta:0") in bot["sent"][-1][1][-2]
+    click("sta:0")
+    assert "AUTOSEND_FILES=1" in config.ENV_FILE.read_text()
+    assert ("📨 New files to chat: every course ▸", "sta:0") in bot["edits"][-1][1][-2]

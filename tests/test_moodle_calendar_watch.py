@@ -279,3 +279,36 @@ class TestPerCourseSettings:
         assert calendar_sync.run() == 0
         assert "5" in state_mod.load()["calendar"]["events"] and len(sent) == 2
         assert "Sandbox" in sent[-1] and "Algorithms" not in sent[-1]
+
+
+class TestHiddenCourses:
+    def test_forums_of_a_hidden_course_are_forgotten_and_come_back_quietly(self, monkeypatch):
+        forums = [{"id": 1, "type": "news", "name": "Announcements", "course": 10},
+                  {"id": 2, "type": "news", "name": "Announcements", "course": 11}]
+        discussions = {1: [], 2: [{"discussion": 21, "created": 1}]}
+
+        def fake_call(fn, **kw):
+            if fn == "mod_forum_get_forums_by_courses":  # only the courses asked about
+                return [f for f in forums if f["course"] in kw.values()]
+            return {"discussions": discussions[kw["forumid"]]}
+
+        monkeypatch.setattr(moodle, "call", fake_call)
+        sent = []
+        monkeypatch.setattr(watch, "notify", lambda *a, **k: sent.append(a))
+        section: dict = {}
+        watch.check_forums([{"id": 10}, {"id": 11}], {}, section, {}, dry_run=False)
+        watch.check_forums([{"id": 10}], {}, section, {}, dry_run=False)  # course 11 hidden
+        assert section["forums_known"] == [1]
+        discussions[2].append({"discussion": 22, "created": 2, "subject": "While hidden", "message": "x"})
+        assert watch.check_forums([{"id": 10}, {"id": 11}], {}, section, {}, dry_run=False) == 0  # shown again
+        assert sent == []
+
+    def test_deadlines_leave_out_hidden_courses(self, monkeypatch):
+        courses = [{"id": 10, "fullname": "Algorithms"}, {"id": 11, "fullname": "Old", "hidden": True}]
+        events = [{"id": 1, "name": "Report", "eventtype": "due", "courseid": 10, "timestart": 4_000_000_000},
+                  {"id": 2, "name": "Test", "eventtype": "due", "courseid": 11, "timestart": 4_000_000_000},
+                  {"id": 3, "name": "Holiday", "eventtype": "site", "courseid": 1, "timestart": 4_000_000_000}]
+        monkeypatch.setattr(moodle, "my_courses", lambda: courses)
+        monkeypatch.setattr(calendar_sync, "fetch_events", lambda courses, past_days, future_days: events)
+        monkeypatch.setattr(calendar_sync, "fetch_open_action_ids", lambda past_days: set())
+        assert [text for _, text, _ in calendar_sync.upcoming_deadlines()] == ["[Algorithms] Report", "[Moodle] Holiday"]
