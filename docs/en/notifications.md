@@ -40,10 +40,13 @@ The first run only *remembers* existing announcements and grades, so you won't g
    ```
    Send any message to your bot. The script saves your `TELEGRAM_CHAT_ID` and the bot replies "Connected!".
 
-**Commands.** Both languages work, and the menu under **/** follows `LANGUAGE`:
+**Commands.** Both languages work. The menu under **/** (in your `LANGUAGE`) lists only the everyday ones;
+**`/menu`** (or `/start`) opens everything as tiles in one message - a tile opens in place, **↩️ Menu** goes back.
+Every command below still works when typed:
 
 | | |
 |---|---|
+| `/menu` `/start` | everything as tiles: 📅 deadlines, 📚 new, 🎓 grades, 📘 courses, 🗓 today, 🔎 search, ✋ attendance, ⚙️ settings, and groups 🗂 Studies ▸ and 🛠 Service ▸ (submit and forum appear with `MOODLE_ACTIONS=1`, Studies with a study plan) |
 | `/deadlines` `/terminy` | upcoming deadlines (14 days) straight from Moodle, ✅ = already submitted; also of a second site (`OTHER_SITES`) |
 | `/new` `/nowe` | recently downloaded materials, also of a second site |
 | `/grades` `/oceny` | latest grades, also of a second site |
@@ -57,7 +60,7 @@ The first run only *remembers* existing announcements and grades, so you won't g
 | `/assign` `/przypisz` | put a Moodle course under a subject or module of the plan, rename its folder, add a semester |
 | `/card` `/karta` | your own link to the card of a subject outside the catalogue |
 | `/errors` `/bledy` | the last sync step by step, with the full output of failed steps - for a second site too |
-| `/settings` `/ustawienia` | switch notification kinds on and off, pick quiet hours and reminder times - for a second site too, no SSH needed (writes `.env`) |
+| `/settings` `/ustawienia` | switch notification kinds on and off, pick quiet hours and reminder times - for a second site too, no SSH needed (writes `.env`); **📘 Per course** tunes each course ([below](#per-course-settings)) |
 | `/search` `/szukaj` | find a downloaded file by course or name on every site (`/search lecture 3`, diacritics optional), with **⬇️** buttons |
 | `/cleanup` `/porzadki` | find and delete old copies left next to moved files (after confirmation) |
 | `/sync` | sync now: everything, or pick one course |
@@ -72,6 +75,27 @@ The first run only *remembers* existing announcements and grades, so you won't g
 - Notifications work **without** the bot process.
 - **⬇️ Download** under *New course materials*: the bot sends you the file itself, from `DOWNLOAD_DIR` or, with `KEEP_LOCAL=0`, fetched from the cloud. One button per file (the first 6) and *Download all*. Telegram lets a bot send at most 50 MB; for a bigger file you get a link to your Drive copy. Without the bot process, set `TELEGRAM_FILE_BUTTONS=0`.
 - The bot answers **only your chat** and ignores everyone else.
+
+### Per-course settings
+
+Every course can be tuned on its own: **/settings → 📘 Per course**, or **/courses → a course → ⚙️ Course settings**.
+A tap switches one of these on ✅ or off 🔕:
+
+| | |
+|---|---|
+| Materials | the *New course materials* notification (the files are downloaded either way) |
+| Announcements | new announcements |
+| Grades | new grades |
+| Deadline changes | *New / changed deadlines*. The calendar sync notices them, so they need *Deadlines in calendar* on |
+| Reminders | reminders of what you haven't handed in |
+| Deadlines in calendar | the course's deadlines in the "– deadlines" Google calendar. Switched off, they are removed from it; switched on again, they come back without a "new deadlines" notification |
+| Classes in calendar | the course's classes in the "– classes" calendar |
+
+- **🔕 Mute the whole course** switches all of them off at once; the list shows 🔔 all on, 🔉 partly muted, 🔕 all off.
+- The switches in /settings still apply on top: a kind muted there is muted for every course (the course screen says so).
+- These settings decide what is **pushed** to you. When you ask - `/deadlines`, `/today`, `/courses`, `/grades`, the weekly summary - you still see every course.
+- Under an announcement or a grade there is **🔕 Mute this for this course**: one tap and that kind from that course stays quiet, also for a second site (`OTHER_SITES`). `TELEGRAM_FILE_BUTTONS=0` hides it together with the download buttons.
+- The bot keeps your choices in `course_settings.json` next to `state.json`; it is backed up to the cloud and brought back by `restore` with it. Without the bot, use `"mute"` in [`courses.json`](configuration.md#coursesjson).
 
 ## Discord
 

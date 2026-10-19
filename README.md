@@ -37,7 +37,8 @@ Teacher's feedback: Good work, see comments in section 3.
 - 📅 **Deadlines → Google Calendar.** Submitted assignments get ✅ and stop reminding you. Moved deadlines are updated and notified. Classes go into a separate calendar you can hide. Outlook or Apple Calendar can use a subscription link instead.
 - 📢 **Announcements and 🎓 grades** from teachers go straight to your phone, including teacher feedback.
 - ⏰ **Reminders of what you haven't handed in yet,** 24 h and 3 h before the deadline - never about what you've already submitted. Quiet hours keep the night silent.
-- 🔔 **Your choice of channel:** Telegram (with commands like `/deadlines`, `/sync`), Discord, ntfy or e-mail.
+- 🔔 **Your choice of channel:** Telegram (with commands like `/deadlines`, `/sync`, or everything as tiles in `/menu`), Discord, ntfy or e-mail.
+- 🎛️ **Every course your way:** per course, switch its materials, announcements, grades, deadline changes and reminders on or off, and decide whether its deadlines and classes go into your calendar - in the bot (`/settings → 📘`, or 🔕 right under a notification) or in `courses.json`.
 - 🧙 **Setup wizard:** finds out how your university logs in (password or SSO) and guides you. `doctor` checks everything.
 - 🖥️ **Runs how you want:** double-click when you feel like it, automatically while your computer is on, or 24/7 on a Raspberry Pi.
 - 🌍 **English and Polish:** messages, bot and documentation.

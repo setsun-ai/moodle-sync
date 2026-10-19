@@ -40,10 +40,13 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
    ```
    Napisz cokolwiek do swojego bota. Skrypt zapisze Twój `TELEGRAM_CHAT_ID`, a bot odpisze „Połączono!”.
 
-**Komendy.** Działają w obu językach, a menu pod **/** idzie za `LANGUAGE`:
+**Komendy.** Działają w obu językach. Menu pod **/** (w Twoim `LANGUAGE`) pokazuje tylko te na co dzień;
+**`/menu`** (albo `/start`) otwiera wszystko jako kafelki w jednej wiadomości – kafelek otwiera się w miejscu,
+**↩️ Menu** wraca. Każda komenda z tabeli nadal działa, gdy ją wpiszesz:
 
 | | |
 |---|---|
+| `/menu` `/start` | wszystko jako kafelki: 📅 terminy, 📚 nowe, 🎓 oceny, 📘 kursy, 🗓 dziś, 🔎 szukaj, ✋ obecność, ⚙️ ustawienia oraz grupy 🗂 Studia ▸ i 🛠 Serwis ▸ (oddawanie i forum pojawiają się przy `MOODLE_ACTIONS=1`, Studia przy planie studiów) |
 | `/terminy` `/deadlines` | najbliższe terminy (14 dni) prosto z Moodle, ✅ = już oddane; także drugiego Moodle (`OTHER_SITES`) |
 | `/nowe` `/new` | ostatnio pobrane materiały, także z drugiego Moodle |
 | `/oceny` `/grades` | ostatnie oceny, także z drugiego Moodle |
@@ -57,7 +60,7 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 | `/przypisz` `/assign` | przypisz kurs z Moodle do przedmiotu albo modułu z planu, zmień nazwę folderu, dodaj semestr |
 | `/karta` `/card` | Twój link do karty przedmiotu spoza katalogu |
 | `/bledy` `/errors` | ostatnia synchronizacja krok po kroku, z pełnym wynikiem kroków z błędem - także drugiego Moodle |
-| `/ustawienia` `/settings` | włączaj i wyciszaj rodzaje powiadomień, wybierz ciszę nocną i godziny przypomnień - także drugiego Moodle, bez SSH (zapisuje `.env`) |
+| `/ustawienia` `/settings` | włączaj i wyciszaj rodzaje powiadomień, wybierz ciszę nocną i godziny przypomnień - także drugiego Moodle, bez SSH (zapisuje `.env`); **📘 Ustawienia kursów** dla każdego kursu osobno ([niżej](#ustawienia-kursów)) |
 | `/szukaj` `/search` | znajdź pobrany plik po kursie albo nazwie na każdym Moodle (`/szukaj wyklad 3`, polskie znaki niepotrzebne), z przyciskami **⬇️** |
 | `/porzadki` `/cleanup` | znajdź i usuń stare kopie plików po przenosinach (po potwierdzeniu) |
 | `/sync` | synchronizuj teraz: wszystko albo wybrany kurs |
@@ -72,6 +75,27 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
 - Powiadomienia działają **bez** procesu bota.
 - **⬇️ Pobierz** pod *Nowymi materiałami*: bot wysyła Ci sam plik, z `DOWNLOAD_DIR` albo, przy `KEEP_LOCAL=0`, pobrany z chmury. Przycisk dla każdego pliku (pierwszych 6) i *Pobierz wszystkie*. Telegram pozwala botowi wysłać najwyżej 50 MB; przy większym pliku dostajesz link do kopii na Dysku. Jeśli nie uruchamiasz procesu bota, ustaw `TELEGRAM_FILE_BUTTONS=0`.
 - Bot odpowiada **tylko Twojemu czatowi**, a wszystkich innych ignoruje.
+
+### Ustawienia kursów
+
+Każdy kurs ustawisz osobno: **/ustawienia → 📘 Ustawienia kursów** albo **/kursy → kurs → ⚙️ Ustawienia kursu**.
+Kliknięcie włącza ✅ albo wyłącza 🔕:
+
+| | |
+|---|---|
+| Materiały | powiadomienie *Nowe materiały* (pliki i tak się pobierają) |
+| Ogłoszenia | nowe ogłoszenia |
+| Oceny | nowe oceny |
+| Zmiany terminów | *Nowe / zmienione terminy*. Zauważa je synchronizacja kalendarza, więc potrzebują włączonych *Terminów w kalendarzu* |
+| Przypomnienia | przypomnienia o tym, czego jeszcze nie oddałeś |
+| Terminy w kalendarzu | terminy kursu w kalendarzu Google „– terminy”. Po wyłączeniu znikają z niego; po ponownym włączeniu wracają bez powiadomienia o „nowych terminach” |
+| Zajęcia w kalendarzu | zajęcia kursu w kalendarzu „– zajęcia” |
+
+- **🔕 Wycisz cały kurs** wyłącza wszystko naraz; lista pokazuje 🔔 wszystko włączone, 🔉 część wyciszona, 🔕 wszystko wyłączone.
+- Przełączniki z /ustawienia nadal obowiązują: rodzaj wyciszony tam jest wyciszony dla każdego kursu (ekran kursu o tym mówi).
+- Te ustawienia decydują o tym, co bot Ci **wysyła sam**. Gdy pytasz – `/terminy`, `/dzis`, `/kursy`, `/oceny`, podsumowanie tygodnia – widzisz każdy kurs.
+- Pod ogłoszeniem i oceną jest **🔕 Wycisz to z tego kursu**: jedno kliknięcie i ten rodzaj z tego kursu milknie, także dla drugiego Moodle (`OTHER_SITES`). `TELEGRAM_FILE_BUTTONS=0` ukrywa go razem z przyciskami pobierania.
+- Bot zapisuje wybory w `course_settings.json` obok `state.json`; trafia on do kopii w chmurze i wraca z nią przez `restore`. Bez bota użyj `"mute"` w [`courses.json`](configuration.md#coursesjson).
 
 ## Discord
 

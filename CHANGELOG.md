@@ -2,6 +2,15 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.13.0 (2026-10)
+
+- 🎛️ **Per-course settings:** every course can have its own *materials*, *announcements*, *grades*, *deadline changes* and *reminders* notifications switched on or off, and its *deadlines* and *classes* kept in or out of the Google calendars. In the bot: `/settings` → **📘 Per course**, or `/courses` → a course → **⚙️ Course settings**; **🔕 Mute the whole course** in one tap. Files are still downloaded, and what you ask for (`/deadlines`, `/today`, `/courses`, the weekly summary) still shows every course. A calendar switched off for a course removes its events; switched on again, they come back without a "new deadlines" notification.
+- **🔕 Mute this for this course** under announcement and grade notifications (also of a second site).
+- `courses.json` → `"mute"`: the same by a fragment of the course name, for setups without the bot (`{"Sandbox": "all"}`).
+- **`/menu`** (and `/start`): everything as tiles in one message - 📅 📚 🎓 📘 🗓 🔎 ✋ ⚙️ plus 🗂 Studies ▸ and 🛠 Service ▸. Tiles open in place, ↩️ Menu goes back; submit and forum appear with `MOODLE_ACTIONS=1`, Studies with a study plan.
+- A shorter command menu under **/**: the 10 everyday commands instead of 23. Every command still works when typed, and `/help` lists them in groups.
+- `course_settings.json` is backed up to the cloud with `state.json` and brought back by `restore`.
+
 ## 1.12.0 (2026-10)
 
 - `/deadlines`, `/new` and `/grades` include a second site too (`OTHER_SITES`), in one list sorted by time, its items marked "UG · ". When that site is down, the rest still shows, with a short note.

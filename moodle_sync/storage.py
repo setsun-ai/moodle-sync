@@ -51,7 +51,7 @@ RCLONE_FLAGS = [
 # rclone exit codes: 3 = directory not found, 4 = file not found
 RCLONE_NOT_FOUND = {3, 4}
 MAX_MOVE_ATTEMPTS = 5
-BACKUP_FILES = ["state.json", "courses.json", "przedmioty.json"]
+BACKUP_FILES = ["state.json", "courses.json", "przedmioty.json", "course_settings.json"]
 
 
 def rclone(*args: str, quiet: bool = False) -> int:
@@ -344,7 +344,7 @@ def cleanup(apply: bool = False) -> int:
 
 
 def backup_state() -> None:
-    """Copy state.json (+ courses config) to the cloud.
+    """Copy state.json (+ courses config and per-course settings) to the cloud.
 
     No authentication credentials (.env, tokens), but state.json holds private Moodle data such as grades.
     """
@@ -358,7 +358,7 @@ def backup_state() -> None:
 
 def restore(force: bool = False) -> int:
     """
-    Bring back state.json (+ courses config) from the cloud backup - after a new SD card or a reinstall,
+    Bring back state.json (+ courses config and per-course settings) from the cloud backup - after a new SD card or a reinstall,
     so nothing is downloaded and announced again. Needs .env restored first (secrets aren't backed up).
     Existing files are kept unless force; a backup that isn't valid JSON is never put in place.
     """

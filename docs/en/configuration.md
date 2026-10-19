@@ -169,7 +169,7 @@ the same command - it continues where it stopped.
 | Variable | Meaning |
 |---|---|
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram (the chat id is set by `bot --setup`). |
-| `TELEGRAM_FILE_BUTTONS` | `0` = no "⬇️ Download" buttons under *New course materials*. Default `1`; the buttons need the bot process. |
+| `TELEGRAM_FILE_BUTTONS` | `0` = no buttons under notifications ("⬇️ Download" under *New course materials*, "🔕 Mute this for this course" under announcements and grades). Default `1`; the buttons need the bot process. |
 | `DISCORD_WEBHOOK_URL` | Discord channel webhook. |
 | `NTFY_TOPIC`, `NTFY_SERVER` | ntfy push. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`, `EMAIL_FROM` | E-mail. |
@@ -197,6 +197,7 @@ python -m moodle_sync courses
   "default_category": {
     "Foreign language course": "exercises"
   },
+  "mute": {"Physical education": ["announcements", "reminders"]},
   "skip": ["Library training", "Sandbox"],
   "category_rules": [
     { "folder": "Seminars", "pattern": "seminar" },
@@ -209,6 +210,7 @@ python -m moodle_sync courses
 - **`names`:** the folder name, also used in calendar event titles and notifications.
 - **`default_category`:** the category for files that no rule recognised. Use a built-in key (`lectures`, `exercises`, `labs`, `projects`, `other`) or any folder name.
 - **`skip`:** ignore these courses completely (files, calendar, announcements, grades).
+- **`mute`:** what a course may **not** push to you or put into your calendar: `"all"`, or a list of `files`, `announcements`, `grades`, `deadlines`, `reminders`, `calendar`, `classes`. Unlike `skip`, its files are still downloaded and `/deadlines`, `/courses` still show it. The bot's per-course settings ([Notifications](notifications.md#per-course-settings)) override it.
 - **`plan`:** which subject of the study plan a course is, when its Moodle name doesn't say it (`"Maths for engineers": "Mathematics II"`).
 - **`only`:** sync only the courses whose names contain one of these fragments (e.g. a second Moodle site, see below).
 - **`semester`:** force the semester of a course (`"Sandbox": 1`).

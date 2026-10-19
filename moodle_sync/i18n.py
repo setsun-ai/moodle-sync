@@ -55,7 +55,70 @@ MESSAGES: dict[str, dict[str, str]] = {
     "ui_set_quiet": {"pl": "🌙 Cisza nocna: {value} ▸", "en": "🌙 Quiet hours: {value} ▸"},
     "ui_set_remind": {"pl": "⏰ Przypomnienia (h przed terminem): {value} ▸", "en": "⏰ Reminders (h before): {value} ▸"},
     "ui_set_off": {"pl": "wyłączone", "en": "off"},
-    "bot_cmd_settings": {"pl": "Ustawienia powiadomień", "en": "Notification settings"},
+    # --- per-course settings (courseprefs.py) ---
+    "ui_cp_files": {"pl": "Materiały", "en": "Materials"},
+    "ui_cp_announcements": {"pl": "Ogłoszenia", "en": "Announcements"},
+    "ui_cp_grades": {"pl": "Oceny", "en": "Grades"},
+    "ui_cp_deadlines": {"pl": "Zmiany terminów", "en": "Deadline changes"},
+    "ui_cp_reminders": {"pl": "Przypomnienia", "en": "Reminders"},
+    "ui_cp_calendar": {"pl": "Terminy w kalendarzu", "en": "Deadlines in calendar"},
+    "ui_cp_classes": {"pl": "Zajęcia w kalendarzu", "en": "Classes in calendar"},
+    "ui_cp_title": {"pl": "⚙️ <b>{course}</b>\nCo ten kurs może Ci wysyłać i wpisywać do kalendarza: ✅ włączone, "
+                          "🔕 wyłączone. Pliki pobierają się zawsze, a /terminy, /dzis i /kursy pokazują wszystko.",
+                    "en": "⚙️ <b>{course}</b>\nWhat this course may send you and put into your calendar: ✅ on, "
+                          "🔕 off. Files are downloaded either way, and /deadlines, /today and /courses show everything."},
+    "ui_cp_global_off": {"pl": "⛔ Teraz nie działa dla żadnego kursu (wyłączone w /ustawienia albo brak Kalendarza "
+                               "Google): {kinds}",
+                         "en": "⛔ Off for every course right now (muted in /settings, or no Google Calendar): {kinds}"},
+    "ui_cp_list": {"pl": "📘 <b>Ustawienia kursów</b>\n🔔 wszystko włączone · 🔉 część wyciszona · 🔕 wszystko "
+                         "wyłączone. Wybierz kurs.",
+                   "en": "📘 <b>Course settings</b>\n🔔 everything on · 🔉 partly muted · 🔕 everything off. "
+                         "Pick a course."},
+    "ui_cp_list_button": {"pl": "📘 Ustawienia kursów ▸", "en": "📘 Per course ▸"},
+    "ui_cp_open": {"pl": "⚙️ Ustawienia kursu", "en": "⚙️ Course settings"},
+    "ui_cp_all_off": {"pl": "🔕 Wycisz cały kurs", "en": "🔕 Mute the whole course"},
+    "ui_cp_all_on": {"pl": "🔔 Włącz wszystko", "en": "🔔 Switch everything on"},
+    "ui_cp_muted": {"pl": "🔕 Wyciszone: {kind} z kursu <b>{course}</b>. Włączysz z powrotem w ustawieniach kursu.",
+                    "en": "🔕 Muted: {kind} from <b>{course}</b>. Switch it back on in the course settings."},
+    "notify_mute_course": {"pl": "🔕 Wycisz to z tego kursu", "en": "🔕 Mute this for this course"},
+    "files_muted": {"pl": "Bez powiadomienia (wyciszone kursy): {n} plików",
+                    "en": "Not notified (muted courses): {n} files"},
+    "watch_muted": {"pl": "wyciszone w ustawieniach kursu: {title}", "en": "muted in the course settings: {title}"},
+    # --- /menu (tiles) ---
+    "bot_cmd_menu": {"pl": "Wszystko jako kafelki", "en": "Everything as tiles"},
+    "ui_hub_title": {"pl": "🧩 <b>Menu</b>\nWybierz kafelek. Pełna lista komend: /pomoc",
+                     "en": "🧩 <b>Menu</b>\nPick a tile. Every command: /help"},
+    "ui_hub_studies_title": {"pl": "🗂 <b>Studia</b>\nPlan, przedmioty obieralne, przypisanie kursów i karty przedmiotów.",
+                             "en": "🗂 <b>Studies</b>\nPlan, electives, which course is which subject, subject cards."},
+    "ui_hub_service_title": {"pl": "🛠 <b>Serwis</b>\nStan, błędy, synchronizacja, pauza i porządki. Aktualizacja: "
+                                   "/update, /rollback; przeniesienie plików: /reorganize.",
+                             "en": "🛠 <b>Service</b>\nStatus, errors, sync, pause and cleanup. Updates: /update, "
+                                   "/rollback; moving files: /reorganize."},
+    "ui_hub_back": {"pl": "↩️ Menu", "en": "↩️ Menu"},
+    "ui_hub_search_prompt": {"pl": "🔎 Napisz, czego szukać – np. <i>wykład 3</i> albo nazwę kursu.",
+                             "en": "🔎 Type what to look for - e.g. <i>lecture 3</i> or a course name."},
+    "ui_hub_deadlines": {"pl": "📅 Terminy", "en": "📅 Deadlines"},
+    "ui_hub_new": {"pl": "📚 Nowe", "en": "📚 New"},
+    "ui_hub_grades": {"pl": "🎓 Oceny", "en": "🎓 Grades"},
+    "ui_hub_courses": {"pl": "📘 Kursy", "en": "📘 Courses"},
+    "ui_hub_today": {"pl": "🗓 Dziś", "en": "🗓 Today"},
+    "ui_hub_search": {"pl": "🔎 Szukaj", "en": "🔎 Search"},
+    "ui_hub_submit": {"pl": "📤 Oddaj", "en": "📤 Submit"},
+    "ui_hub_forum": {"pl": "💬 Forum", "en": "💬 Forum"},
+    "ui_hub_attendance": {"pl": "✋ Obecność", "en": "✋ Attendance"},
+    "ui_hub_studies": {"pl": "🗂 Studia ▸", "en": "🗂 Studies ▸"},
+    "ui_hub_settings": {"pl": "⚙️ Ustawienia", "en": "⚙️ Settings"},
+    "ui_hub_service": {"pl": "🛠 Serwis ▸", "en": "🛠 Service ▸"},
+    "ui_hub_plan": {"pl": "🗂 Plan", "en": "🗂 Plan"},
+    "ui_hub_electives": {"pl": "🎯 Obieralne", "en": "🎯 Electives"},
+    "ui_hub_assign": {"pl": "🔗 Przypisz", "en": "🔗 Assign"},
+    "ui_hub_card": {"pl": "📄 Karta", "en": "📄 Card"},
+    "ui_hub_status": {"pl": "🤖 Status", "en": "🤖 Status"},
+    "ui_hub_errors": {"pl": "🧾 Błędy", "en": "🧾 Errors"},
+    "ui_hub_sync": {"pl": "🔄 Synchronizuj", "en": "🔄 Sync"},
+    "ui_hub_pause": {"pl": "⏸ Pauza", "en": "⏸ Pause"},
+    "ui_hub_cleanup": {"pl": "🧹 Porządki", "en": "🧹 Cleanup"},
+    "bot_cmd_settings": {"pl": "Powiadomienia i ustawienia każdego kursu", "en": "Notifications and each course's settings"},
     "step_reminders": {"pl": "Przypomnienia", "en": "Reminders"},
     "remind_off": {"pl": "Przypomnienia wyłączone (REMIND_HOURS, NOTIFY_REMINDERS) albo brak kanału powiadomień.",
                    "en": "Reminders are off (REMIND_HOURS, NOTIFY_REMINDERS) or there's no notification channel."},
@@ -511,22 +574,36 @@ MESSAGES: dict[str, dict[str, str]] = {
     "weekly_deadlines_failed": {"pl": "(Nie udało się pobrać terminów: {error})", "en": "(Couldn't get deadlines: {error})"},
 
     # --- Telegram bot ---
-    "bot_help": {"pl": "Komendy:\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
-                       "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
-                       "/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
-                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n/przypisz — przypisz kursy z Moodle do przedmiotów\n/karta — link do karty przedmiotu spoza katalogu\n/bledy — szczegóły ostatnich błędów\n/porzadki — usuń stare kopie plików\n/status — stan automatu\n/sync — synchronizuj teraz (wszystko albo jeden kurs)\n"
-                       "/pauza — wstrzymaj albo wznów synchronizację\n"
-                       "/szukaj — znajdź pobrany plik (np. /szukaj wykład 3)\n"
-                       "/ustawienia — które powiadomienia, cisza nocna, przypomnienia\n"
+    "bot_help": {"pl": "🧩 /menu — wszystko jako kafelki\n\n"
+                       "📅 Na co dzień\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
+                       "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n"
+                       "/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
+                       "/szukaj — znajdź pobrany plik (np. /szukaj wykład 3)\n\n"
+                       "✍️ W Moodle\n/oddaj — oddaj zadanie (albo po prostu wyślij plik)\n/forum — napisz na forum\n"
+                       "/obecnosc — zaznacz obecność (albo wyślij link / zdjęcie kodu QR)\n\n"
+                       "🗂 Studia\n/plan — semestry i przedmioty\n/obieralne — wybierz przedmioty obieralne\n"
+                       "/przypisz — przypisz kursy z Moodle do przedmiotów\n"
+                       "/karta — link do karty przedmiotu spoza katalogu\n\n"
+                       "⚙️ Ustawienia\n/ustawienia — powiadomienia, cisza nocna, przypomnienia i ustawienia każdego kursu\n"
+                       "/pauza — wstrzymaj albo wznów synchronizację\n\n"
+                       "🛠 Serwis\n/status — stan automatu\n/bledy — szczegóły ostatnich błędów\n"
+                       "/sync — synchronizuj teraz (wszystko albo jeden kurs)\n/porzadki — usuń stare kopie plików\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
-                 "en": "Commands:\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
-                       "/grades — latest grades\n/courses — browse courses and materials\n/today — what's new today (/today 1, /today 12.10)\n"
-                       "/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
-                       "/attendance — mark attendance (or send the link / a QR photo)\n/plan — semesters and subjects\n/electives — pick your elective subjects\n/assign — assign Moodle courses to subjects\n/card — a card link for a subject outside the catalogue\n/errors — details of the last errors\n/cleanup — delete old copies of files\n/status — status of the sync\n/sync — sync now\n"
-                       "/pause — pause or resume the sync\n"
-                       "/search — find a downloaded file (e.g. /search lecture 3)\n"
-                       "/settings — which notifications, quiet hours, reminders\n"
+                 "en": "🧩 /menu — everything as tiles\n\n"
+                       "📅 Every day\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
+                       "/grades — latest grades\n/courses — browse courses and materials\n"
+                       "/today — what's new today (/today 1, /today 12.10)\n"
+                       "/search — find a downloaded file (e.g. /search lecture 3)\n\n"
+                       "✍️ In Moodle\n/submit — submit an assignment (or just send a file)\n/forum — post to a forum\n"
+                       "/attendance — mark attendance (or send the link / a QR photo)\n\n"
+                       "🗂 Studies\n/plan — semesters and subjects\n/electives — pick your elective subjects\n"
+                       "/assign — assign Moodle courses to subjects\n"
+                       "/card — a card link for a subject outside the catalogue\n\n"
+                       "⚙️ Settings\n/settings — notifications, quiet hours, reminders and each course's settings\n"
+                       "/pause — pause or resume the sync\n\n"
+                       "🛠 Service\n/status — status of the sync\n/errors — details of the last errors\n"
+                       "/sync — sync now (everything or one course)\n/cleanup — delete old copies of files\n"
                        "/reorganize — confirm moving files (e.g. into semester folders)\n"
                        "/update — install the newest version\n/rollback — go back to the previous version\n/help — this list"},
     "bot_cmd_deadlines": {"pl": "Najbliższe terminy (14 dni)", "en": "Upcoming deadlines (14 days)"},

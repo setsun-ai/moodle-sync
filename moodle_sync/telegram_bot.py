@@ -2,7 +2,10 @@
 Telegram bot: notifications are sent by notify.py; this module answers commands.
 
 Commands (Polish and English aliases; only YOUR chat - TELEGRAM_CHAT_ID - is
-answered, anything else is ignored without a reply):
+answered, anything else is ignored without a reply). The menu under "/" lists only
+the everyday ones (MENU_NAMES); /menu opens all of them as tiles, every command
+below still works when typed:
+    /menu       /start     everything as tiles (see interactive.py)
     /deadlines  /terminy   upcoming deadlines (14 days) straight from Moodle, ✅ = done
     /new        /nowe      recently downloaded materials
     /grades     /oceny     latest grades
@@ -226,16 +229,13 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
     "sync": (cmd_sync, "bot_cmd_sync"),
     "plan": (cmd_plan, "bot_cmd_plan"), "reorganize": (cmd_reorganize, "bot_cmd_reorganize"),
     "update": (cmd_update, "bot_cmd_update"), "rollback": (cmd_rollback, "bot_cmd_rollback"),
-    "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None), "start": (cmd_help, None),
+    "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None),
 }
-# Menu in Telegram: Polish names for Polish users, English otherwise.
-MENU_NAMES = {"pl": ["terminy", "nowe", "oceny", "kursy", "dzis", "oddaj", "forum", "obecnosc", "plan", "obieralne",
-                     "przypisz", "karta", "szukaj", "ustawienia", "status", "bledy", "sync", "pauza", "reorganize", "porzadki",
-                     "update", "rollback", "pomoc"],
-              "en": ["deadlines", "new", "grades", "courses", "today", "submit", "forum", "attendance", "plan",
-                     "electives", "assign", "card", "search", "settings", "status", "errors", "sync", "pause", "reorganize",
-                     "cleanup", "update", "rollback", "help"]}
-MENU_DESCRIPTIONS = {"terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
+# Menu in Telegram: Polish names for Polish users, English otherwise. Only what you need every day -
+# the rest is one tap away in /menu (tiles) and listed by /help.
+MENU_NAMES = {"pl": ["menu", "terminy", "nowe", "dzis", "kursy", "szukaj", "obecnosc", "ustawienia", "status", "pomoc"],
+              "en": ["menu", "deadlines", "new", "today", "courses", "search", "attendance", "settings", "status", "help"]}
+MENU_DESCRIPTIONS = {"menu": "bot_cmd_menu", "terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help", "kursy": "bot_cmd_courses", "courses": "bot_cmd_courses",
                      "dzis": "bot_cmd_today", "today": "bot_cmd_today", "oddaj": "bot_cmd_submit",
                      "submit": "bot_cmd_submit", "forum": "bot_cmd_forum", "obecnosc": "bot_cmd_attendance",

@@ -4,6 +4,7 @@ Reminders of what you haven't handed in yet: REMIND_HOURS=24,3 hours before the 
 
 Only assignments and quizzes that Moodle reports as not done (calendar_sync.is_done is False)
 are reminded about - never what you've already submitted, never plain calendar events.
+A course with reminders switched off in the bot (courseprefs) is left out.
 Every reminder goes out once: state.json -> "reminders" remembers which ones were sent.
 A deadline first seen when it's already close gets only the nearest reminder, not all of them.
 """
@@ -59,7 +60,7 @@ def run() -> int:
     if not marks or not notify.channels() or not config.env_bool("NOTIFY_REMINDERS", True):
         print(t("remind_off"))
         return SKIPPED
-    items = calendar_sync.upcoming_deadlines(days=int(max(marks) // 24) + 1)
+    items = calendar_sync.upcoming_deadlines(days=int(max(marks) // 24) + 1, kind="reminders")
     state = state_mod.load()
     sent = state.setdefault("reminders", {})
     now = time.time()

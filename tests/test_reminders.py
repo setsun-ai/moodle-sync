@@ -38,7 +38,9 @@ def test_run_sends_reminders_and_forgets_old_ones(monkeypatch):
 
     monkeypatch.setenv("NTFY_TOPIC", "t")
     now = time.time()
-    monkeypatch.setattr(calendar_sync, "upcoming_deadlines", lambda days=14: [(now + 2 * HOUR, "[Algorithms] Report", False)])
+    asked = []
+    monkeypatch.setattr(calendar_sync, "upcoming_deadlines",
+                        lambda days=14, kind="": asked.append(kind) or [(now + 2 * HOUR, "[Algorithms] Report", False)])
     sent = []
     monkeypatch.setattr(notify, "notify", lambda kind, title, message="", **k: sent.append((kind, title, message)))
     state.save({"reminders": {f"{int(now - 3 * 86400)}:old": [24]}})
@@ -47,6 +49,7 @@ def test_run_sends_reminders_and_forgets_old_ones(monkeypatch):
     assert kind == "reminders" and title == "Due in 2 h – not handed in yet" and message.startswith("[Algorithms] Report\n")
     assert list(state.load()["reminders"]) == [f"{int(now + 2 * HOUR)}:[Algorithms] Report"]
     assert reminders.run() == 0 and len(sent) == 1
+    assert asked == ["reminders", "reminders"]  # courses with reminders muted are left out
 
 
 def test_run_is_skipped_without_a_channel_or_when_off(monkeypatch):

@@ -328,3 +328,24 @@ def test_new_files_notification_names_the_course_and_offers_downloads(monkeypatc
     assert [row[0] for row in buttons[:2]] == [("⬇️ a.pdf", f"dl:{files.file_token(a['id'])}"),
                                                ("⬇️ b.pdf", f"dl:{files.file_token('url:b')}")]
     assert state.load()["file_batches"][buttons[-1][0][1].removeprefix("dla:")] == [a["id"], "url:b"]
+
+
+def test_muted_course_downloads_but_does_not_notify(monkeypatch):
+    from moodle_sync import courseprefs, moodle
+
+    a = make_file()
+    b = make_file(id="url:b", fileurl="https://m.example/b.pdf", filename="b.pdf", course_id=11,
+                  course_name="Databases", module_id=101)
+    sent = []
+    monkeypatch.setenv("SUBMITTED_FILES", "0")
+    databases = {"id": 11, "fullname": "Databases", "startdate": 0}
+    monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 10, "fullname": "Algorithms", "startdate": 0}, databases])
+    monkeypatch.setattr(files, "collect_files", lambda courses: [a, b])
+    monkeypatch.setattr(files, "download_file", lambda f, dest: (dest.parent.mkdir(parents=True, exist_ok=True),
+                                                                 dest.write_bytes(b"x")))
+    monkeypatch.setattr(files, "notify", lambda kind, title, message="", urgent=False, buttons=None:
+                        sent.append((title, message)))
+    courseprefs.switch(databases, ["files"], False)
+    assert files.run() == 0
+    assert sent[-1] == ("New course materials (1)", "📘 Algorithms\n• a.pdf")
+    assert (config.download_dir() / "Databases").is_dir()  # downloaded all the same

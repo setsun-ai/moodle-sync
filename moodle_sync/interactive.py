@@ -1,6 +1,7 @@
 """
 The interactive part of the Telegram bot: buttons, files and short conversations.
 
+    /menu    /start        everything below as tiles: one message, tapping edits it in place
     /courses /kursy        a course -> its sections -> what's in them (links to Drive / Moodle)
     /today   /dzis [N]     what appeared in your courses today (N days ago, "wczoraj", "12.10")
                            both also on OTHER_SITES (sites.py)
@@ -10,6 +11,8 @@ The interactive part of the Telegram bot: buttons, files and short conversations
     /pause /pauza          pause or resume the sync of this site and of OTHER_SITES (pause.py)
     /search /szukaj WORDS  downloaded files whose course or name has all the words, with ⬇️ buttons
     /settings /ustawienia  notification kinds, quiet hours and reminders - here and on OTHER_SITES (.env)
+                           📘 per course: what each course may send you and put into the calendar (courseprefs.py)
+    🔕 under an announcement or a grade: mute that kind for that course with one tap
     ⬇️ under "new materials" the bot sends the file itself (TELEGRAM_FILE_BUTTONS=0 hides the buttons)
 
 Nothing that changes Moodle happens without a "✅" tap on a summary of exactly
@@ -31,6 +34,7 @@ from . import (
     attendance,
     config,
     coursebrowse,
+    courseprefs,
     moodle,
     notify,
     pause,
@@ -109,7 +113,7 @@ COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": 
             "cleanup": "cleanup", "porzadki": "cleanup", "porządki": "cleanup", "assign": "assign",
             "przypisz": "assign", "card": "card", "karta": "card", "errors": "errors", "bledy": "errors",
             "błędy": "errors", "sync": "sync", "pause": "pause", "pauza": "pause", "search": "search",
-            "szukaj": "search", "settings": "settings", "ustawienia": "settings"}
+            "szukaj": "search", "settings": "settings", "ustawienia": "settings", "menu": "menu", "start": "menu"}
 
 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
@@ -123,7 +127,7 @@ def handle_command(command: str, args: list[str], chat: str) -> bool:
          "forum": start_forum, "attendance": start_attendance, "submit": explain_submit,
          "electives": show_electives, "cleanup": show_cleanup, "assign": show_assign, "card": show_cards,
          "errors": show_errors, "sync": show_sync, "pause": show_pause,
-         "search": lambda c: search_files(c, args), "settings": show_settings}[kind](chat)
+         "search": lambda c: search_files(c, args), "settings": show_settings, "menu": show_hub}[kind](chat)
     except Exception as e:  # a command must never crash the bot
         fail(chat, e)
     return True
@@ -185,7 +189,7 @@ def show_sections(chat: str, message_id: int, ref: str) -> None:
         lang = config.moodle_content_language()
         rows = [[(clean_text(s.get("name", ""), lang) or "—", f"s:{ref}:{i}")] for i, s in enumerate(sections[:40])]
         name = course_name(course_id)
-    rows.append([(t("ui_back"), "cl")])
+    rows.append([(t("ui_cp_open"), f"cp:{ref}:c"), (t("ui_back"), "cl")])
     edit(chat, message_id, f"📘 <b>{esc(name)}</b>\n" + t("ui_sections"), rows)
 
 
@@ -865,6 +869,7 @@ def show_settings(chat: str, message_id: int | None = None, index: int = 0) -> N
     if len(all_sites) > 1:
         rows.append([(("• " if i == index else "") + sites.label(s), f"sts:{i}") for i, s in enumerate(all_sites)
                      if s.is_dir()])
+    rows.append([(t("ui_cp_list_button"), "stc"), (t("ui_hub_back"), "h")])
     text = t("ui_set_title", site=esc(sites.label(site)))
     (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
 
@@ -879,6 +884,133 @@ def change_setting(chat: str, message_id: int, index: int, action: str, kind: st
         elif action == "remind":
             config.set_env_var("REMIND_HOURS", next_choice(REMIND_CHOICES, config.env("REMIND_HOURS", "24,3")))
     show_settings(chat, message_id, index)
+
+
+# --- per-course settings (courseprefs.py) ---------------------------------------------------------
+
+def course_icon(off: set) -> str:
+    return "🔕" if len(off) == len(courseprefs.KINDS) else "🔉" if off else "🔔"
+
+
+def show_course_prefs_list(chat: str, message_id: int | None = None) -> None:
+    """Every course of every site with how much of it is muted; tap one to change it."""
+    from .files import course_display_name
+
+    def collect(i, prefix):
+        cfg = config.load_courses_config()
+        courses = moodle.my_courses()
+        off = courseprefs.muted(courses, cfg)
+        return [[(f"{course_icon(off.get(c['id'], set()))} {prefix}{course_display_name(c['fullname'], cfg)}",
+                  f"cp:{course_ref(i, c['id'])}:s")] for c in courses]
+
+    rows, notes = sites.each(collect)
+    rows.append([(t("ui_back"), "sts:0")])
+    text = "\n\n".join([t("ui_cp_list"), *notes])
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
+
+
+def find_course(course_id: int) -> dict:
+    """The course as Moodle lists it (its full name decides courses.json -> "mute"); a course you left: its id."""
+    return next((c for c in moodle.my_courses() if c["id"] == course_id), {"id": course_id, "fullname": ""})
+
+
+def show_course_prefs(chat: str, message_id: int, ref: str, origin: str) -> None:
+    """One course: a toggle per kind (courseprefs.KINDS). origin "c" = opened from /courses, "s" = from the list."""
+    site, course_id = parse_ref(ref)
+    with sites.use(site):
+        off = courseprefs.muted([find_course(course_id)]).get(course_id, set())
+        name = course_name(course_id)
+        everywhere = courseprefs.globally_off()
+    toggles = [(("🔕 " if kind in off else "✅ ") + t(f"ui_cp_{kind}"), f"cpt:{ref}:{origin}:{kind}")
+               for kind in courseprefs.KINDS]
+    rows = [toggles[i:i + 2] for i in range(0, len(toggles), 2)]
+    all_off = len(off) == len(courseprefs.KINDS)
+    rows.append([(t("ui_cp_all_on" if all_off else "ui_cp_all_off"), f"cpa:{ref}:{origin}:{0 if all_off else 1}")])
+    rows.append([(t("ui_back"), f"c:{ref}" if origin == "c" else "stc")])
+    text = t("ui_cp_title", course=esc(name))
+    if everywhere:
+        text += "\n\n" + t("ui_cp_global_off", kinds=esc(", ".join(t(f"ui_cp_{k}") for k in courseprefs.KINDS
+                                                                    if k in everywhere)))
+    edit(chat, message_id, text, rows)
+
+
+def switch_course_prefs(chat: str, message_id: int, ref: str, origin: str, kinds: list[str], on: bool | None) -> None:
+    """on None = flip the one kind; True/False = set every kind given."""
+    site, course_id = parse_ref(ref)
+    with sites.use(site):
+        course = find_course(course_id)
+        if on is None:
+            on = kinds[0] in courseprefs.muted([course]).get(course_id, set())
+        courseprefs.switch(course, kinds, on)
+    show_course_prefs(chat, message_id, ref, origin)
+
+
+def quick_mute(chat: str, course_id: int, key: str, kind: str) -> None:
+    """🔕 under a notification - the notification may come from another site (OTHER_SITES)."""
+    index = next((i for i, site in enumerate(sites.sites()) if courseprefs.site_key(site) == key), None)
+    if index is None or kind not in courseprefs.KINDS:
+        send(chat, t("ui_expired"))
+        return
+    with sites.use(sites.sites()[index]):
+        courseprefs.switch(find_course(course_id), [kind], False)
+        name = course_name(course_id)
+    send(chat, t("ui_cp_muted", kind=esc(t(f"ui_cp_{kind}")), course=esc(name)),
+         [[(t("ui_cp_open"), f"cp:{course_ref(index, course_id)}:s")]])
+
+
+# --- /menu: everything as tiles ------------------------------------------------------------------
+
+HUB = {  # group -> rows of tiles; a tile that is itself a key here opens that group
+    "": [["deadlines", "new", "grades"], ["courses", "today", "search"], ["submit", "forum", "attendance"],
+         ["studies", "settings", "service"]],
+    "studies": [["plan", "electives"], ["assign", "card"]],
+    "service": [["status", "errors"], ["sync", "pause"], ["cleanup"]],
+}
+
+
+def hub_tiles(group: str) -> list:
+    hidden = set()
+    if not actions_enabled():
+        hidden |= {"submit", "forum"}  # they'd only explain how to switch MOODLE_ACTIONS on (/help lists them)
+    if not studyplan.plan_url():
+        hidden.add("studies")
+    rows = [[(t(f"ui_hub_{name}"), f"hg:{name}" if name in HUB else f"h:{name}") for name in row if name not in hidden]
+            for row in HUB[group]]
+    if group:
+        rows.append([(t("ui_hub_back"), "h")])
+    return rows
+
+
+def show_hub(chat: str, message_id: int | None = None, group: str = "") -> None:
+    group = group if group in HUB else ""
+    text = t(f"ui_hub_{group}_title" if group else "ui_hub_title")
+    rows = hub_tiles(group)
+    (edit(chat, message_id, text, rows) if message_id else send(chat, text, rows))
+
+
+def hub_action(chat: str, message_id: int, name: str) -> None:
+    """A tile: answers replace the menu (with ↩️ back), screens open in it, conversations start below it."""
+    from . import telegram_bot
+
+    answers = {"deadlines": telegram_bot.cmd_deadlines, "new": telegram_bot.cmd_new, "grades": telegram_bot.cmd_grades,
+               "status": telegram_bot.cmd_status, "plan": telegram_bot.cmd_plan}
+    screens = {"courses": show_courses, "today": lambda c, m: show_day(c, 0, m), "settings": show_settings,
+               "pause": show_pause, "electives": show_electives, "assign": show_assign}
+    conversations = {"submit": explain_submit, "forum": start_forum, "attendance": start_attendance,
+                     "card": show_cards, "errors": show_errors, "sync": show_sync, "cleanup": show_cleanup}
+    STATE.clear()
+    if name in answers:
+        edit(chat, message_id, "⏳")
+        edit(chat, message_id, answers[name](chat), [[(t("ui_hub_back"), "h")]])
+    elif name in screens:
+        screens[name](chat, message_id)
+    elif name in conversations:
+        conversations[name](chat)
+    elif name == "search":
+        STATE["await"] = "search"
+        edit(chat, message_id, t("ui_hub_search_prompt"), [[(t("ui_hub_back"), "h")]])
+    else:
+        edit(chat, message_id, t("ui_expired"))
 
 
 def cli(*args: str):
@@ -1049,6 +1181,9 @@ def on_text(msg: dict, chat: str) -> bool:
     elif waiting == "card_link":
         STATE["await"] = None
         save_card_link(chat, text)
+    elif waiting == "search":
+        STATE["await"] = None
+        search_files(chat, text.split())
     elif waiting == "att_password":
         try:  # the password doesn't stay in the chat
             api("deleteMessage", chat_id=chat, message_id=msg["message_id"])
@@ -1161,6 +1296,28 @@ def on_callback(cq: dict, chat: str) -> None:
             set_pause(chat, message_id, int(rest), None)
         elif kind in ("dl", "dla"):
             send_new_files(chat, rest, batch=kind == "dla")
+        elif data == "h":
+            STATE.clear()
+            show_hub(chat, message_id)
+        elif kind == "hg":
+            show_hub(chat, message_id, rest)
+        elif kind == "h":
+            hub_action(chat, message_id, rest)
+        elif data == "stc":
+            show_course_prefs_list(chat, message_id)
+        elif kind == "cp":
+            ref, origin = rest.rsplit(":", 1)
+            show_course_prefs(chat, message_id, ref, origin)
+        elif kind == "cpt":
+            ref, origin, pref = rest.split(":")
+            if pref in courseprefs.KINDS:
+                switch_course_prefs(chat, message_id, ref, origin, [pref], None)
+        elif kind == "cpa":
+            ref, origin, mute = rest.split(":")
+            switch_course_prefs(chat, message_id, ref, origin, courseprefs.KINDS, mute == "0")
+        elif kind == "cpq":
+            course, key, pref = rest.split(":")
+            quick_mute(chat, int(course), key, pref)
         else:
             edit(chat, message_id, t("ui_expired"))
     except attendance.NotAvailable as e:
