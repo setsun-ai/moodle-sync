@@ -2,6 +2,13 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.13.1 (2026-10)
+
+- The menu under **/** has just `/menu` and `/help` - everything else is a tile. Typed commands all still work.
+- After `/menu` every reply has **↩️ Menu**, also messages that start a conversation below it, so `/menu` never has to be sent again. Typing another command closes it.
+- 🛠 Service → **🆕 Update**: install the newest version or go back to the previous one, after one more tap; the bot restarts as with `/update`.
+- Fix: switching a course's calendar off (or hiding the course) removed its events only with the next timer sync, up to 15 minutes later, and the bot didn't say so. Now the bot syncs that site's Google calendar right away and says when it's done. For a second site (`OTHER_SITES`) it runs against that site's data folder.
+
 ## 1.13.0 (2026-10)
 
 - 🎛️ **Per-course settings:** every course can have its own *materials*, *announcements*, *grades*, *deadline changes* and *reminders* notifications switched on or off, and its *deadlines* and *classes* kept in or out of the Google calendars. In the bot: `/settings` → **📘 Per course**, or `/courses` → a course → **⚙️ Course settings**; **🔕 Mute the whole course** in one tap. Files are still downloaded, and what you ask for (`/deadlines`, `/today`, `/courses`, the weekly summary) still shows every course. A calendar switched off for a course removes its events; switched on again, they come back without a "new deadlines" notification.

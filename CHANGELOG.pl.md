@@ -2,6 +2,13 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.13.1 (2026-10)
+
+- Menu pod **/** ma tylko `/menu` i `/pomoc` – cała reszta to kafelki. Wpisane komendy dalej działają.
+- Po `/menu` każda odpowiedź ma **↩️ Menu**, także wiadomości rozpoczynające rozmowę pod nim, więc nie trzeba wysyłać `/menu` drugi raz. Wpisanie innej komendy je zamyka.
+- 🛠 Serwis → **🆕 Aktualizacja**: zainstaluj najnowszą wersję albo wróć do poprzedniej, po jeszcze jednym kliknięciu; bot restartuje się jak po `/update`.
+- Poprawka: wyłączenie kalendarza kursu (albo ukrycie kursu) usuwało jego wydarzenia dopiero przy kolejnej synchronizacji z timera, do 15 minut później, a bot o tym nie mówił. Teraz bot od razu synchronizuje kalendarz Google tego Moodle i mówi, kiedy skończył. Dla drugiego Moodle (`OTHER_SITES`) działa na jego folderze danych.
+
 ## 1.13.0 (2026-10)
 
 - 🎛️ **Ustawienia kursów:** każdy kurs może mieć osobno włączone albo wyciszone powiadomienia o *materiałach*, *ogłoszeniach*, *ocenach*, *zmianach terminów* i *przypomnienia*, a jego *terminy* i *zajęcia* mogą trafiać do kalendarzy Google albo nie. W bocie: `/ustawienia` → **📘 Ustawienia kursów** albo `/kursy` → kurs → **⚙️ Ustawienia kursu**; **🔕 Wycisz cały kurs** jednym kliknięciem. Pliki dalej się pobierają, a to, o co pytasz (`/terminy`, `/dzis`, `/kursy`, podsumowanie tygodnia), dalej pokazuje każdy kurs. Kalendarz wyłączony dla kursu usuwa jego wydarzenia; po ponownym włączeniu wracają bez powiadomienia o „nowych terminach”.
