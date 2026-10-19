@@ -3,7 +3,7 @@ Telegram bot: notifications are sent by notify.py; this module answers commands.
 
 Commands (Polish and English aliases; only YOUR chat - TELEGRAM_CHAT_ID - is
 answered, anything else is ignored without a reply). The menu under "/" lists only
-the everyday ones (MENU_NAMES); /menu opens all of them as tiles, every command
+/menu and /help (MENU_NAMES); /menu opens all of them as tiles, every command
 below still works when typed:
     /menu       /start     everything as tiles (see interactive.py)
     /deadlines  /terminy   upcoming deadlines (14 days) straight from Moodle, ✅ = done
@@ -231,10 +231,9 @@ COMMANDS = {  # name -> (handler, i18n key of the description shown in Telegram'
     "update": (cmd_update, "bot_cmd_update"), "rollback": (cmd_rollback, "bot_cmd_rollback"),
     "help": (cmd_help, "bot_cmd_help"), "pomoc": (cmd_help, None),
 }
-# Menu in Telegram: Polish names for Polish users, English otherwise. Only what you need every day -
-# the rest is one tap away in /menu (tiles) and listed by /help.
-MENU_NAMES = {"pl": ["menu", "terminy", "nowe", "dzis", "kursy", "szukaj", "obecnosc", "ustawienia", "status", "pomoc"],
-              "en": ["menu", "deadlines", "new", "today", "courses", "search", "attendance", "settings", "status", "help"]}
+# Menu in Telegram: Polish names for Polish users, English otherwise. Everything else is a tile in /menu;
+# every command still works when typed, and /help lists them.
+MENU_NAMES = {"pl": ["menu", "pomoc"], "en": ["menu", "help"]}
 MENU_DESCRIPTIONS = {"menu": "bot_cmd_menu", "terminy": "bot_cmd_deadlines", "nowe": "bot_cmd_new", "oceny": "bot_cmd_grades",
                      "pomoc": "bot_cmd_help", "kursy": "bot_cmd_courses", "courses": "bot_cmd_courses",
                      "dzis": "bot_cmd_today", "today": "bot_cmd_today", "oddaj": "bot_cmd_submit",
@@ -292,6 +291,8 @@ def run() -> int:
                 if callback:
                     if str(callback.get("message", {}).get("chat", {}).get("id", "")) == chat:
                         interactive.on_callback(callback, chat)
+                    if updater.restart_requested():  # 🛠 Service -> update in /menu
+                        restart(offset)
                     continue
                 msg = update.get("message") or {}
                 if str(msg.get("chat", {}).get("id", "")) != chat:
@@ -321,14 +322,18 @@ def run() -> int:
                 print(f"> {msg['text'][:40]}", flush=True)
                 notify.send_telegram_html(handle(msg["text"], chat), chat)
                 if updater.restart_requested():
-                    try:
-                        get_updates(offset, timeout=0)  # confirm, so Telegram doesn't deliver /update again
-                    except (requests.RequestException, ValueError):
-                        pass
-                    updater.restart()
+                    restart(offset)
         except (requests.RequestException, ValueError) as e:  # ValueError: not JSON (e.g. a proxy error page)
             print(f"[telegram] {notify._redact(str(e))} - retry in 15 s", flush=True)
             time.sleep(15)
+
+
+def restart(offset: int) -> None:
+    try:
+        get_updates(offset, timeout=0)  # confirm, so Telegram doesn't deliver /update (or its button) again
+    except (requests.RequestException, ValueError):
+        pass
+    updater.restart()
 
 
 def register_menu() -> None:

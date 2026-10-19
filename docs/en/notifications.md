@@ -40,13 +40,13 @@ The first run only *remembers* existing announcements and grades, so you won't g
    ```
    Send any message to your bot. The script saves your `TELEGRAM_CHAT_ID` and the bot replies "Connected!".
 
-**Commands.** Both languages work. The menu under **/** (in your `LANGUAGE`) lists only the everyday ones;
-**`/menu`** (or `/start`) opens everything as tiles in one message - a tile opens in place, **↩️ Menu** goes back.
-Every command below still works when typed:
+**Commands.** Both languages work. The menu under **/** has just **`/menu`** and **`/help`**: `/menu` (or `/start`)
+opens everything as tiles in one message - a tile opens in place, and every reply after it has **↩️ Menu**, so you
+never send `/menu` again (typing another command closes it). Every command below still works when typed:
 
 | | |
 |---|---|
-| `/menu` `/start` | everything as tiles: 📅 deadlines, 📚 new, 🎓 grades, 📘 courses, 🗓 today, 🔎 search, ✋ attendance, ⚙️ settings, and groups 🗂 Studies ▸ and 🛠 Service ▸ (submit and forum appear with `MOODLE_ACTIONS=1`, Studies with a study plan) |
+| `/menu` `/start` | everything as tiles: 📅 deadlines, 📚 new, 🎓 grades, 📘 courses, 🗓 today, 🔎 search, ✋ attendance, ⚙️ settings, and groups 🗂 Studies ▸ and 🛠 Service ▸ (status, errors, sync, pause, cleanup, 🆕 update / back to the previous version, after one more tap) (submit and forum appear with `MOODLE_ACTIONS=1`, Studies with a study plan) |
 | `/deadlines` `/terminy` | upcoming deadlines (14 days) straight from Moodle, ✅ = already submitted; also of a second site (`OTHER_SITES`) |
 | `/new` `/nowe` | recently downloaded materials, also of a second site |
 | `/grades` `/oceny` | latest grades, also of a second site |
@@ -88,7 +88,7 @@ A tap switches one of these on ✅ or off 🔕:
 | Grades | new grades |
 | Deadline changes | *New / changed deadlines*. The calendar sync notices them, so they need *Deadlines in calendar* on |
 | Reminders | reminders of what you haven't handed in |
-| Deadlines in calendar | the course's deadlines in the "– deadlines" Google calendar. Switched off, they are removed from it; switched on again, they come back without a "new deadlines" notification |
+| Deadlines in calendar | the course's deadlines in the "– deadlines" Google calendar. Switched off, they are removed from it right away (the bot syncs the calendar at once); switched on again, they come back without a "new deadlines" notification |
 | Classes in calendar | the course's classes in the "– classes" calendar |
 | 📨 Files to chat | **off by default.** New files of the course arrive in the Telegram chat as documents, without tapping ⬇️ (up to 10 per sync, up to 50 MB each; bigger ones keep their ⬇️ button). Works without the bot process. `/settings` → **📨 New files to chat: every course** switches it on for all courses (`AUTOSEND_FILES=1`) |
 

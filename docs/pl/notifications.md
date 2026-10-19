@@ -40,13 +40,14 @@ Pierwsze uruchomienie tylko *zapamiętuje* istniejące ogłoszenia i oceny, wię
    ```
    Napisz cokolwiek do swojego bota. Skrypt zapisze Twój `TELEGRAM_CHAT_ID`, a bot odpisze „Połączono!”.
 
-**Komendy.** Działają w obu językach. Menu pod **/** (w Twoim `LANGUAGE`) pokazuje tylko te na co dzień;
-**`/menu`** (albo `/start`) otwiera wszystko jako kafelki w jednej wiadomości – kafelek otwiera się w miejscu,
-**↩️ Menu** wraca. Każda komenda z tabeli nadal działa, gdy ją wpiszesz:
+**Komendy.** Działają w obu językach. Menu pod **/** ma tylko **`/menu`** i **`/pomoc`**: `/menu` (albo `/start`)
+otwiera wszystko jako kafelki w jednej wiadomości – kafelek otwiera się w miejscu, a każda kolejna odpowiedź ma
+**↩️ Menu**, więc nie wysyłasz `/menu` drugi raz (wpisanie innej komendy je zamyka). Każda komenda z tabeli nadal
+działa, gdy ją wpiszesz:
 
 | | |
 |---|---|
-| `/menu` `/start` | wszystko jako kafelki: 📅 terminy, 📚 nowe, 🎓 oceny, 📘 kursy, 🗓 dziś, 🔎 szukaj, ✋ obecność, ⚙️ ustawienia oraz grupy 🗂 Studia ▸ i 🛠 Serwis ▸ (oddawanie i forum pojawiają się przy `MOODLE_ACTIONS=1`, Studia przy planie studiów) |
+| `/menu` `/start` | wszystko jako kafelki: 📅 terminy, 📚 nowe, 🎓 oceny, 📘 kursy, 🗓 dziś, 🔎 szukaj, ✋ obecność, ⚙️ ustawienia oraz grupy 🗂 Studia ▸ i 🛠 Serwis ▸ (stan, błędy, synchronizacja, pauza, porządki, 🆕 aktualizacja / powrót do poprzedniej wersji, po jeszcze jednym kliknięciu) (oddawanie i forum pojawiają się przy `MOODLE_ACTIONS=1`, Studia przy planie studiów) |
 | `/terminy` `/deadlines` | najbliższe terminy (14 dni) prosto z Moodle, ✅ = już oddane; także drugiego Moodle (`OTHER_SITES`) |
 | `/nowe` `/new` | ostatnio pobrane materiały, także z drugiego Moodle |
 | `/oceny` `/grades` | ostatnie oceny, także z drugiego Moodle |
@@ -88,7 +89,7 @@ Kliknięcie włącza ✅ albo wyłącza 🔕:
 | Oceny | nowe oceny |
 | Zmiany terminów | *Nowe / zmienione terminy*. Zauważa je synchronizacja kalendarza, więc potrzebują włączonych *Terminów w kalendarzu* |
 | Przypomnienia | przypomnienia o tym, czego jeszcze nie oddałeś |
-| Terminy w kalendarzu | terminy kursu w kalendarzu Google „– terminy”. Po wyłączeniu znikają z niego; po ponownym włączeniu wracają bez powiadomienia o „nowych terminach” |
+| Terminy w kalendarzu | terminy kursu w kalendarzu Google „– terminy”. Po wyłączeniu od razu z niego znikają (bot od razu synchronizuje kalendarz); po ponownym włączeniu wracają bez powiadomienia o „nowych terminach” |
 | Zajęcia w kalendarzu | zajęcia kursu w kalendarzu „– zajęcia” |
 | 📨 Pliki na czat | **domyślnie wyłączone.** Nowe pliki kursu przychodzą na czat Telegrama jako dokumenty, bez klikania ⬇️ (do 10 na synchronizację, do 50 MB każdy; większe zostają z przyciskiem ⬇️). Działa bez procesu bota. `/ustawienia` → **📨 Nowe pliki na czat: wszystkie kursy** włącza je dla wszystkich kursów (`AUTOSEND_FILES=1`) |
 

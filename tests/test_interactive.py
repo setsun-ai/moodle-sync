@@ -201,6 +201,7 @@ def bot(monkeypatch):
     monkeypatch.setattr(interactive, "download", lambda file_id: b"%PDF-1.7")
     monkeypatch.setattr(moodle, "my_courses", lambda: [{"id": 10, "fullname": "LCMS"}])
     interactive.STATE.clear()
+    monkeypatch.setitem(interactive.MENU, "open", False)
     return out
 
 
@@ -941,7 +942,7 @@ def test_menu_tiles(bot, monkeypatch):
     assert bot["edits"][-1] == ("📅 nothing due", [[("↩️ Menu", "h")]])
     click("hg:service")
     text, rows = bot["edits"][-1]
-    assert "/update" in text and rows[-1] == [("↩️ Menu", "h")] and ("⏸ Pause", "h:pause") in rows[1]
+    assert "/reorganize" in text and rows[-1] == [("↩️ Menu", "h")] and ("⏸ Pause", "h:pause") in rows[1]
     click("h")
     assert "Menu" in bot["edits"][-1][0]
 
@@ -1023,3 +1024,56 @@ def test_autosend_for_every_course_in_settings(bot):
     click("sta:0")
     assert "AUTOSEND_FILES=1" in config.ENV_FILE.read_text()
     assert ("📨 New files to chat: every course ▸", "sta:0") in bot["edits"][-1][1][-2]
+
+
+def test_menu_stays_one_tap_away(monkeypatch):
+    """After /menu every reply - also a new message - has ↩️ Menu; a typed command closes the menu."""
+    monkeypatch.setitem(interactive.MENU, "open", False)
+    sent = []
+    monkeypatch.setattr(interactive, "api", lambda method, **p: sent.append(p) or {"message_id": 1})
+    interactive.handle_command("menu", [], "1")
+    interactive.explain_submit("1")  # a conversation that starts below the menu
+    assert sent[-1]["reply_markup"]["inline_keyboard"][-1] == [{"text": "↩️ Menu", "callback_data": "h"}]
+    interactive.edit("1", 1, "x", [[("↩️ Menu", "h")]])  # never twice
+    assert len(sent[-1]["reply_markup"]["inline_keyboard"]) == 1
+    interactive.handle_command("deadlines", [], "1")  # typed: handled by telegram_bot, closes the menu
+    interactive.explain_submit("1")
+    assert "reply_markup" not in sent[-1]
+
+
+def test_update_from_the_menu_asks_first(bot, monkeypatch):
+    from moodle_sync import telegram_bot
+
+    calls = []
+    monkeypatch.setattr(telegram_bot, "cmd_update", lambda chat: calls.append("update") or "🔄 restarting")
+    click("h:update")
+    text, rows = bot["edits"][-1]
+    assert "Installed version" in text and calls == []  # one more tap before anything happens
+    assert [row[0][1] for row in rows] == ["upd!", "rbk!", "hg:service"]
+    click("upd!")
+    assert calls == ["update"] and bot["edits"][-1][0] == "🔄 restarting"
+    assert telegram_bot.MENU_NAMES == {"pl": ["menu", "pomoc"], "en": ["menu", "help"]}
+
+
+def test_calendar_is_updated_right_after_a_switch(bot, other_site, monkeypatch):
+    from moodle_sync import calendar_sync, sites
+
+    monkeypatch.setattr(calendar_sync, "status", lambda: (True, ""))
+    runs = []
+    monkeypatch.setattr(interactive, "cli", lambda *args, site=None: runs.append((args, site)) or
+                        type("P", (), {"returncode": 0, "stdout": ""})())
+    click("cpt:10@1:s:calendar")
+    assert runs == [(("calendar",), sites.sites()[1])]  # the other site's calendar, at once
+    assert bot["edits"][-1][0].startswith("🗓 Google Calendar updated.")
+    click("cpt:10@1:s:grades")  # not about the calendar: nothing to run
+    assert len(runs) == 1
+    click("hd:10:1")  # a hidden course leaves the calendar too
+    assert runs[-1] == (("calendar",), sites.sites()[0]) and "Google Calendar updated" in bot["edits"][-1][0]
+
+
+def test_cli_runs_against_the_chosen_site(monkeypatch, tmp_path):
+    seen = []
+    monkeypatch.setattr(interactive.subprocess, "run", lambda cmd, **kw: seen.append(kw["env"]))
+    interactive.cli("calendar")
+    interactive.cli("calendar", site=tmp_path / "site-2")
+    assert seen[0] is None and seen[1]["MOODLE_SYNC_DATA_DIR"] == str(tmp_path / "site-2")

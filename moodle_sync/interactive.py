@@ -31,8 +31,10 @@ from pathlib import Path
 import requests
 
 from . import (
+    __version__,
     assignments,
     attendance,
+    calendar_sync,
     config,
     coursebrowse,
     courseprefs,
@@ -49,6 +51,9 @@ from .textutil import clean_text, normalize_for_matching
 
 LIMIT = 3900
 STATE: dict = {}  # the bot serves one chat, so one conversation state
+# Opened with /menu: every reply gets "↩️ Menu" until another command is typed, so the menu never has
+# to be sent again.
+MENU = {"open": False}
 
 
 def esc(text) -> str:
@@ -73,8 +78,17 @@ def api(method: str, **params) -> dict:
 kb = notify.keyboard
 
 
+def with_menu(rows: list | None) -> list:
+    """The rows plus "↩️ Menu" while the menu is open (unless they already lead there)."""
+    rows = list(rows or [])
+    if MENU["open"] and not any(data == "h" for row in rows for _, data in row):
+        rows.append([(t("ui_hub_back"), "h")])
+    return rows
+
+
 def send(chat: str, text: str, rows: list | None = None) -> int | None:
     params = {"chat_id": chat, "text": trim(text), "parse_mode": "HTML", "disable_web_page_preview": True}
+    rows = with_menu(rows)
     if rows:
         params["reply_markup"] = kb(rows)
     return api("sendMessage", **params).get("message_id")
@@ -82,7 +96,7 @@ def send(chat: str, text: str, rows: list | None = None) -> int | None:
 
 def edit(chat: str, message_id: int, text: str, rows: list | None = None) -> None:
     params = {"chat_id": chat, "message_id": message_id, "text": trim(text), "parse_mode": "HTML",
-              "disable_web_page_preview": True, "reply_markup": kb(rows or [])}
+              "disable_web_page_preview": True, "reply_markup": kb(with_menu(rows))}
     api("editMessageText", **params)
 
 
@@ -120,6 +134,7 @@ COMMANDS = {"courses": "courses", "kursy": "courses", "today": "today", "dzis": 
 def handle_command(command: str, args: list[str], chat: str) -> bool:
     """True when the command is ours (the caller then sends nothing itself)."""
     kind = COMMANDS.get(command)
+    MENU["open"] = kind == "menu"  # any other typed command closes it
     if kind is None:
         return False
     STATE.clear()
@@ -217,6 +232,9 @@ def set_course_hidden(chat: str, message_id: int, ref: str, hidden: bool) -> Non
                 note = "\n" + t("ui_hide_moodle_failed", error=esc(moodle.redact(str(e))[:200]))
         courseprefs.set_hidden(course, hidden)
         name = course_name(course_id)
+    edit(chat, message_id, "⏳ " + t("ui_cal_applying"))
+    applied = apply_calendar(site)  # a hidden course leaves the calendar too
+    note += "\n" + applied if applied else ""
     show_courses(chat, message_id, note=t("ui_hidden_done" if hidden else "ui_shown_done", course=esc(name)) + note)
 
 
@@ -980,7 +998,7 @@ def find_course(course_id: int) -> dict:
     return next((c for c in moodle.my_courses() if c["id"] == course_id), {"id": course_id, "fullname": ""})
 
 
-def show_course_prefs(chat: str, message_id: int, ref: str, origin: str) -> None:
+def show_course_prefs(chat: str, message_id: int, ref: str, origin: str, note: str = "") -> None:
     """One course: a toggle per kind (courseprefs.KINDS). origin "c" = opened from /courses, "s" = from the list."""
     site, course_id = parse_ref(ref)
     with sites.use(site):
@@ -995,7 +1013,7 @@ def show_course_prefs(chat: str, message_id: int, ref: str, origin: str) -> None
     all_off = set(LOUD_KINDS) <= off
     rows.append([(t("ui_cp_all_on" if all_off else "ui_cp_all_off"), f"cpa:{ref}:{origin}:{0 if all_off else 1}")])
     rows.append([(t("ui_back"), f"c:{ref}" if origin == "c" else "stc")])
-    text = t("ui_cp_title", course=esc(name))
+    text = (note + "\n\n" if note else "") + t("ui_cp_title", course=esc(name))
     if hidden:
         text += "\n\n" + t("ui_cp_hidden_note")
     if everywhere:
@@ -1012,7 +1030,11 @@ def switch_course_prefs(chat: str, message_id: int, ref: str, origin: str, kinds
         if on is None:
             on = kinds[0] in courseprefs.muted([course]).get(course_id, set())
         courseprefs.switch(course, kinds, on)
-    show_course_prefs(chat, message_id, ref, origin)
+    note = ""
+    if {"calendar", "classes"} & set(kinds):
+        edit(chat, message_id, "⏳ " + t("ui_cal_applying"))
+        note = apply_calendar(site)
+    show_course_prefs(chat, message_id, ref, origin, note)
 
 
 def quick_mute(chat: str, course_id: int, key: str, kind: str) -> None:
@@ -1034,7 +1056,7 @@ HUB = {  # group -> rows of tiles; a tile that is itself a key here opens that g
     "": [["deadlines", "new", "grades"], ["courses", "today", "search"], ["submit", "forum", "attendance"],
          ["studies", "settings", "service"]],
     "studies": [["plan", "electives"], ["assign", "card"]],
-    "service": [["status", "errors"], ["sync", "pause"], ["cleanup"]],
+    "service": [["status", "errors"], ["sync", "pause"], ["cleanup", "update"]],
 }
 
 
@@ -1079,16 +1101,40 @@ def hub_action(chat: str, message_id: int, name: str) -> None:
     elif name == "search":
         STATE["await"] = "search"
         edit(chat, message_id, t("ui_hub_search_prompt"), [[(t("ui_hub_back"), "h")]])
+    elif name == "update":  # installs code and restarts the bot: never on a single tap
+        edit(chat, message_id, t("ui_hub_update_title", version=__version__),
+             [[(t("ui_hub_update_install"), "upd!")], [(t("ui_hub_update_rollback"), "rbk!")],
+              [(t("ui_hub_back"), "hg:service")]])
     else:
         edit(chat, message_id, t("ui_expired"))
 
 
-def cli(*args: str):
+def cli(*args: str, site: Path | None = None):
+    """python -m moodle_sync ...; site: run it against another site's data folder (OTHER_SITES)."""
+    import os
     import subprocess
     import sys
 
-    return subprocess.run([sys.executable, "-m", "moodle_sync", *args], cwd=config.PROJECT_DIR,
+    env = {**os.environ, "MOODLE_SYNC_DATA_DIR": str(site)} if site and site != config.DATA_DIR else None
+    return subprocess.run([sys.executable, "-m", "moodle_sync", *args], cwd=config.PROJECT_DIR, env=env,
                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+def apply_calendar(site: Path) -> str:
+    """A course left or joined the calendar: sync that site's Google calendar now, not at the next timer run.
+    Returns a line for the screen ("" without a Google calendar)."""
+    from .runner import SingleInstance
+
+    with sites.use(site):
+        if not calendar_sync.status()[0]:
+            return ""
+        with SingleInstance() as lock:  # the lock of that site
+            if not lock.acquired:
+                return t("ui_cal_later")
+            proc = cli("calendar", site=site)
+    if proc.returncode == 0:
+        return t("ui_cal_applied")
+    return t("ui_cal_failed") + f"\n<pre>{esc(moodle.redact(proc.stdout[-300:]))}</pre>"
 
 
 def do_cleanup(chat: str, message_id: int) -> None:
@@ -1371,7 +1417,13 @@ def on_callback(cq: dict, chat: str) -> None:
             send_new_files(chat, rest, batch=kind == "dla")
         elif data == "h":
             STATE.clear()
+            MENU["open"] = True
             show_hub(chat, message_id)
+        elif data in ("upd!", "rbk!"):
+            from . import telegram_bot
+
+            edit(chat, message_id, "⏳")  # then the bot process restarts (telegram_bot.run)
+            edit(chat, message_id, (telegram_bot.cmd_update if data == "upd!" else telegram_bot.cmd_rollback)(chat))
         elif kind == "hg":
             show_hub(chat, message_id, rest)
         elif kind == "h":

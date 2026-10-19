@@ -116,10 +116,22 @@ MESSAGES: dict[str, dict[str, str]] = {
                      "en": "🧩 <b>Menu</b>\nPick a tile. Every command: /help"},
     "ui_hub_studies_title": {"pl": "🗂 <b>Studia</b>\nPlan, przedmioty obieralne, przypisanie kursów i karty przedmiotów.",
                              "en": "🗂 <b>Studies</b>\nPlan, electives, which course is which subject, subject cards."},
-    "ui_hub_service_title": {"pl": "🛠 <b>Serwis</b>\nStan, błędy, synchronizacja, pauza i porządki. Aktualizacja: "
-                                   "/update, /rollback; przeniesienie plików: /reorganize.",
-                             "en": "🛠 <b>Service</b>\nStatus, errors, sync, pause and cleanup. Updates: /update, "
-                                   "/rollback; moving files: /reorganize."},
+    "ui_hub_service_title": {"pl": "🛠 <b>Serwis</b>\nStan, błędy, synchronizacja, pauza, porządki i aktualizacja. "
+                                   "Przeniesienie plików, gdy synchronizacja o to poprosi: /reorganize.",
+                             "en": "🛠 <b>Service</b>\nStatus, errors, sync, pause, cleanup and updates. Moving files, "
+                                   "when the sync asks for it: /reorganize."},
+    "ui_hub_update": {"pl": "🆕 Aktualizacja", "en": "🆕 Update"},
+    "ui_hub_update_title": {"pl": "🆕 <b>Aktualizacja</b>\nZainstalowana wersja: {version}. Po instalacji bot się "
+                                  "zrestartuje.",
+                            "en": "🆕 <b>Update</b>\nInstalled version: {version}. The bot restarts afterwards."},
+    "ui_hub_update_install": {"pl": "⬇️ Zainstaluj najnowszą wersję", "en": "⬇️ Install the newest version"},
+    "ui_hub_update_rollback": {"pl": "⏪ Wróć do poprzedniej wersji", "en": "⏪ Back to the previous version"},
+    "ui_cal_applying": {"pl": "Aktualizuję kalendarz…", "en": "Updating the calendar…"},
+    "ui_cal_applied": {"pl": "🗓 Kalendarz Google zaktualizowany.", "en": "🗓 Google Calendar updated."},
+    "ui_cal_later": {"pl": "🗓 Trwa synchronizacja – kalendarz zmieni się przy następnej (do 15 min).",
+                     "en": "🗓 A sync is running - the calendar changes with the next one (within 15 min)."},
+    "ui_cal_failed": {"pl": "🗓 Nie udało się zaktualizować kalendarza teraz; spróbuję przy następnej synchronizacji.",
+                      "en": "🗓 Couldn't update the calendar now; the next sync tries again."},
     "ui_hub_back": {"pl": "↩️ Menu", "en": "↩️ Menu"},
     "ui_hub_search_prompt": {"pl": "🔎 Napisz, czego szukać – np. <i>wykład 3</i> albo nazwę kursu.",
                              "en": "🔎 Type what to look for - e.g. <i>lecture 3</i> or a course name."},
@@ -602,7 +614,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "weekly_deadlines_failed": {"pl": "(Nie udało się pobrać terminów: {error})", "en": "(Couldn't get deadlines: {error})"},
 
     # --- Telegram bot ---
-    "bot_help": {"pl": "🧩 /menu — wszystko jako kafelki\n\n"
+    "bot_help": {"pl": "🧩 /menu — wszystko jako kafelki. Każdą komendę z listy możesz też wpisać.\n\n"
                        "📅 Na co dzień\n/terminy — najbliższe terminy (14 dni)\n/nowe — ostatnio pobrane materiały\n"
                        "/oceny — ostatnie oceny\n/kursy — podgląd kursów i materiałów\n"
                        "/dzis — co nowego dziś (/dzis wczoraj, /dzis 12.10)\n"
@@ -618,7 +630,7 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "/sync — synchronizuj teraz (wszystko albo jeden kurs)\n/porzadki — usuń stare kopie plików\n"
                        "/reorganize — zatwierdź przeniesienie plików (np. do folderów semestrów)\n"
                        "/update — zainstaluj najnowszą wersję\n/rollback — wróć do poprzedniej wersji\n/pomoc — ta lista",
-                 "en": "🧩 /menu — everything as tiles\n\n"
+                 "en": "🧩 /menu — everything as tiles. You can also type any command below.\n\n"
                        "📅 Every day\n/deadlines — upcoming deadlines (14 days)\n/new — recently downloaded materials\n"
                        "/grades — latest grades\n/courses — browse courses and materials\n"
                        "/today — what's new today (/today 1, /today 12.10)\n"
