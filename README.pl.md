@@ -35,7 +35,8 @@ Komentarz prowadzącego: Dobra robota, uwagi w sekcji 3.
 - 📅 **Terminy → Kalendarz Google.** Oddane zadania dostają ✅ i przestają przypominać. Przesunięte terminy się aktualizują, a Ty dostajesz powiadomienie. Zajęcia trafiają do osobnego kalendarza, który możesz ukryć. Outlook i kalendarz Apple mogą zamiast tego korzystać z linku subskrypcji.
 - 📢 **Ogłoszenia i 🎓 oceny** od prowadzących trafiają prosto na telefon, razem z komentarzem prowadzącego.
 - ⏰ **Przypomnienia o tym, czego jeszcze nie oddałeś,** 24 h i 3 h przed terminem – nigdy o tym, co już oddane. Cisza nocna wycisza powiadomienia w nocy.
-- 🔔 **Kanał do wyboru:** Telegram (z komendami `/terminy`, `/sync`...), Discord, ntfy albo e-mail.
+- 🔔 **Kanał do wyboru:** Telegram (z komendami `/terminy`, `/sync`... albo wszystkim jako kafelki w `/menu`), Discord, ntfy albo e-mail.
+- 🎛️ **Każdy kurs po swojemu:** dla każdego kursu osobno włączasz albo wyciszasz materiały, ogłoszenia, oceny, zmiany terminów i przypomnienia oraz decydujesz, czy jego terminy i zajęcia trafiają do kalendarza – w bocie (`/ustawienia → 📘` albo 🔕 prosto pod powiadomieniem) albo w `courses.json`. Nowe pliki kursu mogą przychodzić prosto na czat (📨), a stare kursy ukryjesz jak na panelu eNauczania (🙈): przestają się synchronizować, dopóki ich nie pokażesz.
 - 🧙 **Kreator konfiguracji:** sam sprawdza, jak loguje Twoja uczelnia (hasło czy SSO), i prowadzi krok po kroku. `doctor` sprawdza całość.
 - 🖥️ **Działa, jak chcesz:** dwuklik, kiedy masz ochotę, automatycznie, gdy komputer jest włączony, albo 24/7 na Raspberry Pi.
 - 🌍 **Po polsku i po angielsku:** komunikaty, bot i dokumentacja.

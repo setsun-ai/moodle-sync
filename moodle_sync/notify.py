@@ -36,6 +36,7 @@ KIND_TAGS = {  # ntfy shows these as emoji
     "grades": "mortar_board", "errors": "rotating_light", "summary": "white_check_mark", "test": "bell",
 }
 TELEGRAM_LIMIT = 4096
+TELEGRAM_UPLOAD_MB = 50  # the most a bot may send
 DISCORD_LIMIT = 2000
 
 
@@ -113,6 +114,27 @@ def send_telegram_html(text: str, chat_id: str | None = None, buttons: list | No
     except requests.RequestException as e:
         print(f"[telegram] {_redact(str(e))}")
         return False
+
+
+def send_telegram_document(path, caption: str, chat_id: str | None = None, silent: bool = False) -> bool:
+    """Send a file as a document (caption is HTML). The sync uses it too (autosend), so it lives here."""
+    chat_id = chat_id or config.env("TELEGRAM_CHAT_ID")
+    if not (config.env("TELEGRAM_BOT_TOKEN") and chat_id):
+        return False
+    data = {"chat_id": chat_id, "caption": caption[:1000], "parse_mode": "HTML"}
+    if silent:
+        data["disable_notification"] = True
+    try:
+        with open(path, "rb") as fh:
+            resp = requests.post(f"{telegram_api()}/sendDocument", timeout=300, data=data,
+                                 files={"document": (path.name, fh)})
+    except requests.RequestException as e:
+        print(f"[telegram] sendDocument: {_redact(str(e))}")
+        return False
+    ok = resp.status_code == 200 and resp.json().get("ok")
+    if not ok:
+        print(f"[telegram] sendDocument: HTTP {resp.status_code} {resp.text[:200]}")
+    return bool(ok)
 
 
 def _send_discord(title: str, message: str, emoji: str) -> bool:

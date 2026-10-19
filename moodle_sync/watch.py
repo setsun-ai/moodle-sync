@@ -24,7 +24,7 @@ import time
 
 import requests
 
-from . import config, moodle, state as state_mod
+from . import config, courseprefs, moodle, state as state_mod
 from .files import course_display_name
 from .i18n import t
 from .notify import notify
@@ -82,8 +82,12 @@ def check_forums(courses: list, courses_by_id: dict, section: dict, cfg: dict, d
             if not forum_is_new:
                 new.append((forum, d))
         known_forums.add(forum["id"])
-    section["forums_known"] = sorted(known_forums)
+    # A forum no longer watched (a hidden course, WATCH_ALL_FORUMS off) is forgotten: watched again,
+    # it is remembered silently instead of reporting what was posted meanwhile.
+    watched_ids = {f["id"] for f in watched}
+    section["forums_known"] = sorted(f for f in known_forums if f in watched_ids)
 
+    off = courseprefs.muted(courses, cfg)
     for forum, d in sorted(new, key=lambda x: x[1]["created"]):
         course = _course_name(courses_by_id, forum["course"], cfg)
         title = f"[{course}] {clean_text(d.get('subject') or d.get('name'), lang)}"
@@ -94,9 +98,13 @@ def check_forums(courses: list, courses_by_id: dict, section: dict, cfg: dict, d
             f"{t('attachments')}: {', '.join(attachments)}" if attachments else "",
             f"{config.moodle_base_url()}/mod/forum/discuss.php?d={d['discussion']}",
         ]
+        if not courseprefs.allows(off, forum["course"], "announcements"):
+            print("  " + t("watch_muted", title=title))
+            continue
         print("  " + t("watch_announcement", title=title))
         if not dry_run:
-            notify("announcements", title, "\n\n".join(p for p in parts if p), urgent=True)
+            notify("announcements", title, "\n\n".join(p for p in parts if p), urgent=True,
+                   buttons=courseprefs.mute_buttons(forum["course"], "announcements"))
 
     section["initialized"] = True
     if first_run:
@@ -165,8 +173,12 @@ def check_grades(courses: list, courses_by_id: dict, section: dict, cfg: dict, f
         if grade and not unchanged and not first_run:
             changes.append((course_id, name, grade, comment, prev.get("grade")))
 
+    off = courseprefs.muted(courses, cfg)
     for course_id, name, grade, comment, old in changes:
         title = t("notify_grade_title", grade=grade, name=clean_text(name, lang))
+        if not courseprefs.allows(off, course_id, "grades"):
+            print("  " + t("watch_muted", title=title))
+            continue
         message = _course_name(courses_by_id, course_id, cfg)
         if old:
             message += "\n" + t("grade_previous", old=old)
@@ -174,7 +186,7 @@ def check_grades(courses: list, courses_by_id: dict, section: dict, cfg: dict, f
             message += f"\n\n{t('grade_feedback')}:\n{shorten(comment, 1200)}"
         print("  " + title)
         if not dry_run:
-            notify("grades", title, message, urgent=True)
+            notify("grades", title, message, urgent=True, buttons=courseprefs.mute_buttons(course_id, "grades"))
 
     section["initialized"] = True
     if first_run:
@@ -183,7 +195,7 @@ def check_grades(courses: list, courses_by_id: dict, section: dict, cfg: dict, f
 
 
 def run(force: bool = False, dry_run: bool = False) -> int:
-    courses = moodle.my_courses()
+    courses = courseprefs.active(moodle.my_courses())  # a hidden course isn't watched (fewer requests)
     courses_by_id = {c["id"]: c for c in courses}
     cfg = config.load_courses_config()
     state = state_mod.load()

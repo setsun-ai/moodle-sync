@@ -21,6 +21,7 @@ Announcements can contain **other people's personal data**, e.g. a table of grad
 | **Your Moodle server** | Your token and API requests. The User-Agent names this project. | always |
 | **Your disk**: `.env` | Settings and secrets (tokens, passwords) | always |
 | **Your disk**: `state.json` | List of downloaded files, calendar ids, ids of seen announcements, **your grades with assignment names**, results of recent runs | always |
+| **Your disk**: `course_settings.json` | Which notifications and calendar entries each course may have, which courses you hid (course ids only) | after you change a course's settings in the bot |
 | **Your disk**: `DOWNLOAD_DIR` | Course files | always |
 | **Your disk**: `logs/` | Course and file names, errors; **secrets are masked** | scheduled runs on Windows/macOS |
 | **Your cloud** (rclone: Google Drive, OneDrive...) | Course files + a backup of `state.json`. No authentication credentials, but private Moodle data such as your grades. | if `RCLONE_REMOTE` is set |
@@ -86,6 +87,7 @@ Ogłoszenia mogą zawierać **dane osobowe innych osób**, np. tabelę ocen z nu
 | **Serwer Twojego Moodle** | Twój token i zapytania do API. User-Agent podaje nazwę projektu. | zawsze |
 | **Twój dysk**: `.env` | Ustawienia i sekrety (tokeny, hasła) | zawsze |
 | **Twój dysk**: `state.json` | Lista pobranych plików, identyfikatory kalendarzy, identyfikatory widzianych ogłoszeń, **Twoje oceny z nazwami zadań**, wyniki ostatnich przebiegów | zawsze |
+| **Twój dysk**: `course_settings.json` | Jakie powiadomienia i wpisy w kalendarzu może mieć każdy kurs, które kursy ukryłeś (tylko identyfikatory kursów) | gdy zmienisz ustawienia kursu w bocie |
 | **Twój dysk**: `DOWNLOAD_DIR` | Pliki z kursów | zawsze |
 | **Twój dysk**: `logs/` | Nazwy kursów i plików, błędy; **sekrety są maskowane** | przebiegi z harmonogramu na Windows/macOS |
 | **Twoja chmura** (rclone: Dysk Google, OneDrive...) | Pliki z kursów + kopia `state.json`. Bez danych logowania, ale z prywatnymi danymi z Moodle, np. Twoimi ocenami. | gdy ustawisz `RCLONE_REMOTE` |

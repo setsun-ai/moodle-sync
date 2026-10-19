@@ -2,6 +2,18 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.13.0 (2026-10)
+
+- 🎛️ **Ustawienia kursów:** każdy kurs może mieć osobno włączone albo wyciszone powiadomienia o *materiałach*, *ogłoszeniach*, *ocenach*, *zmianach terminów* i *przypomnienia*, a jego *terminy* i *zajęcia* mogą trafiać do kalendarzy Google albo nie. W bocie: `/ustawienia` → **📘 Ustawienia kursów** albo `/kursy` → kurs → **⚙️ Ustawienia kursu**; **🔕 Wycisz cały kurs** jednym kliknięciem. Pliki dalej się pobierają, a to, o co pytasz (`/terminy`, `/dzis`, `/kursy`, podsumowanie tygodnia), dalej pokazuje każdy kurs. Kalendarz wyłączony dla kursu usuwa jego wydarzenia; po ponownym włączeniu wracają bez powiadomienia o „nowych terminach”.
+- **🔕 Wycisz to z tego kursu** pod powiadomieniami o ogłoszeniach i ocenach (także z drugiego Moodle).
+- `courses.json` → `"mute"`: to samo według fragmentu nazwy kursu, dla instalacji bez bota (`{"Piaskownica": "all"}`).
+- **`/menu`** (i `/start`): wszystko jako kafelki w jednej wiadomości – 📅 📚 🎓 📘 🗓 🔎 ✋ ⚙️ oraz 🗂 Studia ▸ i 🛠 Serwis ▸. Kafelki otwierają się w miejscu, ↩️ Menu wraca; oddawanie i forum pojawiają się przy `MOODLE_ACTIONS=1`, Studia przy planie studiów.
+- Krótsze menu komend pod **/**: 10 komend na co dzień zamiast 23. Każda komenda dalej działa po wpisaniu, a `/pomoc` pokazuje je w grupach.
+- 📨 **Pliki na czat** (dla kursu, domyślnie wyłączone): nowe pliki kursu przychodzą na czat Telegrama jako dokumenty, bez klikania ⬇️ – do 10 na synchronizację, do 50 MB każdy. `/ustawienia` → **📨 Nowe pliki na czat: wszystkie kursy** (`AUTOSEND_FILES=1`) włącza je dla wszystkich kursów. Wysyła sama synchronizacja, proces bota niepotrzebny.
+- 🙈 **Ukryte kursy**, jak *Ukryj z panelu* na eNauczaniu – a kurs ukryty tam jest ukryty i tutaj. `/kursy` → kurs → **🙈 Ukryj kurs** / **👁 Pokaż kurs**; `/kursy` pokazuje aktualne kursy i **🙈 Ukryte (N)**. Ukryty kurs się nie synchronizuje (pliki, kalendarz, ogłoszenia, oceny, przypomnienia) i znika z `/dzis` i `/terminy`; `/sync` → **🙈 Pliki z ukrytych kursów** pobiera je na żądanie. Przy `MOODLE_ACTIONS=1` ukrycie w bocie ukrywa kurs też na panelu Moodle. **Uwaga:** kursy, które już ukryłeś w Moodle, po tej aktualizacji przestają się synchronizować.
+- `/sync` → **🔄 Aktualne** (wcześniej *Wszystko*): kursy, które nie są ukryte, tak jak robi to timer.
+- `course_settings.json` trafia do kopii w chmurze razem z `state.json` i wraca przez `restore`.
+
 ## 1.12.0 (2026-10)
 
 - `/terminy`, `/nowe` i `/oceny` obejmują też drugi Moodle (`OTHER_SITES`): jedna lista posortowana według czasu, jego pozycje z dopiskiem „UG · ”. Gdy tamten serwer nie odpowiada, reszta i tak się pokazuje, z krótką informacją.

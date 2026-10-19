@@ -22,6 +22,7 @@ through the "remote_moves" queue processed by the upload step.
 """
 
 import hashlib
+import html
 import json
 import os
 import re
@@ -30,7 +31,7 @@ from pathlib import Path
 
 import requests
 
-from . import config, moodle, state as state_mod, studyplan
+from . import config, courseprefs, moodle, state as state_mod, studyplan
 from .i18n import t
 from .notify import bullet_list, notify
 from .textutil import clean_text, normalize_for_matching, pick_language, sanitize_component
@@ -41,6 +42,7 @@ EXCLUDED_EXTENSIONS = {".html", ""}
 
 CHUNK_SIZE = 64 * 1024
 FILE_BUTTONS = 6     # new files with their own "download" button in a Telegram notification
+AUTOSEND_MAX = 10    # files sent into the chat by one sync (the rest keep their ⬇️ buttons)
 BATCHES_KEPT = 30    # notifications whose "download all" button still works
 
 # Built-in category rules, checked in order - first match wins - on text
@@ -509,15 +511,19 @@ def is_pending(f: dict, downloaded: dict) -> bool:
 
 def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganize: bool = False,
         course_ids: list[int] | None = None) -> int:
-    """course_ids: only these courses (bot: /sync -> one course); the layout still sees all of them."""
+    """
+    course_ids: only these courses (bot: /sync -> one course, or the hidden ones); without them every course
+    that isn't hidden (courseprefs). The layout still sees all of them.
+    """
     courses = moodle.my_courses()
-    picked = [c for c in courses if c["id"] in course_ids] if course_ids else courses
+    picked = [c for c in courses if c["id"] in course_ids] if course_ids else courseprefs.active(courses)
+    picked_ids = {c["id"] for c in picked}
     files = collect_files(picked)
     cfg = config.load_courses_config()
 
     state = state_mod.load()
     downloaded = state.setdefault("downloaded", {})
-    files += [f for f in submitted_files(courses, state) if not course_ids or f["course_id"] in course_ids]
+    files += [f for f in submitted_files(courses if course_ids else picked, state) if f["course_id"] in picked_ids]
     try:
         apply_layout(files, courses, cfg, state)
     except RuntimeError as e:  # plan configured but unavailable: don't scatter files into the old layout
@@ -592,7 +598,7 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
         again = (downloaded.get(f["id"]) or {}).get("skipped") == "redownload"
         downloaded[f["id"]] = {"path": rel.as_posix(), "key": logical_key(f), "ts": int(time.time())}
         if not again and f.get("category") != "submitted":  # refetched after /cleanup, or your own: not news
-            done.append((f["id"], rel.as_posix()))
+            done.append((f["id"], rel.as_posix(), f["course_id"]))
         state_mod.save(state)  # after every file: an interrupted run won't start over
 
     if dry_run:
@@ -600,12 +606,44 @@ def run(dry_run: bool = False, limit: int = 0, baseline: bool = False, reorganiz
         return 0
 
     print("\n" + t("files_summary", ok=len(done), failed=failed))
-    if done:
-        paths = [path for _, path in done]
-        buttons = download_buttons([fid for fid, _ in done], paths, state)
+    off = courseprefs.muted(courses, cfg)
+    loud = [(fid, path) for fid, path, course_id in done if courseprefs.allows(off, course_id, "files")]
+    pushed = [path for _, path, course_id in done if courseprefs.allows(off, course_id, "autosend") and fits(path)]
+    if len(pushed) > AUTOSEND_MAX:
+        print(t("files_autosend_limit", n=len(pushed) - AUTOSEND_MAX))
+        pushed = pushed[:AUTOSEND_MAX]
+    if len(loud) < len(done):
+        print(t("files_muted", n=len(done) - len(loud)))
+    if loud:
+        paths = [path for _, path in loud]
+        # files that arrive in the chat themselves need no ⬇️ button
+        wanted = [(fid, path) for fid, path in loud if path not in pushed]
+        buttons = download_buttons([fid for fid, _ in wanted], [path for _, path in wanted], state)
         state_mod.save(state)
-        notify("files", t("notify_files_title", n=len(done)), new_files_message(paths), buttons=buttons)
+        notify("files", t("notify_files_title", n=len(loud)), new_files_message(paths), buttons=buttons)
+    autosend(pushed)
     return 1 if failed else 0
+
+
+def fits(path: str) -> bool:
+    """Small enough for a bot to send (50 MB)? A bigger one keeps its ⬇️ button (a Drive link)."""
+    from . import notify as notify_mod
+
+    if (config.download_dir() / path).stat().st_size <= notify_mod.TELEGRAM_UPLOAD_MB * 1024 * 1024:
+        return True
+    print(t("files_autosend_too_big", name=path.rsplit("/", 1)[-1]))
+    return False
+
+
+def autosend(paths: list[str]) -> None:
+    """New files of courses with 📨 on (courseprefs "autosend") straight into the Telegram chat."""
+    from . import notify as notify_mod
+
+    silent = notify_mod.quiet_now()
+    for path in paths:
+        caption = f"📨 <b>{html.escape(course_of_path(path))}</b>"
+        if not notify_mod.send_telegram_document(config.download_dir() / path, caption, silent=silent):
+            print(t("files_autosend_failed", name=path.rsplit("/", 1)[-1]))
 
 
 # --- preview (python -m moodle_sync courses) ---------------------------------------------------------

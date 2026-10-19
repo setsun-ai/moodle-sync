@@ -31,7 +31,7 @@ import re
 import time
 from datetime import datetime, timezone
 
-from . import config, moodle, state as state_mod
+from . import config, courseprefs, moodle, state as state_mod
 from .files import course_display_name
 from .i18n import t
 from .notify import bullet_list, notify
@@ -137,11 +137,18 @@ def course_label(course: dict | None, cfg: dict | None = None) -> str:
     return name if len(name) <= 40 else name[:39].rstrip() + "…"
 
 
-def upcoming_deadlines(days: int = 14) -> list[tuple[int, str, bool | None]]:
-    """Upcoming deadlines straight from Moodle (no Google): [(timestamp, text, done?), ...]."""
-    courses = moodle.my_courses()
+def upcoming_deadlines(days: int = 14, kind: str = "") -> list[tuple[int, str, bool | None]]:
+    """Upcoming deadlines straight from Moodle (no Google): [(timestamp, text, done?), ...].
+
+    Hidden courses are left out. kind: also leave out courses that have it switched off (courseprefs,
+    e.g. "reminders"); "" = every course that isn't hidden.
+    """
+    every = moodle.my_courses()
+    courses = courseprefs.active(every)
     by_id = {c["id"]: c for c in courses}
+    hidden = {c["id"] for c in every} - set(by_id)
     cfg = config.load_courses_config()
+    off = courseprefs.muted(courses, cfg) if kind else {}
     open_ids = fetch_open_action_ids(past_days=0)
     lang = config.moodle_content_language()
     now = time.time()
@@ -149,12 +156,19 @@ def upcoming_deadlines(days: int = 14) -> list[tuple[int, str, bool | None]]:
     for e in fetch_events(courses, past_days=0, future_days=days):
         if e.get("eventtype") == "attendance" or e["timestart"] < now:
             continue
+        if e.get("courseid") in hidden or (kind and not courseprefs.allows(off, e.get("courseid"), kind)):
+            continue
         label = course_label(by_id.get(e.get("courseid")), cfg)
         out.append((e["timestart"], f"[{label}] {clean_text(e['name'], lang)}", is_done(e, open_ids)))
     return sorted(out)
 
 
 # --- event building ------------------------------------------------------------------------
+
+def calendar_kind(e: dict) -> str:
+    """Which per-course setting lets an event into Google: "classes" for attendance, else "calendar"."""
+    return "classes" if e.get("eventtype") == "attendance" else "calendar"
+
 
 def rfc3339(ts: int) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
@@ -299,12 +313,21 @@ def run(dry_run: bool = False) -> int:
     courses = moodle.my_courses()
     courses_by_id = {c["id"]: c for c in courses}
     cfg = config.load_courses_config()
-    events = fetch_events(courses)
+    off = courseprefs.muted(courses, cfg)
+    fetched = fetch_events(courses)
+    # A course switched off (courseprefs) is treated as if its events weren't there: those already in
+    # Google are deleted below. They stay "hidden", so switched on again they come back silently,
+    # not as a flood of "new deadlines".
+    events = [e for e in fetched if courseprefs.allows(off, e.get("courseid"), calendar_kind(e))]
     open_ids = fetch_open_action_ids()
 
     state = state_mod.load()
     cal_state = state.setdefault("calendar", {})
     known = cal_state.setdefault("events", {})  # moodle id -> {fp, cal, start, done, added}
+    was_hidden = set(cal_state.get("hidden", []))
+    all_ids = {str(e["id"]) for e in fetched}
+    # until an event is back in Google it stays hidden (an upload that fails is tried again next run)
+    cal_state["hidden"] = sorted((all_ids - {str(e["id"]) for e in events}) | (was_hidden & all_ids))
 
     session = cal_ids = None
     if not dry_run:
@@ -316,10 +339,11 @@ def run(dry_run: bool = False) -> int:
             if entry["cal"] in created:
                 entry["fp"] = ""  # upload again; same start -> no "new deadline" notification
 
-    to_upsert, fetched_ids = [], set()
+    to_upsert, fetched_ids, course_of = [], set(), {}
     for e in events:
         mid = str(e["id"])
         fetched_ids.add(mid)
+        course_of[mid] = e.get("courseid")
         prev = known.get(mid)
         done = is_done(e, open_ids)
         if done is None and open_ids is None and prev:
@@ -363,12 +387,16 @@ def run(dry_run: bool = False) -> int:
         start_ts = datetime.fromisoformat(body["start"]["dateTime"].replace("Z", "+00:00")).timestamp()
         known[mid] = {"fp": fp, "cal": cal, "start": start_ts, "done": done,
                       "added": prev.get("added") if prev else int(time.time())}
+        if mid in cal_state["hidden"]:
+            cal_state["hidden"].remove(mid)
         print(f"  {'+' if prev is None else '~'} {body['summary']}")
         # Notify only about future, not-yet-done deadlines: new, or with a changed time.
-        if cal == "deadlines" and start_ts > time.time() and not done:
+        if cal == "deadlines" and start_ts > time.time() and not done and \
+                courseprefs.allows(off, course_of[mid], "deadlines"):
             when = datetime.fromtimestamp(start_ts).strftime("%d.%m %H:%M")
             if prev is None:
-                new_deadlines.append(f"{when}  {body['summary']}")
+                if mid not in was_hidden:
+                    new_deadlines.append(f"{when}  {body['summary']}")
             elif prev["start"] != start_ts:
                 moved_deadlines.append(f"{when}  {body['summary']}")
 

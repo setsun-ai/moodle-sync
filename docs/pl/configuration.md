@@ -169,7 +169,8 @@ jeszcze raz i uruchom to samo polecenie - zacznie od miejsca, w którym skończy
 | Zmienna | Znaczenie |
 |---|---|
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram (id czatu ustawia `bot --setup`). |
-| `TELEGRAM_FILE_BUTTONS` | `0` = bez przycisków „⬇️ Pobierz” pod *Nowymi materiałami*. Domyślnie `1`; przyciski wymagają procesu bota. |
+| `TELEGRAM_FILE_BUTTONS` | `0` = bez przycisków pod powiadomieniami („⬇️ Pobierz” pod *Nowymi materiałami*, „🔕 Wycisz to z tego kursu” pod ogłoszeniami i ocenami). Domyślnie `1`; przyciski wymagają procesu bota. |
+| `AUTOSEND_FILES` | `1` = nowe pliki **każdego** kursu trafiają na czat Telegrama jako dokumenty (do 10 na synchronizację, do 50 MB każdy). Domyślnie `0`: tylko kursy, w których włączysz **📨 Pliki na czat**. Także w `/ustawienia`. |
 | `DISCORD_WEBHOOK_URL` | Webhook kanału Discord. |
 | `NTFY_TOPIC`, `NTFY_SERVER` | Powiadomienia push ntfy. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`, `EMAIL_FROM` | E-mail. |
@@ -197,6 +198,7 @@ python -m moodle_sync courses
   "default_category": {
     "lektorat": "exercises"
   },
+  "mute": {"Wychowanie fizyczne": ["announcements", "reminders"]},
   "skip": ["Szkolenie biblioteczne", "Piaskownica"],
   "category_rules": [
     { "folder": "Seminaria", "pattern": "seminar" },
@@ -208,7 +210,8 @@ python -m moodle_sync courses
 - **Klucze** w `names`, `default_category` i `skip` to *fragmenty* nazwy kursu tak, jak wygląda w Moodle (bez rozróżniania wielkości liter).
 - **`names`:** nazwa folderu, używana też w tytułach wydarzeń w kalendarzu i w powiadomieniach.
 - **`default_category`:** kategoria dla plików, których nie rozpoznała żadna reguła. Użyj wbudowanego klucza (`lectures`, `exercises`, `labs`, `projects`, `other`) albo dowolnej nazwy folderu.
-- **`skip`:** całkowicie pomijaj te kursy (pliki, kalendarz, ogłoszenia, oceny).
+- **`skip`:** całkowicie pomijaj te kursy (pliki, kalendarz, ogłoszenia, oceny). Kurs, który może jeszcze wrócić, łatwiej ukryć: w bocie albo na panelu Moodle ([Powiadomienia](notifications.md#ukryte-kursy)).
+- **`mute`:** czego kurs **nie** może Ci wysyłać ani wpisywać do kalendarza: `"all"` albo lista z `files`, `announcements`, `grades`, `deadlines`, `reminders`, `calendar`, `classes`. W odróżnieniu od `skip` pliki dalej się pobierają, a `/terminy` i `/kursy` dalej go pokazują. Ustawienia kursu w bocie ([Powiadomienia](notifications.md#ustawienia-kursów)) mają pierwszeństwo.
 - **`plan`:** który to przedmiot z planu studiów, gdy nazwa w Moodle tego nie mówi (`"Matematyka dla inżynierów": "Matematyka II"`).
 - **`only`:** synchronizuj tylko kursy, których nazwa zawiera któryś z tych fragmentów (np. drugi Moodle, zobacz niżej).
 - **`semester`:** wymuszony semestr kursu (`"Piaskownica": 1`).

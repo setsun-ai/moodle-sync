@@ -32,7 +32,6 @@ Read [How it works](docs/en/how-it-works.md) first. It explains the structure an
 - 💬 Discord bot **commands** (today Discord only receives notifications).
 - 🔔 Matrix / Slack / Signal notification channels (`notify.py`).
 - 📅 Export deadlines to an `.ics` file in `DOWNLOAD_DIR`.
-- 🔕 Per-course notification settings in `courses.json`.
 - 🐳 A Dockerfile for NAS users.
 - 🧪 More tests, e.g. for `storage.py` with a fake `rclone`.
 
@@ -57,7 +56,6 @@ Dzięki za pomoc! Projekt ma być przyjazny dla pierwszoroczniaków, więc pierw
 - komendy dla bota Discord,
 - powiadomienia przez Matrix, Slack albo Signal,
 - eksport terminów do `.ics`,
-- ustawienia powiadomień per kurs,
 - Dockerfile,
 - więcej testów.
 

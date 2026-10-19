@@ -27,6 +27,7 @@ Moodle REST API ───► │ 1. files.py      nowe pliki         -> DOWNLOAD
 | `storage.py` | Wysyłka przez rclone. |
 | `calendar_sync.py` | Kalendarz Google. |
 | `watch.py` | Ogłoszenia i oceny. |
+| `courseprefs.py` | Ustawienia kursów: co każdy kurs może wysyłać i wpisywać do kalendarza. Zapisuje je bot, kroki tylko czytają. |
 | `notify.py` | Kanały powiadomień. |
 | `telegram_bot.py` | Komendy bota. |
 | `runner.py` | Uruchamia wszystkie kroki, obsługuje błędy, podsumowanie tygodnia. |
@@ -97,6 +98,5 @@ Zobacz [CONTRIBUTING.md](../../CONTRIBUTING.md). Kilka przykładów:
 - bot Discord z komendami,
 - powiadomienia przez Matrix,
 - eksport terminów do pliku `.ics`,
-- ustawienia powiadomień per kurs,
 - obraz Dockera,
 - tłumaczenie na niemiecki (dodaj `"de"` w `i18n.py`).
