@@ -2,6 +2,11 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
+## 1.13.2 (2026-11)
+
+- **Fix: `upload --cleanup --yes` from the command line waits for a running sync.** It used to delete files and rewrite `state.json` next to the scheduled sync, which could lose entries (files downloaded and announced again). Now it says that another run is in progress and exits, like /cleanup in the bot.
+- **Fix: cleanup no longer reports deletions that failed.** When rclone can't delete, move or dedupe in the cloud, the count leaves those out and you get a warning (details in the log and in /errors); the command exits with 1.
+
 ## 1.13.1 (2026-10)
 
 - The menu under **/** has just `/menu` and `/help` - everything else is a tile. Typed commands all still work.

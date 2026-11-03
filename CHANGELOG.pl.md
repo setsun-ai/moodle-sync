@@ -2,6 +2,11 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.13.2 (2026-11)
+
+- **Poprawka: `upload --cleanup --yes` z wiersza poleceń czeka na trwającą synchronizację.** Wcześniej usuwało pliki i nadpisywało `state.json` obok zaplanowanej synchronizacji, co mogło zgubić wpisy (pliki pobrane i ogłoszone drugi raz). Teraz pisze, że trwa inne uruchomienie, i kończy – tak jak /porzadki w bocie.
+- **Poprawka: porządki nie zgłaszają usunięć, które się nie udały.** Gdy rclone nie zdoła usunąć, przenieść albo scalić plików w chmurze, licznik ich nie wlicza i dostajesz ostrzeżenie (szczegóły w logu i w /bledy); polecenie kończy się kodem 1.
+
 ## 1.13.1 (2026-10)
 
 - Menu pod **/** ma tylko `/menu` i `/pomoc` – cała reszta to kafelki. Wpisane komendy dalej działają.
