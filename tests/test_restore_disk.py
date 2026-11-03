@@ -81,3 +81,34 @@ def test_low_disk_alarm_can_be_turned_off(monkeypatch):
     monkeypatch.setattr(runner.shutil, "disk_usage", lambda path: Usage(32e9, 32e9, 0))
     monkeypatch.setattr(runner, "notify", lambda *a, **k: pytest.fail("off"))
     runner.check_disk({})  # conftest: LOW_DISK_GB=0
+
+
+def stale(**found):
+    return {"local": [], "remote": [], "duplicates": [], "misplaced": [], "missing": [], **found}
+
+
+def test_cleanup_waits_for_a_running_sync(monkeypatch, capsys):
+    monkeypatch.setattr(storage, "find_stale", lambda: stale(local=["a/x.pdf"]))
+    monkeypatch.setattr(storage, "remove_stale", lambda found: pytest.fail("deleted during a sync"))
+    with runner.SingleInstance():  # the scheduled sync is running
+        assert storage.cleanup(apply=True) == runner.LOCK_BUSY
+    assert "still in progress" in capsys.readouterr().out
+
+
+def test_cleanup_reports_what_rclone_could_not_delete(monkeypatch, capsys):
+    monkeypatch.setenv("RCLONE_REMOTE", "gdrive")
+    monkeypatch.setenv("DRIVE_DEST", "Studies/Moodle")
+    local = config.download_dir() / "a" / "x.pdf"
+    local.parent.mkdir(parents=True)
+    local.write_bytes(b"old copy")
+    monkeypatch.setattr(storage, "rclone", lambda *args, quiet=False: 1 if args[0] == "delete" else 0)
+    monkeypatch.setattr(storage, "find_stale", lambda: stale(local=["a/x.pdf"], remote=["a/x.pdf", "b/y.pdf"]))
+    assert storage.cleanup(apply=True) == 1
+    out = capsys.readouterr().out
+    assert "Deleted: 1" in out and "failed" in out  # the local copy only, not the 2 in the cloud
+    assert not local.exists()
+
+    monkeypatch.setattr(storage, "rclone", lambda *args, quiet=False: 0)
+    assert storage.cleanup(apply=True) == 0
+    out = capsys.readouterr().out
+    assert "Deleted: 3" in out and "failed" not in out  # 1 local + 2 in the cloud

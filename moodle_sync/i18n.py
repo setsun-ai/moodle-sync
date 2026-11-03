@@ -383,6 +383,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Delete them: python -m moodle_sync upload --cleanup --yes  (or /cleanup in the bot)"},
     "cleanup_done": {"pl": "Usunięto: {n}",
         "en": "Deleted: {n}"},
+    "cleanup_failed": {"pl": "⚠️ Część się nie udała – rclone zgłosił błąd (szczegóły w logu i w /bledy).",
+        "en": "⚠️ Some of it failed - rclone reported an error (details in the log and in /errors)."},
     "bot_cmd_electives": {"pl": "Wybierz przedmioty obieralne",
         "en": "Pick your elective subjects"},
     "bot_cmd_cleanup": {"pl": "Usuń stare kopie plików po przenosinach",

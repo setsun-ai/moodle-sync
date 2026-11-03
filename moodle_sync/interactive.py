@@ -1149,8 +1149,8 @@ def do_cleanup(chat: str, message_id: int) -> None:
             edit(chat, message_id, "⏳ " + esc(t("bot_sync_busy")))
             return
         edit(chat, message_id, t("ui_cu_working"))
-        n = storage.remove_stale(found)
-    edit(chat, message_id, t("ui_cu_done", n=n))
+        n, ok = storage.remove_stale(found)
+    edit(chat, message_id, t("ui_cu_done", n=n) + ("" if ok else "\n" + t("cleanup_failed")))
 
 
 # --- "download" buttons under the new-files notification ------------------------------------------

@@ -281,17 +281,23 @@ def find_stale() -> dict:
     return found
 
 
-def remove_stale(found: dict) -> int:
+def remove_stale(found: dict) -> tuple[int, bool]:
+    """(what was fixed, did every rclone step succeed) - a failed step is not counted as done."""
+    done, ok = 0, True
     if found.get("duplicates"):
         # merge folders with the same name (their content ends up in one), and of two files
         # with the same name in the same folder keep the newest
-        rclone("dedupe", "--dedupe-mode", "newest", target())
+        if rclone("dedupe", "--dedupe-mode", "newest", target()) == 0:
+            done += len(found["duplicates"])
+        else:
+            ok = False
     moves = found.get("misplaced") or []
     for folder in sorted({posixpath.dirname(m["to"]) for m in moves if posixpath.dirname(m["to"])},
                          key=lambda d: (d.count("/"), d)):
         rclone("mkdir", target(folder), quiet=True)
     for move in moves:  # one by one: they're few, and parallel moves made duplicate folders before
-        _move_one(move)
+        moved = _move_one(move)
+        done, ok = done + moved, ok and moved
     if found.get("missing"):
         state = state_mod.load()
         missing = {p.casefold() for p in found["missing"]}
@@ -302,9 +308,11 @@ def remove_stale(found: dict) -> int:
             if entry.get("path", "").casefold() in missing:
                 entry["checked"], entry["sha"] = 0, ""
         state_mod.save(state)
+        done += len(found["missing"])
     root = config.download_dir()
     for path in found["local"]:
         (root / path).unlink(missing_ok=True)
+    done += len(found["local"])
     if found["local"] and root.exists():
         from .files import _remove_empty_dirs
         _remove_empty_dirs(root)
@@ -312,16 +320,37 @@ def remove_stale(found: dict) -> int:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as fh:
             fh.write("\n".join(found["remote"]) + "\n")
         try:
-            rclone("delete", target(), "--files-from-raw", fh.name)
-            rclone("rmdirs", target(), "--leave-root")
+            if rclone("delete", target(), "--files-from-raw", fh.name) == 0:
+                done += len(found["remote"])
+            else:
+                ok = False
+            ok = rclone("rmdirs", target(), "--leave-root") == 0 and ok
         finally:
             os.unlink(fh.name)
-    return (len(found["local"]) + len(found["remote"] or []) + len(found.get("duplicates", []))
-            + len(found.get("misplaced", [])) + len(found.get("missing", [])))
+    return done, ok
 
 
 def cleanup(apply: bool = False) -> int:
-    found = find_stale()
+    """List the old copies; with apply, delete them - under the sync lock, like /cleanup in the bot."""
+    if not apply:
+        show_stale(find_stale(), hint=True)
+        return 0
+    from .runner import LOCK_BUSY, SingleInstance
+
+    with SingleInstance() as lock:  # a scheduled sync writes state.json and uploads at the same time
+        if not lock.acquired:
+            print(t("run_busy"))
+            return LOCK_BUSY
+        found = find_stale()
+        show_stale(found)
+        done, ok = remove_stale(found)
+    print(t("cleanup_done", n=done))
+    if not ok:
+        print(t("cleanup_failed"))
+    return 0 if ok else 1
+
+
+def show_stale(found: dict, hint: bool = False) -> None:
     for where, label in (("local", t("cleanup_local")), ("remote", t("cleanup_remote"))):
         items = found[where] or []
         print(t("cleanup_found", where=label, n=len(items)))
@@ -335,12 +364,8 @@ def cleanup(apply: bool = False) -> int:
         print(t("cleanup_misplaced", moved=len(found["misplaced"]), missing=len(found["missing"])))
         for move in found["misplaced"][:30]:
             print(f"    {move['from']}\n -> {move['to']}")
-    if not apply:
-        if found["local"] or found["remote"] or found["duplicates"] or found["misplaced"] or found["missing"]:
-            print("\n" + t("cleanup_hint"))
-        return 0
-    print(t("cleanup_done", n=remove_stale(found)))
-    return 0
+    if hint and (found["local"] or found["remote"] or found["duplicates"] or found["misplaced"] or found["missing"]):
+        print("\n" + t("cleanup_hint"))
 
 
 def backup_state() -> None:

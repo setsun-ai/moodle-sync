@@ -365,11 +365,16 @@ def test_cleanup_in_the_bot(bot, monkeypatch):
 
     removed = []
     monkeypatch.setattr(storage, "find_stale", lambda: {"local": ["a/x.pdf"], "remote": ["a/x.pdf", "b/y.pdf"]})
-    monkeypatch.setattr(storage, "remove_stale", lambda found: removed.append(found) or 3)
+    monkeypatch.setattr(storage, "remove_stale", lambda found: removed.append(found) or (3, True))
     interactive.handle_command("porzadki", [], "1")
     assert "local 1, cloud 2" in bot["sent"][-1][0] and removed == []
     click("cu!")
-    assert removed and "3" in bot["edits"][-1][0]
+    assert removed and "3" in bot["edits"][-1][0] and "failed" not in bot["edits"][-1][0]
+
+    monkeypatch.setattr(storage, "remove_stale", lambda found: (1, False))  # rclone couldn't delete in the cloud
+    interactive.handle_command("porzadki", [], "1")
+    click("cu!")
+    assert "1" in bot["edits"][-1][0] and "failed" in bot["edits"][-1][0]
 
 
 
