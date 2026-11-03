@@ -2,7 +2,7 @@
 
 🇵🇱 [Po polsku](CHANGELOG.pl.md)
 
-## 1.13.3 (unreleased)
+## 1.13.3 (2026-11)
 
 - **Tiles fit on a phone.** "⚙️ Settings" (in Polish "⚙️ Ustawienia") showed as "U…ienia" in the row of three in /menu. Just before a message goes out, a row of buttons that doesn't fit is now split into more rows (same order, nothing disappears), and a single button that is still too long (a long course name) is shortened in the middle, so the start and the end stay visible. One rule for every menu and notification: 42 characters per row, emoji count as two.
 

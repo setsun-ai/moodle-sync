@@ -2,7 +2,7 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
-## 1.13.3 (niewydana)
+## 1.13.3 (2026-11)
 
 - **Kafelki mieszczą się na telefonie.** „⚙️ Ustawienia” w rzędzie po trzy w /menu wyglądało jak „U…ienia”. Tuż przed wysłaniem wiadomości rząd przycisków, który się nie mieści, dzieli się teraz na kilka rzędów (ta sama kolejność, nic nie znika), a pojedynczy za długi przycisk (długa nazwa kursu) jest skracany w środku – początek i koniec zostają. Jedna reguła dla każdego menu i powiadomienia: 42 znaki na rząd, emoji liczone podwójnie.
 
