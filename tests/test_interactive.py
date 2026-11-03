@@ -1082,3 +1082,33 @@ def test_cli_runs_against_the_chosen_site(monkeypatch, tmp_path):
     interactive.cli("calendar")
     interactive.cli("calendar", site=tmp_path / "site-2")
     assert seen[0] is None and seen[1]["MOODLE_SYNC_DATA_DIR"] == str(tmp_path / "site-2")
+
+
+def test_menu_tiles_fit_on_a_phone(monkeypatch):
+    """Like the real menu on a phone: "⚙️ Ustawienia" in a row of three was cut to "U…ienia"."""
+    from moodle_sync import notify
+
+    sent = []
+    monkeypatch.setattr(interactive, "api", lambda method, **p: sent.append(p) or {"message_id": 1})
+    monkeypatch.setenv("MOODLE_ACTIONS", "1")
+    monkeypatch.setenv("STUDY_PLAN_URL", "https://ects.example.edu/pl/courses/1")
+    monkeypatch.setitem(interactive.MENU, "open", True)
+    for lang in ("pl", "en"):
+        monkeypatch.setenv("LANGUAGE", lang)
+        for group in ("", "studies", "service"):
+            sent.clear()
+            interactive.show_hub("1", group=group)
+            rows = sent[-1]["reply_markup"]["inline_keyboard"]
+            for row in rows:
+                for b in row:
+                    assert notify.label_width(b["text"]) <= notify.TG_ROW_CHARS // len(row) - 2, (lang, group, b)
+            if lang == "pl" and group == "":
+                labels = [b["text"] for row in rows for b in row]
+                assert "⚙️ Ustawienia" in labels  # whole, not cut
+                assert all(len(r) < 3 for r in rows if any(b["text"] == "⚙️ Ustawienia" for b in r))  # the screenshot
+                assert labels[:9] == ["📅 Terminy", "📚 Nowe", "🎓 Oceny", "📘 Kursy", "🗓 Dziś", "🔎 Szukaj",
+                                      "📤 Oddaj", "💬 Forum", "✋ Obecność"]  # rows that fit stay as they are
+                assert [len(r) for r in rows[:3]] == [3, 3, 3]
+    long_name = "🟢 Biochemia stosowana i inżynieria procesów biotechnologicznych – laboratorium 👥3"
+    shown = notify.keyboard([[(long_name, "c:1")]])["inline_keyboard"][0][0]["text"]
+    assert shown.startswith("🟢 Biochemia") and shown.endswith("👥3") and "…" in shown

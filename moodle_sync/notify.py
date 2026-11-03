@@ -79,11 +79,54 @@ def channels() -> list[str]:
 
 # --- channels ------------------------------------------------------------------------------
 
+TG_ROW_CHARS = 42  # a row of buttons on a ~390 pt phone fits this many characters; n buttons share it equally
+
+
+def label_width(text: str) -> int:
+    """Width of a button text in characters: emoji and symbols take two, variation selectors and ZWJ none."""
+    return sum(0 if ch in "\ufe0f\u200d" else 2 if ord(ch) >= 0x2300 else 1 for ch in text)
+
+
+def fits(text: str, n: int) -> bool:
+    return label_width(text) <= TG_ROW_CHARS // n - 2
+
+
+def shorten(text: str, n: int = 1) -> str:
+    """Too long for its tile: cut the middle, keep the start (icon, name) and the end (e.g. a count)."""
+    if fits(text, n):
+        return text
+    left = right = len(text) // 2
+    while left > 0 or right < len(text):
+        if left > len(text) - right:
+            left -= 1
+        else:
+            right += 1
+        short = text[:left].rstrip() + "…" + text[right:].lstrip()
+        if fits(short, n):
+            return short
+    return "…"
+
+
+def fit_rows(rows: list) -> list:
+    """A row that doesn't fit on a phone is split into more rows (same order); a single button too long is shortened."""
+    out = []
+    for row in rows:
+        line: list = []
+        for button in row:
+            if line and not all(fits(text, len(line) + 1) for text, _ in line + [button]):
+                out.append(line)
+                line = []
+            line.append(button)
+        if line:
+            out.append(line)
+    return [[(shorten(text, len(row)), data) for text, data in row] for row in out]
+
+
 def keyboard(rows: list) -> dict:
-    """Rows of (text, callback data) - or (text, https://...) for a button that opens a page."""
-    return {"inline_keyboard": [[{"text": text[:60], "url": data} if data.startswith("http")
-                                 else {"text": text[:60], "callback_data": data[:64]} for text, data in row]
-                                for row in rows if row]}
+    """Rows of (text, callback data) - or (text, https://...) for a button that opens a page - fitted to a phone."""
+    return {"inline_keyboard": [[{"text": text, "url": data} if data.startswith("http")
+                                 else {"text": text, "callback_data": data[:64]} for text, data in row]
+                                for row in fit_rows(rows)]}
 
 
 def send_telegram_html(text: str, chat_id: str | None = None, buttons: list | None = None,

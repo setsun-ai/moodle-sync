@@ -2,6 +2,10 @@
 
 🇬🇧 [English](CHANGELOG.md)
 
+## 1.13.3 (niewydana)
+
+- **Kafelki mieszczą się na telefonie.** „⚙️ Ustawienia” w rzędzie po trzy w /menu wyglądało jak „U…ienia”. Tuż przed wysłaniem wiadomości rząd przycisków, który się nie mieści, dzieli się teraz na kilka rzędów (ta sama kolejność, nic nie znika), a pojedynczy za długi przycisk (długa nazwa kursu) jest skracany w środku – początek i koniec zostają. Jedna reguła dla każdego menu i powiadomienia: 42 znaki na rząd, emoji liczone podwójnie.
+
 ## 1.13.2 (2026-11)
 
 - **Poprawka: `upload --cleanup --yes` z wiersza poleceń czeka na trwającą synchronizację.** Wcześniej usuwało pliki i nadpisywało `state.json` obok zaplanowanej synchronizacji, co mogło zgubić wpisy (pliki pobrane i ogłoszone drugi raz). Teraz pisze, że trwa inne uruchomienie, i kończy – tak jak /porzadki w bocie.
